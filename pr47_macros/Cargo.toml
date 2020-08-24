@@ -1,0 +1,15 @@
+[package]
+name = "pr47_macros"
+version = "0.1.0"
+authors = ["ICEY <icey@icey.tech>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pr47_data = { path = "../pr47_data" }
+syn = "1.0"
+quote = "1.0"
+
+[lib]
+proc-macro = true
