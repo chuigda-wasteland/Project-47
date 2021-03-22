@@ -1,0 +1,12 @@
+[package]
+name = "pr47-codegen"
+version = "0.0.1"
+authors = ["ICEY <icey@icey.tech>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1"
+quote = "1"

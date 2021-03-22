@@ -1,2 +1,5 @@
 [workspace]
-members = ["pr47_macros", "pr47", "pr47_data"]
+members = [
+	"pr47-core",
+	"pr47-codegen"
+]
