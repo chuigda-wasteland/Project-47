@@ -11,10 +11,7 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-lazy_static = "1.4.0"
-paste = "1.0"
-memoffset = "0.5"
-unchecked_unwrap = "2.0.2"
+unchecked_unwrap = "3"
 smallvec = "1.4.2"
 pr47-codegen = { path = "../pr47-codegen" }
 
