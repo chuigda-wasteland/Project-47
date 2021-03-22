@@ -2,19 +2,19 @@ use crate::util::mstring::StringHandle;
 use crate::util::location::{SingleLineRange, SourceLocation};
 
 #[derive(Debug)]
-pub enum CSTType {
-    SimpleType(CSTSimpleType),
-    GenericType(CSTGenericType)
+pub enum ConcreteType {
+    SimpleType(ConcreteSimpleType),
+    GenericType(ConcreteGenericType)
 }
 
 #[derive(Debug)]
-pub struct CSTSimpleType {
-    pub content: CSTSimpleTypeContent,
+pub struct ConcreteSimpleType {
+    pub content: ConcreteSimpleTypeContent,
     pub range: SingleLineRange
 }
 
 #[derive(Debug)]
-pub enum CSTSimpleTypeContent {
+pub enum ConcreteSimpleTypeContent {
     VoidType,
     ByteType,
     IntType,
@@ -26,8 +26,8 @@ pub enum CSTSimpleTypeContent {
 }
 
 #[derive(Debug)]
-pub struct CSTGenericType {
-    pub inner: Box<CSTType>,
+pub struct ConcreteGenericType {
+    pub inner: Box<ConcreteType>,
     pub left_angle: SourceLocation,
     pub right_angle: SourceLocation
 }

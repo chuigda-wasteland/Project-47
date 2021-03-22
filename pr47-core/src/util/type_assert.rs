@@ -12,5 +12,5 @@ impl<T> AssertRef<&T> for Void {}
 impl<T> AssertRef<&mut T> for Void {}
 impl<T> AssertMutRef<&mut T> for Void {}
 
-impl<T, E> AssertResult<core::result::Result<T, E>> for Void {}
+impl<T, E: 'static> AssertResult<core::result::Result<T, E>> for Void {}
 impl<T> AssertOption<core::option::Option<T>> for Void {}

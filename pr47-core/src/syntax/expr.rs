@@ -1,24 +1,24 @@
 use crate::syntax::id::Identifier;
 use crate::util::location::{SingleLineRange, SourceLocation};
-use crate::syntax::ty::CSTType;
+use crate::syntax::ty::ConcreteType;
 
 #[derive(Debug)]
-pub enum CSTExpr {
-    LiteralExpr(CSTLiteralExpr),
-    StringLiteralExpr(CSTStringLiteralExpr),
-    IdRefExpr(CSTIdRefExpr),
-    UnaryExpr(CSTUnaryExpr),
-    BinaryExpr(CSTBinaryExpr),
-    AssignExpr(CSTAssignExpr),
-    FuncCallExpr(CSTFuncCallExpr),
-    SubscriptExpr(CSTSubscriptExpr),
-    FieldRefExpr(CSTFieldRefExpr),
-    MethodCallExpr(CSTMethodCallExpr),
-    AsExpr(CSTAsExpr)
+pub enum ConcreteExpr {
+    LiteralExpr(ConcreteLiteralExpr),
+    StringLiteralExpr(ConcreteStringLiteralExpr),
+    IdRefExpr(ConcreteIdRefExpr),
+    UnaryExpr(ConcreteUnaryExpr),
+    BinaryExpr(ConcreteBinaryExpr),
+    AssignExpr(ConcreteAssignExpr),
+    FuncCallExpr(ConcreteFuncCallExpr),
+    SubscriptExpr(ConcreteSubscriptExpr),
+    FieldRefExpr(ConcreteFieldRefExpr),
+    MethodCallExpr(ConcreteMethodCallExpr),
+    AsExpr(ConcreteAsExpr)
 }
 
 #[derive(Debug)]
-pub struct CSTLiteralExpr {
+pub struct ConcreteLiteralExpr {
     pub content: LiteralExprContent,
     pub range: SingleLineRange
 }
@@ -33,12 +33,12 @@ pub enum LiteralExprContent {
 }
 
 #[derive(Debug)]
-pub struct CSTIdRefExpr {
+pub struct ConcreteIdRefExpr {
     pub id: Identifier
 }
 
 #[derive(Debug)]
-pub struct CSTStringLiteralExpr {
+pub struct ConcreteStringLiteralExpr {
     pub value: String,
     pub range: SingleLineRange
 }
@@ -62,9 +62,9 @@ impl UnaryOp {
 }
 
 #[derive(Debug)]
-pub struct CSTUnaryExpr {
+pub struct ConcreteUnaryExpr {
     pub op: UnaryOp,
-    pub operand: Box<CSTExpr>,
+    pub operand: Box<ConcreteExpr>,
 
     pub op_loc: SourceLocation
 }
@@ -104,53 +104,53 @@ impl BinaryOp {
 }
 
 #[derive(Debug)]
-pub struct CSTBinaryExpr {
+pub struct ConcreteBinaryExpr {
     pub op: BinaryOp,
-    pub lhs: Box<CSTExpr>,
-    pub rhs: Box<CSTExpr>,
+    pub lhs: Box<ConcreteExpr>,
+    pub rhs: Box<ConcreteExpr>,
 
     pub op_loc: SingleLineRange
 }
 
 #[derive(Debug)]
-pub struct CSTAssignExpr {
-    pub lhs: Box<CSTExpr>,
-    pub rhs: Box<CSTExpr>,
+pub struct ConcreteAssignExpr {
+    pub lhs: Box<ConcreteExpr>,
+    pub rhs: Box<ConcreteExpr>,
 
     pub op_loc: SourceLocation
 }
 
 #[derive(Debug)]
-pub struct CSTFuncCallExpr {
-    pub func: Box<CSTExpr>,
-    pub args: Vec<Box<CSTExpr>>,
+pub struct ConcreteFuncCallExpr {
+    pub func: Box<ConcreteExpr>,
+    pub args: Vec<Box<ConcreteExpr>>,
 
     pub left_paren: SourceLocation,
     pub right_paren: SourceLocation
 }
 
 #[derive(Debug)]
-pub struct CSTSubscriptExpr {
-    pub base: Box<CSTExpr>,
-    pub idx: Box<CSTExpr>,
+pub struct ConcreteSubscriptExpr {
+    pub base: Box<ConcreteExpr>,
+    pub idx: Box<ConcreteExpr>,
 
     pub left_bracket: SourceLocation,
     pub right_bracket: SourceLocation
 }
 
 #[derive(Debug)]
-pub struct CSTFieldRefExpr {
-    pub base: Box<CSTExpr>,
+pub struct ConcreteFieldRefExpr {
+    pub base: Box<ConcreteExpr>,
     pub id: Identifier,
 
     pub dot_loc: SourceLocation
 }
 
 #[derive(Debug)]
-pub struct CSTMethodCallExpr {
-    pub base: Box<CSTExpr>,
+pub struct ConcreteMethodCallExpr {
+    pub base: Box<ConcreteExpr>,
     pub func_id: Identifier,
-    pub args: Vec<Box<CSTExpr>>,
+    pub args: Vec<Box<ConcreteExpr>>,
 
     pub dot_loc: SourceLocation,
     pub left_paren: SourceLocation,
@@ -158,9 +158,9 @@ pub struct CSTMethodCallExpr {
 }
 
 #[derive(Debug)]
-pub struct CSTAsExpr {
-    pub operand: Box<CSTExpr>,
-    pub dest_type: CSTType,
+pub struct ConcreteAsExpr {
+    pub operand: Box<ConcreteExpr>,
+    pub dest_type: ConcreteType,
 
     pub as_range: SingleLineRange
 }
