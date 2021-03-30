@@ -1,5 +1,6 @@
 pub mod syntax;
 pub mod util;
+pub mod vm;
 
 #[cfg(test)]
 mod test {
