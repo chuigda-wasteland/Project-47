@@ -42,7 +42,7 @@ impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
 #[cfg(test)]
 mod test {
     use std::ptr::{addr_of, null_mut};
-    use crate::data::value::{Wrapper, WrapperData};
+    use crate::data::wrapper::{Wrapper, WrapperData};
 
     #[allow(dead_code)]
     struct TestStruct {
