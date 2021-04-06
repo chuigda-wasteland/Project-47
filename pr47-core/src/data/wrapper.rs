@@ -10,7 +10,7 @@ pub union WrapperData<T> {
     pub value: ManuallyDrop<MaybeUninit<T>>
 }
 
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct Wrapper<T> {
     pub refcount: u32,
     pub gc_info: u8,
