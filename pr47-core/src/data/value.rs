@@ -51,9 +51,39 @@ mod test {
         field3: std::string::String
     }
 
+    #[allow(dead_code)]
+    #[repr(align(16))]
+    struct TestStruct2();
+
     #[test]
     fn test_mem_layout() {
         let w: Wrapper<TestStruct> = Wrapper {
+            refcount: 42,
+            gc_info: 0,
+            data_offset: 0,
+            data: WrapperData {
+                ptr: null_mut()
+            }
+        };
+
+        assert_eq!(addr_of!(w.refcount) as usize - addr_of!(w) as usize, 0);
+        assert_eq!(addr_of!(w.gc_info) as usize - addr_of!(w) as usize, 4);
+        assert_eq!(addr_of!(w.data_offset) as usize - addr_of!(w) as usize, 5);
+
+        let w: Wrapper<()> = Wrapper {
+            refcount: 42,
+            gc_info: 0,
+            data_offset: 0,
+            data: WrapperData {
+                ptr: null_mut()
+            }
+        };
+
+        assert_eq!(addr_of!(w.refcount) as usize - addr_of!(w) as usize, 0);
+        assert_eq!(addr_of!(w.gc_info) as usize - addr_of!(w) as usize, 4);
+        assert_eq!(addr_of!(w.data_offset) as usize - addr_of!(w) as usize, 5);
+
+        let w: Wrapper<TestStruct2> = Wrapper {
             refcount: 42,
             gc_info: 0,
             data_offset: 0,
