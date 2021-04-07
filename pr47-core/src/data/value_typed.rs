@@ -16,10 +16,8 @@ impl Into<u8> for ValueTypeTag {
     }
 }
 
-impl From<u8> for ValueTypeTag {
-    /// ## Warning: soundness hole
-    /// This should be fine as long as user don't use `ValueTypeTag` directly
-    fn from(input: u8) -> Self {
+impl ValueTypeTag {
+    unsafe fn unsafe_from(input: u8) -> Self {
         unsafe { std::mem::transmute::<u8, Self>(input) }
     }
 }
