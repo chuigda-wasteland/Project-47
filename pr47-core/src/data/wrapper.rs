@@ -5,13 +5,13 @@ use crate::data::tyck::TyckInfo;
 use crate::util::void::Void;
 
 #[repr(C)]
-pub union WrapperData<T> {
+pub union WrapperData<T: 'static> {
     pub ptr: *mut T,
-    pub value: ManuallyDrop<MaybeUninit<T>>
+    pub owned: ManuallyDrop<MaybeUninit<T>>
 }
 
 #[repr(C, align(8))]
-pub struct Wrapper<T> {
+pub struct Wrapper<T: 'static> {
     pub refcount: u32,
     pub gc_info: u8,
     pub data_offset: u8,
@@ -19,9 +19,60 @@ pub struct Wrapper<T> {
     pub data: WrapperData<T>
 }
 
+impl<T: 'static> Wrapper<T> {
+    pub fn new_owned(data: T) -> Self {
+        let mut ret: Wrapper<T> = Self {
+            refcount: 0,
+            // TODO use actual gc_info instead of this
+            gc_info: 0,
+            data_offset: 0,
+            data: WrapperData {
+                owned: ManuallyDrop::new(MaybeUninit::new(data))
+            }
+        };
+        ret.data_offset =
+            (std::ptr::addr_of!(ret.data) as usize - std::ptr::addr_of!(ret) as usize) as u8;
+        ret
+    }
+
+    pub fn new_ref(ptr: *const T) -> Self {
+        let mut ret: Wrapper<T> = Self {
+            // TODO do we need reference counting here?
+            refcount: 0,
+            // TODO use actual gc_info instead of this
+            gc_info: 0,
+            data_offset: 0,
+            data: WrapperData {
+                ptr: ptr as *mut T
+            }
+        };
+        ret.data_offset =
+            (std::ptr::addr_of!(ret.data) as usize - std::ptr::addr_of!(ret) as usize) as u8;
+        ret
+    }
+
+    pub fn new_mut_ref(ptr: *mut T) -> Self {
+        let mut ret: Wrapper<T> = Self {
+            // TODO do we need reference counting here?
+            refcount: 0,
+            // TODO use actual gc_info instead of this
+            gc_info: 0,
+            data_offset: 0,
+            data: WrapperData {
+                ptr
+            }
+        };
+        ret.data_offset =
+            (std::ptr::addr_of!(ret.data) as usize - std::ptr::addr_of!(ret) as usize) as u8;
+        ret
+    }
+}
+
 pub trait DynBase {
     fn dyn_type_id(&self) -> TypeId;
+
     fn dyn_type_name(&self) -> String;
+
     fn dyn_tyck(&self, tyck_info: &TyckInfo) -> bool;
 }
 

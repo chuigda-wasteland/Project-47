@@ -15,5 +15,3 @@ pub union Value {
     pub ptr_repr: FatPointer,
     pub vt_data: ValueTypedData,
 }
-
-

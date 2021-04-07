@@ -11,9 +11,10 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-unchecked_unwrap = "3"
 smallvec = "1.6.1"
-pr47-codegen = { path = "../pr47-codegen" }
+unchecked_unwrap = "3"
+
+pr47-codegen = { path="../pr47-codegen" }
 
 [features]
 default = ["optimized-rtlc"]
