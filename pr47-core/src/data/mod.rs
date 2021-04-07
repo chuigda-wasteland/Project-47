@@ -9,8 +9,11 @@ use crate::data::wrapper::DynBase;
 use crate::data::value_typed::ValueTypedData;
 
 #[repr(C)]
+#[derive(Clone, Copy)]
 pub union Value {
     pub ptr: *mut dyn DynBase,
     pub ptr_repr: FatPointer,
     pub vt_data: ValueTypedData,
 }
+
+

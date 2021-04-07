@@ -8,11 +8,11 @@ pub trait StaticBase<T: 'static> {
     }
 
     fn tyck_info() -> TyckInfo {
-        TyckInfo::SimpleType(TypeId::of::<T>())
+        TyckInfo::Plain(TypeId::of::<T>())
     }
 
     fn tyck(tyck_info: &TyckInfo) -> bool {
-        if let TyckInfo::SimpleType(type_id) = tyck_info {
+        if let TyckInfo::Plain(type_id) = tyck_info {
             TypeId::of::<T>() == *type_id
         } else {
             false

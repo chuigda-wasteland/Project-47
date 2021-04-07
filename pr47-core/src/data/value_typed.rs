@@ -18,7 +18,7 @@ impl Into<u8> for ValueTypeTag {
 
 impl ValueTypeTag {
     unsafe fn unsafe_from(input: u8) -> Self {
-        unsafe { std::mem::transmute::<u8, Self>(input) }
+        std::mem::transmute::<u8, Self>(input)
     }
 }
 
