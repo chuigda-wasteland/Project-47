@@ -1,9 +1,12 @@
 //! ## `insc.rs`: defines instruction set for the VM.
 
+use std::ptr::NonNull;
+use crate::data::tyck::TyckInfo;
+
 /// An VM instruction
 ///
 /// This is a tri-address like instruction set for register machine.
-pub enum Insc<'a> {
+pub enum Insc {
     /// `ADD-INT <INT@SRC1> <INT@SRC2> [DEST]`
     ///
     /// Add integers in register `SRC1` and `SRC2`, put result to register `DEST`,
@@ -219,9 +222,20 @@ pub enum Insc<'a> {
     /// Similar to `LE-ANY` but yields inverted result.
     GeAny(usize, usize, usize),
 
+    /// `EQ-EEF [SRC1] [SRC2] [DEST]`
+    ///
+    /// Check if the reference stored in `SRC1` is the same as `SRC2`, and put result to register
+    /// `DEST`.
+    EqRef(usize, usize, usize),
+
+    /// `NE-REF [SRC1] [SRC2] [DEST]`
+    ///
+    /// Similar to `EQ-REF` but yields inverted result.
+    NeRef(usize, usize, usize),
+
     /// `BITAND-INT [SRC1] [SRC2] [DEST]`
     ///
-    /// Bit-and integers in register `SRC1` and `SRC2`, put result to register `DEST`,
+    /// Bit-and integers in register `SRC1` and `SRC2`, put result to register `DEST`.
     /// **No type checking.**
     BAndInt(usize, usize, usize),
 
@@ -233,7 +247,7 @@ pub enum Insc<'a> {
 
     /// `BITOR-INT [SRC1] [SRC2] [DEST]`
     ///
-    /// Bit-or integers in register `SRC1` and `SRC2`, put result to register `DEST`,
+    /// Bit-or integers in register `SRC1` and `SRC2`, put result to register `DEST`.
     /// **No type checking.**
     BOrInt(usize, usize, usize),
 
@@ -245,7 +259,7 @@ pub enum Insc<'a> {
 
     /// `BITXOR-INT [SRC1] [SRC2] [DEST]`
     ///
-    /// Bit-xor integers in register `SRC1` and `SRC2`, put result to register `DEST`,
+    /// Bit-xor integers in register `SRC1` and `SRC2`, put result to register `DEST`.
     /// **No type checking.**
     BXorInt(usize, usize, usize),
 
@@ -257,13 +271,13 @@ pub enum Insc<'a> {
 
     /// `BITNOT-INT [SRC] [DEST]`
     ///
-    /// Bit-not integer in register `SRC`, put the result to register `DEST`,
+    /// Bit-not integer in register `SRC`, put the result to register `DEST`.
     /// **No type checking.**
     BNotInt(usize, usize),
 
     /// `BITNOT-ANY [SRC] [DEST]`
     ///
-    /// **Check data in `SRC1` to be integer**, perform integer bit-not operation,
+    /// **Check data in `SRC` to be integer**, perform integer bit-not operation,
     /// and put result to register `DEST`
     BNotAny(usize, usize),
 
@@ -275,7 +289,7 @@ pub enum Insc<'a> {
 
     /// `NEG-FLOAT [SRC] [DEST]`
     ///
-    /// Negate the float in register `SRC`, put the result to register `DEST`,
+    /// Negate the float in register `SRC`, put the result to register `DEST`.
     /// **No type checking.**
     NegFloat(usize, usize),
 
@@ -291,23 +305,82 @@ pub enum Insc<'a> {
     /// **No type checking.**
     AndBool(usize, usize, usize),
 
+    /// `AND-ANY [SRC1] [SRC2] [DEST]`
+    ///
+    /// **Check data in both `SRC1` and `SRC2` to be boolean**, perform boolean logic-and operation,
+    /// and put result to register `DEST`.
     AndAny(usize, usize, usize),
+
+    /// `OR-BOOL [SRC1] [SRC2] [DEST]`
+    ///
+    /// Logic-or booleans in registers `SRC1` and `SRC2`, put result into register `DEST`.
+    /// **No type checking.**
     OrBool(usize, usize, usize),
+
+    /// `OR-ANY [SRC1] [SRC2] [DEST]`
+    ///
+    /// **Check data in both `SRC1` and `SRC2` to be boolean**, perform boolean logic-or operation,
+    /// and put result to register `DEST`.
     OrAny(usize, usize, usize),
+
+    /// `XOR-BOOL [SRC1] [SRC2] [DEST]`
+    ///
+    /// Logic-xor booleans in registers `SRC1` and `SRC2`, put result into register `DEST`.
+    /// **No type checking.**
     XorBool(usize, usize, usize),
+
+    /// `XOR-ANY [SRC1] [SRC2] [DEST]`
+    ///
+    /// **Check data in both `SRC1` and `SRC2` to be boolean**, perform boolean logic-xor operation,
+    /// and put result to register `DEST`.
     XorAny(usize, usize, usize),
+
+    /// `NOT-BOOL [SRC] [DEST]`
+    ///
+    /// Logic negate the float in register `SRC`, put the result to register `DEST`.
+    /// **No type checking**.
     NotBool(usize, usize),
+
+    /// `NOT-ANY [SRC] [DEST]`
+    ///
+    /// **Check data in `SRC` to be boolean**, perform boolean logic negate operation, and put
+    /// result to register `DEST`.
     NotAny(usize, usize),
     ShlInt(usize, usize, usize),
     ShlAny(usize, usize, usize),
     ShrInt(usize, usize, usize),
     ShrAny(usize, usize, usize),
+
+    /// `MAKE-INT-CONST [LIT] [DEST]`
+    ///
+    /// Put the integer literal `LIT` to register `DEST`.
     MakeIntConst(i64, usize),
+
+    /// `MAKE-FLOAT-CONST [LIT] [DEST]`
+    ///
+    /// Put the float literal `LIT` to register `DEST`.
     MakeFloatConst(f64, usize),
+
+    /// `MAKE-CHAR-CONST [LIT] [DEST]`
+    ///
+    /// Put the char literal `LIT` to register `DEST`.
     MakeCharConst(char, usize),
+
+    /// `MAKE-BOOL-CONST [LIT] [DEST]`
+    ///
+    /// Put the boolean literal `LIT` to register `DEST`.
     MakeBoolConst(bool, usize),
+
+    /// `MAKE-NULL [DEST]`
+    ///
+    /// Put a `null` literal to register `DEST`.
     MakeNull(usize),
+
+    /// `LOAD-CONST [CONST-ID] [DEST]`
+    ///
+    /// Load constant `CONST-ID` from constant pool, and put it to register `DEST`.
     LoadConst(usize, usize),
+
     CastFloatInt(usize, usize),
     CastCharInt(usize, usize),
     CastBoolInt(usize, usize),
@@ -316,13 +389,39 @@ pub enum Insc<'a> {
     CastAnyFloat(usize, usize),
     CastIntChar(usize, usize),
     CastAnyChar(usize, usize),
+
+    /// `IS-NULL [SRC] [DEST]`
+    ///
+    /// Check if data stored in `SRC` is `null`, and save the boolean result to `DEST`.
     IsNull(usize, usize),
+
+    /// `NULL-CHECK [SRC]`
+    ///
+    /// Similar to `IS-NULL`, but throws null pointer exception instead
     NullCheck(usize),
-    TypeCheck(usize, &'a (), usize), // TODO use real typechecking information
-    EqRef(usize, usize, usize),
-    NeRef(usize, usize, usize),
+
+    /// `TYCK [SRC] [TYCK-INFO]`
+    ///
+    /// Check if data stored `SRC` satisfies `TYCK-INFO`, throws type checking exception if not.
+    TypeCheck(usize, NonNull<TyckInfo>),
+
+    /// `CALL-UNCHECKED [FUNC-ID] [ARGS..] [RETS..]`
+    ///
+    /// Call the function denoted by `FUNC-ID` with given `ARGS`, store the return values to `RETS`.
+    /// **No type checking and no lifetime checking**.
     Call(usize, Vec<usize>, Vec<usize>),
+
+    /// `CALL-RTLC [FUNC-ID] [ARGS..] [RETS..]`
+    ///
+    /// Similar to `CALL-UNCHECKED`, but **performs run-time lifetime checking**.
+    /// Still **no type checking**.
+    CallRtlc(usize, Vec<usize>, Vec<usize>),
+
+    /// `CALL-TYCK [FUNC-ID] [ARGS..] [RETS..]`
+    ///
+    /// Similar to `CALL-TYCK`, but **performs both lifetime checking and type checking**.
     CallTyck(usize, Vec<usize>, Vec<usize>),
+
     CallPtr(usize, Vec<usize>, Vec<usize>),
     CallPtrTyck(usize, Vec<usize>, Vec<usize>),
     CallOverload(usize, Vec<usize>, Vec<usize>),

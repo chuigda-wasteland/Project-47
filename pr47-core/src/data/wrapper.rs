@@ -1,5 +1,6 @@
 use std::any::TypeId;
 use std::mem::{ManuallyDrop, MaybeUninit};
+use std::ptr::addr_of;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfo;
 use crate::util::void::Void;
@@ -30,8 +31,7 @@ impl<T: 'static> Wrapper<T> {
                 owned: ManuallyDrop::new(MaybeUninit::new(data))
             }
         };
-        ret.data_offset =
-            (std::ptr::addr_of!(ret.data) as usize - std::ptr::addr_of!(ret) as usize) as u8;
+        ret.data_offset = (addr_of!(ret.data) as usize - addr_of!(ret) as usize) as u8;
         ret
     }
 
@@ -46,8 +46,7 @@ impl<T: 'static> Wrapper<T> {
                 ptr: ptr as *mut T
             }
         };
-        ret.data_offset =
-            (std::ptr::addr_of!(ret.data) as usize - std::ptr::addr_of!(ret) as usize) as u8;
+        ret.data_offset = (addr_of!(ret.data) as usize - addr_of!(ret) as usize) as u8;
         ret
     }
 
@@ -62,8 +61,7 @@ impl<T: 'static> Wrapper<T> {
                 ptr
             }
         };
-        ret.data_offset =
-            (std::ptr::addr_of!(ret.data) as usize - std::ptr::addr_of!(ret) as usize) as u8;
+        ret.data_offset = (addr_of!(ret.data) as usize - addr_of!(ret) as usize) as u8;
         ret
     }
 }
