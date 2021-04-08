@@ -12,7 +12,7 @@ pub enum ValueTypeTag {
 
 impl Into<u8> for ValueTypeTag {
     fn into(self) -> u8 {
-        unsafe { std::mem::transmute::<Self, u8>(self) }
+        self as u8
     }
 }
 
