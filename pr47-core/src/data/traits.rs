@@ -2,6 +2,7 @@ use std::any::TypeId;
 use crate::data::tyck::TyckInfo;
 use crate::util::void::Void;
 
+// TODO having no idea on how to implement, will re-consider then.
 pub trait StaticBase<T: 'static> {
     fn type_id() -> TypeId {
         TypeId::of::<T>()

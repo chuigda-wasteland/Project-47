@@ -5,6 +5,37 @@ use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfo;
 use crate::util::void::Void;
 
+pub const GC_MARKED_MASK: u8 = 0b1_00_00000;
+pub const GC_INFO_MASK: u8   = 0b0_00_11111;
+
+#[repr(u8)]
+pub enum GcInfo {
+    // R = Read
+    // W = Write
+    // M = Move
+    // D = Delete
+    // O = Virtual Machine Owned
+    //                    M    R W M D O
+    Owned             = 0b0_00_1_1_1_1_1,
+    SharedFromRust    = 0b0_00_1_0_0_0_0,
+    MutSharedFromRust = 0b0_00_1_1_0_0_0,
+    SharedToRust      = 0b0_00_1_0_0_0_1,
+    MutSharedToRust   = 0b0_00_0_0_0_0_1,
+    MovedToRust       = 0b0_00_0_0_0_1_0
+}
+
+impl Into<u8> for GcInfo {
+    fn into(self) -> u8 {
+        self as u8
+    }
+}
+
+impl GcInfo {
+    pub unsafe fn unsafe_from(input: u8) -> Self {
+        std::mem::transmute::<u8, Self>(input)
+    }
+}
+
 #[repr(C)]
 pub union WrapperData<T: 'static> {
     pub ptr: *mut T,
@@ -13,9 +44,9 @@ pub union WrapperData<T: 'static> {
 
 #[repr(C, align(8))]
 pub struct Wrapper<T: 'static> {
-    pub refcount: u32,
-    pub gc_info: u8,
-    pub data_offset: u8,
+    /* +0 */ pub refcount: u32,
+    /* +4 */ pub gc_info: u8,
+    /* +5 */ pub data_offset: u8,
 
     pub data: WrapperData<T>
 }
@@ -24,8 +55,7 @@ impl<T: 'static> Wrapper<T> {
     pub fn new_owned(data: T) -> Self {
         let mut ret: Wrapper<T> = Self {
             refcount: 0,
-            // TODO use actual gc_info instead of this
-            gc_info: 0,
+            gc_info: GcInfo::Owned.into(),
             data_offset: 0,
             data: WrapperData {
                 owned: ManuallyDrop::new(MaybeUninit::new(data))
@@ -37,10 +67,8 @@ impl<T: 'static> Wrapper<T> {
 
     pub fn new_ref(ptr: *const T) -> Self {
         let mut ret: Wrapper<T> = Self {
-            // TODO do we need reference counting here?
-            refcount: 0,
-            // TODO use actual gc_info instead of this
-            gc_info: 0,
+            refcount: 1,
+            gc_info: GcInfo::SharedFromRust.into(),
             data_offset: 0,
             data: WrapperData {
                 ptr: ptr as *mut T
@@ -52,10 +80,8 @@ impl<T: 'static> Wrapper<T> {
 
     pub fn new_mut_ref(ptr: *mut T) -> Self {
         let mut ret: Wrapper<T> = Self {
-            // TODO do we need reference counting here?
-            refcount: 0,
-            // TODO use actual gc_info instead of this
-            gc_info: 0,
+            refcount: 1,
+            gc_info: GcInfo::MutSharedFromRust.into(),
             data_offset: 0,
             data: WrapperData {
                 ptr

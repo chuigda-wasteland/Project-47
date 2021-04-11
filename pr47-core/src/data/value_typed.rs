@@ -17,7 +17,7 @@ impl Into<u8> for ValueTypeTag {
 }
 
 impl ValueTypeTag {
-    unsafe fn unsafe_from(input: u8) -> Self {
+    pub unsafe fn unsafe_from(input: u8) -> Self {
         std::mem::transmute::<u8, Self>(input)
     }
 }
@@ -36,4 +36,48 @@ pub union ValueTypedDataInner {
 pub struct ValueTypedData {
     pub tag: u64,
     pub inner: ValueTypedDataInner
+}
+
+impl From<i64> for ValueTypedData {
+    fn from(int_value: i64) -> Self {
+        Self {
+            tag: ValueTypeTag::Int as u64 | VALUE_TYPE_MASK as u64,
+            inner: ValueTypedDataInner {
+                int_value
+            }
+        }
+    }
+}
+
+impl From<f64> for ValueTypedData {
+    fn from(float_value: f64) -> Self {
+        Self {
+            tag: ValueTypeTag::Float as u64 | VALUE_TYPE_MASK as u64,
+            inner: ValueTypedDataInner {
+                float_value
+            }
+        }
+    }
+}
+
+impl From<char> for ValueTypedData {
+    fn from(char_value: char) -> Self {
+        Self {
+            tag: ValueTypeTag::Char as u64 | VALUE_TYPE_MASK as u64,
+            inner: ValueTypedDataInner {
+                char_value
+            }
+        }
+    }
+}
+
+impl From<bool> for ValueTypedData {
+    fn from(bool_value: bool) -> Self {
+        Self {
+            tag: ValueTypeTag::Bool as u64 | VALUE_TYPE_MASK as u64,
+            inner: ValueTypedDataInner {
+                bool_value
+            }
+        }
+    }
 }
