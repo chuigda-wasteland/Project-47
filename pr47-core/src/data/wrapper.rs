@@ -8,7 +8,14 @@ use crate::util::void::Void;
 pub const GC_MARKED_MASK: u8 = 0b1_00_00000;
 pub const GC_INFO_MASK: u8   = 0b0_00_11111;
 
+pub const GC_INFO_READ_MASK: u8   = 0b0_00_1_0_0_0_0;
+pub const GC_INFO_WRITE_MASK: u8  = 0b0_00_0_1_0_0_0;
+pub const GC_INFO_MOVE_MASK: u8   = 0b0_00_0_0_1_0_0;
+pub const GC_INFO_DELETE_MASK: u8 = 0b0_00_0_0_0_1_0;
+pub const GC_INFO_OWNED_MASK: u8  = 0b0_00_0_0_0_0_1;
+
 #[repr(u8)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub enum GcInfo {
     // R = Read
     // W = Write
@@ -25,13 +32,34 @@ pub enum GcInfo {
 }
 
 impl Into<u8> for GcInfo {
+    #[inline(always)]
     fn into(self) -> u8 {
         self as u8
     }
 }
 
 impl GcInfo {
-    pub unsafe fn unsafe_from(input: u8) -> Self {
+    #[inline(always)] pub fn is_readable(&self) -> bool {
+        self.into() & GC_INFO_READ_MASK != 0
+    }
+
+    #[inline(always)] pub fn is_writeable(&self) -> bool {
+        self.into() & GC_INFO_WRITE_MASK != 0
+    }
+
+    #[inline(always)] pub fn is_movable(&self) -> bool {
+        self.into() & GC_INFO_MOVE_MASK != 0
+    }
+
+    #[inline(always)] pub fn is_deletable(&self) -> bool {
+        self.into() & GC_INFO_DELETE_MASK != 0
+    }
+
+    #[inline(always)] pub fn is_owned(&self) -> bool {
+        self.into() & GC_INFO_OWNED_MASK != 0
+    }
+
+    #[inline(always)] pub unsafe fn unsafe_from(input: u8) -> Self {
         std::mem::transmute::<u8, Self>(input)
     }
 }

@@ -6,7 +6,7 @@ pub mod wrapper;
 
 use crate::data::value_typed::{ValueTypedData, VALUE_TYPE_MASK};
 use crate::data::traits::StaticBase;
-use crate::data::wrapper::{DynBase, Wrapper, GcInfo};
+use crate::data::wrapper::{DynBase, Wrapper, GcInfo, GC_INFO_MASK};
 use crate::util::mem::FatPointer;
 use crate::util::void::Void;
 
@@ -95,7 +95,35 @@ impl Value {
         }
     }
 
-    pub fn gc_info(&self) -> GcInfo {
-        todo!("I forgot how to write pointer offset operation")
+    pub unsafe fn ref_count(&self) -> u32 {
+        #[cfg(debug_assertions)] self.assert_shared();
+        *(self.ptr_repr.ptr as *const u32)
+    }
+
+    pub unsafe fn incr_ref_count(&mut self) {
+        #[cfg(debug_assertions)] self.assert_shared();
+        *(self.ptr_repr.ptr as *mut u32) += 1
+    }
+
+    pub unsafe fn decr_ref_count(&mut self) {
+        #[cfg(debug_assertions)] self.assert_shared();
+        *(self.ptr_repr.ptr as *mut u32) -= 1
+    }
+
+    #[cfg(debug_assertions)]
+    fn assert_shared(&self) {
+        let gc_info: GcInfo = unsafe { self.gc_info() };
+        assert!(gc_info == GcInfo::SharedFromRust
+                || gc_info == GcInfo::SharedToRust);
+    }
+
+    pub unsafe fn gc_info(&self) -> GcInfo {
+        debug_assert_eq!(self.is_ref());
+        *(self.ptr_repr.ptr + 4 as *const u8) & GC_INFO_MASK
+    }
+
+    pub unsafe fn set_gc_info(&mut self, gc_info: GcInfo) {
+        debug_assert_eq!(self.is_ref());
+        *(self.ptr_repr.ptr + 4 as *mut u8) = gc_info.into();
     }
 }
