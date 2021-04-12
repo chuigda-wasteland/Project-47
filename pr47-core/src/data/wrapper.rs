@@ -6,6 +6,8 @@ use crate::data::tyck::TyckInfo;
 use crate::util::void::Void;
 use crate::util::unsafe_from::UnsafeFrom;
 
+use unchecked_unwrap::UncheckedUnwrap;
+
 pub const GC_MARKED_MASK: u8 = 0b1_00_00000;
 pub const GC_INFO_MASK: u8   = 0b0_00_11111;
 
@@ -122,6 +124,12 @@ pub trait DynBase {
     fn dyn_type_name(&self) -> String;
 
     fn dyn_tyck(&self, tyck_info: &TyckInfo) -> bool;
+
+    #[cfg(debug_assertions)]
+    unsafe fn move_out_ck(&mut self, out: *mut (), type_id: TypeId);
+
+    #[cfg(not(debug_assertions))]
+    unsafe fn move_out(&mut self, out: *mut ());
 }
 
 impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
@@ -135,6 +143,23 @@ impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
 
     fn dyn_tyck(&self, tyck_info: &TyckInfo) -> bool {
         <Void as StaticBase<T>>::tyck(tyck_info)
+    }
+
+    #[cfg(debug_assertions)]
+    unsafe fn move_out_ck(&mut self, out: *mut (), type_id: TypeId) {
+        debug_assert_eq!(self.dyn_type_id(), type_id);
+        debug_assert!(GcInfo::unsafe_from(self.gc_info).is_movable());
+        let dest: &mut MaybeUninit<T> = (out as *mut MaybeUninit<T>).as_mut().unchecked_unwrap();
+        *dest.as_mut_ptr() = ManuallyDrop::take(&mut self.data.owned).assume_init();
+        self.gc_info = GcInfo::MovedToRust as u8;
+    }
+
+    #[cfg(not(debug_assertions))]
+    unsafe fn move_out(&mut self, out: *mut ()) {
+        let dest: &mut MaybeUninit<T>
+            = (out as *mut MaybeUninit<T>).as_mut().unchecked_unwrap();
+        *dest.as_mut_ptr() = ManuallyDrop::take(&mut self.data.owned).assume_init();
+        self.gc_info = GcInfo::MovedToRust as u8;
     }
 }
 

@@ -4,6 +4,7 @@ pub mod tyck;
 pub mod value_typed;
 pub mod wrapper;
 
+use crate::data::custom_vt::CONTAINER_MASK;
 use crate::data::traits::StaticBase;
 use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
 use crate::data::wrapper::{GC_INFO_MASK, DynBase, GcInfo, Wrapper};
@@ -93,6 +94,12 @@ impl Value {
     pub fn is_ref(&self) -> bool {
         unsafe {
             self.ptr_repr.ptr & (VALUE_TYPE_MASK as usize) == 0
+        }
+    }
+
+    pub fn is_container(&self) -> bool {
+        unsafe {
+            self.ptr_repr.ptr & (CONTAINER_MASK as usize) == 0
         }
     }
 
