@@ -31,32 +31,25 @@ pub enum GcInfo {
     MovedToRust       = 0b0_00_0_0_0_1_0
 }
 
-impl Into<u8> for GcInfo {
-    #[inline(always)]
-    fn into(self) -> u8 {
-        self as u8
-    }
-}
-
 impl GcInfo {
-    #[inline(always)] pub fn is_readable(&self) -> bool {
-        self.into() & GC_INFO_READ_MASK != 0
+    #[inline(always)] pub fn is_readable(self) -> bool {
+        (self as u8) & GC_INFO_READ_MASK != 0
     }
 
-    #[inline(always)] pub fn is_writeable(&self) -> bool {
-        self.into() & GC_INFO_WRITE_MASK != 0
+    #[inline(always)] pub fn is_writeable(self) -> bool {
+        (self as u8) & GC_INFO_WRITE_MASK != 0
     }
 
-    #[inline(always)] pub fn is_movable(&self) -> bool {
-        self.into() & GC_INFO_MOVE_MASK != 0
+    #[inline(always)] pub fn is_movable(self) -> bool {
+        (self as u8) & GC_INFO_MOVE_MASK != 0
     }
 
-    #[inline(always)] pub fn is_deletable(&self) -> bool {
-        self.into() & GC_INFO_DELETE_MASK != 0
+    #[inline(always)] pub fn is_deletable(self) -> bool {
+        (self as u8) & GC_INFO_DELETE_MASK != 0
     }
 
-    #[inline(always)] pub fn is_owned(&self) -> bool {
-        self.into() & GC_INFO_OWNED_MASK != 0
+    #[inline(always)] pub fn is_owned(self) -> bool {
+        (self as u8) & GC_INFO_OWNED_MASK != 0
     }
 
     #[inline(always)] pub unsafe fn unsafe_from(input: u8) -> Self {
@@ -83,7 +76,7 @@ impl<T: 'static> Wrapper<T> {
     pub fn new_owned(data: T) -> Self {
         let mut ret: Wrapper<T> = Self {
             refcount: 0,
-            gc_info: GcInfo::Owned.into(),
+            gc_info: GcInfo::Owned as u8,
             data_offset: 0,
             data: WrapperData {
                 owned: ManuallyDrop::new(MaybeUninit::new(data))
@@ -96,7 +89,7 @@ impl<T: 'static> Wrapper<T> {
     pub fn new_ref(ptr: *const T) -> Self {
         let mut ret: Wrapper<T> = Self {
             refcount: 1,
-            gc_info: GcInfo::SharedFromRust.into(),
+            gc_info: GcInfo::SharedFromRust as u8,
             data_offset: 0,
             data: WrapperData {
                 ptr: ptr as *mut T
@@ -109,7 +102,7 @@ impl<T: 'static> Wrapper<T> {
     pub fn new_mut_ref(ptr: *mut T) -> Self {
         let mut ret: Wrapper<T> = Self {
             refcount: 1,
-            gc_info: GcInfo::MutSharedFromRust.into(),
+            gc_info: GcInfo::MutSharedFromRust as u8,
             data_offset: 0,
             data: WrapperData {
                 ptr

@@ -118,12 +118,12 @@ impl Value {
     }
 
     pub unsafe fn gc_info(&self) -> GcInfo {
-        debug_assert_eq!(self.is_ref());
-        *(self.ptr_repr.ptr + 4 as *const u8) & GC_INFO_MASK
+        debug_assert!(self.is_ref());
+        GcInfo::unsafe_from(*((self.ptr_repr.ptr + 4) as *const u8) & GC_INFO_MASK)
     }
 
     pub unsafe fn set_gc_info(&mut self, gc_info: GcInfo) {
-        debug_assert_eq!(self.is_ref());
-        *(self.ptr_repr.ptr + 4 as *mut u8) = gc_info.into();
+        debug_assert!(self.is_ref());
+        *((self.ptr_repr.ptr + 4) as *mut u8) = gc_info as u8;
     }
 }
