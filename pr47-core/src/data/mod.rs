@@ -4,13 +4,17 @@ pub mod tyck;
 pub mod value_typed;
 pub mod wrapper;
 
-use crate::data::custom_vt::CONTAINER_MASK;
+use std::mem::MaybeUninit;
+
+use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
 use crate::data::traits::StaticBase;
 use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
 use crate::data::wrapper::{GC_INFO_MASK, DynBase, GcInfo, Wrapper};
 use crate::util::mem::FatPointer;
 use crate::util::unsafe_from::UnsafeFrom;
 use crate::util::void::Void;
+
+use unchecked_unwrap::UncheckedUnwrap;
 
 pub const TAG_BITS_MASK: u8 = 0b00000_111;
 pub const TAG_BITS_MASK_USIZE: usize = TAG_BITS_MASK as usize;
@@ -107,7 +111,15 @@ impl Value {
     }
 
     #[inline(always)] pub unsafe fn untagged_ptr_field(&self) -> usize {
+        debug_assert_eq!(self.ptr_repr.ptr & CONTAINER_MASK as usize, 0);
         self.ptr_repr.ptr & !TAG_BITS_MASK_USIZE
+    }
+
+    #[inline(always)] pub unsafe fn untagged_dyn_base(&self) -> *mut dyn DynBase {
+        debug_assert_eq!(self.ptr_repr.ptr & CONTAINER_MASK as usize, 0);
+        std::mem::transmute::<FatPointer, *mut dyn DynBase>(
+            FatPointer::new(self.ptr_repr.ptr & !TAG_BITS_MASK_USIZE, self.ptr_repr.trivia)
+        )
     }
 
     pub unsafe fn ref_count(&self) -> u32 {
@@ -154,5 +166,41 @@ impl Value {
             let ptr: *const *mut T = (self.untagged_ptr_field() + data_offset) as *const *mut T;
             *ptr
         }
+    }
+
+    pub unsafe fn move_out<T>(&self) -> T
+        where T: 'static,
+              Void: StaticBase<T>
+    {
+        debug_assert!(self.is_ref());
+        let mut maybe_uninit: MaybeUninit<T> = MaybeUninit::uninit();
+        if self.is_container() {
+            let dyn_base: *mut dyn DynBase = self.untagged_dyn_base();
+            #[cfg(debug_assertions)]
+            dyn_base.as_mut().unchecked_unwrap().move_out_ck(
+                &mut maybe_uninit as *mut _ as *mut (),
+                <Void as StaticBase<T>>::type_id()
+            );
+            #[cfg(not(debug_assertions))]
+            dyn_base.as_mut().unchecked_unwrap().move_out(
+                &mut maybe_uninit as *mut _ as *mut ()
+            );
+        } else {
+            let this_ptr: *mut () = self.untagged_ptr_field() as *mut ();
+            let custom_vt: *const ContainerVT = self.ptr_repr.trivia as *const _;
+
+            #[cfg(debug_assertions)]
+            (custom_vt.as_ref().unchecked_unwrap().move_out_fn) (
+                this_ptr,
+                &mut maybe_uninit as *mut _ as *mut (),
+                <Void as StaticBase<T>>::type_id()
+            );
+            #[cfg(not(debug_assertions))]
+            (custom_vt.as_ref().unchecked_unwrap().move_out_fn) (
+                this_ptr,
+                &mut maybe_uninit as *mut _ as *mut (),
+            );
+        }
+        maybe_uninit.assume_init()
     }
 }
