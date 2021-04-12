@@ -4,10 +4,11 @@ pub mod tyck;
 pub mod value_typed;
 pub mod wrapper;
 
-use crate::data::value_typed::{ValueTypedData, VALUE_TYPE_MASK};
 use crate::data::traits::StaticBase;
-use crate::data::wrapper::{DynBase, Wrapper, GcInfo, GC_INFO_MASK};
+use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
+use crate::data::wrapper::{GC_INFO_MASK, DynBase, GcInfo, Wrapper};
 use crate::util::mem::FatPointer;
+use crate::util::unsafe_from::UnsafeFrom;
 use crate::util::void::Void;
 
 #[repr(C)]
@@ -119,7 +120,7 @@ impl Value {
 
     pub unsafe fn gc_info(&self) -> GcInfo {
         debug_assert!(self.is_ref());
-        GcInfo::unsafe_from(*((self.ptr_repr.ptr + 4) as *const u8) & GC_INFO_MASK)
+        UnsafeFrom::unsafe_from(*((self.ptr_repr.ptr + 4) as *const u8) & GC_INFO_MASK)
     }
 
     pub unsafe fn set_gc_info(&mut self, gc_info: GcInfo) {

@@ -1,3 +1,5 @@
+use crate::util::unsafe_from::UnsafeFrom;
+
 pub const VALUE_TYPE_MASK: u8     = 0b00_000_001;
 pub const VALUE_TYPE_TAG_MASK: u8 = 0b00_111_000;
 
@@ -10,15 +12,9 @@ pub enum ValueTypeTag {
     Bool  = 0b00_100_000
 }
 
-impl Into<u8> for ValueTypeTag {
-    fn into(self) -> u8 {
-        self as u8
-    }
-}
-
-impl ValueTypeTag {
-    pub unsafe fn unsafe_from(input: u8) -> Self {
-        std::mem::transmute::<u8, Self>(input)
+impl UnsafeFrom<u8> for ValueTypeTag {
+    #[inline(always)] unsafe fn unsafe_from(data: u8) -> Self {
+        std::mem::transmute::<u8, Self>(data)
     }
 }
 

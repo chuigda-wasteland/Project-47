@@ -4,6 +4,7 @@ use std::ptr::addr_of;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfo;
 use crate::util::void::Void;
+use crate::util::unsafe_from::UnsafeFrom;
 
 pub const GC_MARKED_MASK: u8 = 0b1_00_00000;
 pub const GC_INFO_MASK: u8   = 0b0_00_11111;
@@ -51,9 +52,11 @@ impl GcInfo {
     #[inline(always)] pub fn is_owned(self) -> bool {
         (self as u8) & GC_INFO_OWNED_MASK != 0
     }
+}
 
-    #[inline(always)] pub unsafe fn unsafe_from(input: u8) -> Self {
-        std::mem::transmute::<u8, Self>(input)
+impl UnsafeFrom<u8> for GcInfo {
+    unsafe fn unsafe_from(data: u8) -> Self {
+        std::mem::transmute::<u8, Self>(data)
     }
 }
 
