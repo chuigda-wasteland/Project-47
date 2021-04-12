@@ -12,6 +12,9 @@ use crate::util::mem::FatPointer;
 use crate::util::unsafe_from::UnsafeFrom;
 use crate::util::void::Void;
 
+pub const TAG_BITS_MASK: u8 = 0b00000_111;
+pub const TAG_BITS_MASK_USIZE: usize = TAG_BITS_MASK as usize;
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union Value {
@@ -103,19 +106,23 @@ impl Value {
         }
     }
 
+    #[inline(always)] pub unsafe fn untagged_ptr_field(&self) -> usize {
+        self.ptr_repr.ptr & !TAG_BITS_MASK_USIZE
+    }
+
     pub unsafe fn ref_count(&self) -> u32 {
         #[cfg(debug_assertions)] self.assert_shared();
-        *(self.ptr_repr.ptr as *const u32)
+        *(self.untagged_ptr_field() as *const u32)
     }
 
     pub unsafe fn incr_ref_count(&mut self) {
         #[cfg(debug_assertions)] self.assert_shared();
-        *(self.ptr_repr.ptr as *mut u32) += 1
+        *(self.untagged_ptr_field() as *mut u32) += 1
     }
 
     pub unsafe fn decr_ref_count(&mut self) {
         #[cfg(debug_assertions)] self.assert_shared();
-        *(self.ptr_repr.ptr as *mut u32) -= 1
+        *(self.untagged_ptr_field() as *mut u32) -= 1
     }
 
     #[cfg(debug_assertions)]
@@ -127,11 +134,25 @@ impl Value {
 
     pub unsafe fn gc_info(&self) -> GcInfo {
         debug_assert!(self.is_ref());
-        UnsafeFrom::unsafe_from(*((self.ptr_repr.ptr + 4) as *const u8) & GC_INFO_MASK)
+        UnsafeFrom::unsafe_from(*((self.untagged_ptr_field() + 4usize) as *const u8) & GC_INFO_MASK)
     }
 
     pub unsafe fn set_gc_info(&mut self, gc_info: GcInfo) {
         debug_assert!(self.is_ref());
-        *((self.ptr_repr.ptr + 4) as *mut u8) = gc_info as u8;
+        *((self.untagged_ptr_field() + 4usize) as *mut u8) = gc_info as u8;
+    }
+
+    pub unsafe fn get_as_mut_ptr<T>(&self) -> *mut T
+        where T: 'static,
+              Void: StaticBase<T>
+    {
+        debug_assert!(self.gc_info().is_readable());
+        let data_offset: usize = *((self.untagged_ptr_field() + 5usize) as *mut u8) as usize;
+        if self.gc_info().is_owned() {
+            (self.untagged_ptr_field() + data_offset as usize) as *mut T
+        } else {
+            let ptr: *const *mut T = (self.untagged_ptr_field() + data_offset) as *const *mut T;
+            *ptr
+        }
     }
 }
