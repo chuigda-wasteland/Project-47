@@ -2,7 +2,6 @@ use std::any::TypeId;
 use crate::data::tyck::TyckInfo;
 use crate::util::void::Void;
 
-// TODO having no idea on how to implement, will re-consider then.
 pub trait StaticBase<T: 'static> {
     fn type_id() -> TypeId {
         TypeId::of::<T>()
@@ -37,3 +36,11 @@ impl StaticBase<String> for Void {
         "string".into()
     }
 }
+
+pub trait VMType<T: 'static> {}
+
+impl<T> VMType<T> for Void where T: 'static, Void: StaticBase<T> {}
+impl VMType<i64> for Void {}
+impl VMType<f64> for Void {}
+impl VMType<char> for Void {}
+impl VMType<bool> for Void {}

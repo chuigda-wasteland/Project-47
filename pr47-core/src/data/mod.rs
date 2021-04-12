@@ -7,7 +7,7 @@ pub mod wrapper;
 use std::mem::MaybeUninit;
 
 use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
-use crate::data::traits::StaticBase;
+use crate::data::traits::{StaticBase, VMType};
 use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
 use crate::data::wrapper::{GC_INFO_MASK, DynBase, GcInfo, Wrapper};
 use crate::util::mem::FatPointer;
@@ -15,6 +15,7 @@ use crate::util::unsafe_from::UnsafeFrom;
 use crate::util::void::Void;
 
 use unchecked_unwrap::UncheckedUnwrap;
+use std::marker::PhantomData;
 
 pub const TAG_BITS_MASK: u8 = 0b00000_111;
 pub const TAG_BITS_MASK_USIZE: usize = TAG_BITS_MASK as usize;
@@ -203,4 +204,33 @@ impl Value {
         }
         maybe_uninit.assume_init()
     }
+}
+
+#[repr(transparent)]
+pub struct TypedValue<T: 'static> {
+    pub inner: Value,
+    _phantom: PhantomData<T>
+}
+
+impl<T> TypedValue<T>
+    where T: 'static,
+          Void: StaticBase<T>
+{
+    // TODO
+}
+
+impl TypedValue<i64> {
+    // TODO
+}
+
+impl TypedValue<f64> {
+    // TODO
+}
+
+impl TypedValue<char> {
+    // TODO
+}
+
+impl TypedValue<bool> {
+    // TODO
 }
