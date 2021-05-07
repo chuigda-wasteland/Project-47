@@ -7,7 +7,7 @@ pub mod wrapper;
 use std::mem::MaybeUninit;
 
 use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
-use crate::data::traits::{StaticBase, VMType};
+use crate::data::traits::StaticBase;
 use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
 use crate::data::wrapper::{GC_INFO_MASK, DynBase, GcInfo, Wrapper};
 use crate::util::mem::FatPointer;
@@ -128,14 +128,32 @@ impl Value {
         *(self.untagged_ptr_field() as *const u32)
     }
 
+    pub unsafe fn ref_count_norm(&self) -> u32 {
+        #[cfg(debug_assertions)] self.assert_shared();
+        debug_assert!(!self.is_container());
+        *(self.ptr_repr.ptr as *const u32)
+    }
+
     pub unsafe fn incr_ref_count(&mut self) {
         #[cfg(debug_assertions)] self.assert_shared();
         *(self.untagged_ptr_field() as *mut u32) += 1
     }
 
+    pub unsafe fn incr_ref_count_norm(&self) {
+        #[cfg(debug_assertions)] self.assert_shared();
+        debug_assert!(!self.is_container());
+        *(self.ptr_repr.ptr as *mut u32) += 1
+    }
+
     pub unsafe fn decr_ref_count(&mut self) {
         #[cfg(debug_assertions)] self.assert_shared();
         *(self.untagged_ptr_field() as *mut u32) -= 1
+    }
+
+    pub unsafe fn decr_ref_count_norm(&self) {
+        #[cfg(debug_assertions)] self.assert_shared();
+        debug_assert!(!self.is_container());
+        *(self.ptr_repr.ptr as *mut u32) -= 1
     }
 
     #[cfg(debug_assertions)]
@@ -150,9 +168,19 @@ impl Value {
         UnsafeFrom::unsafe_from(*((self.untagged_ptr_field() + 4usize) as *const u8) & GC_INFO_MASK)
     }
 
+    pub unsafe fn gc_info_norm(&self) -> GcInfo {
+        debug_assert!(self.is_ref());
+        UnsafeFrom::unsafe_from(*((self.ptr_repr.ptr + 4usize) as *const u8) & GC_INFO_MASK)
+    }
+
     pub unsafe fn set_gc_info(&mut self, gc_info: GcInfo) {
         debug_assert!(self.is_ref());
         *((self.untagged_ptr_field() + 4usize) as *mut u8) = gc_info as u8;
+    }
+
+    pub unsafe fn set_gc_info_norm(&mut self, gc_info: GcInfo) {
+        debug_assert!(self.is_ref());
+        *((self.ptr_repr.ptr + 4usize) as *mut u8) = gc_info as u8;
     }
 
     pub unsafe fn get_as_mut_ptr<T>(&self) -> *mut T
@@ -169,14 +197,28 @@ impl Value {
         }
     }
 
+    pub unsafe fn get_as_mut_ptr_norm<T>(&self) -> *mut T
+        where T: 'static,
+              Void: StaticBase<T>
+    {
+        debug_assert!(self.gc_info().is_readable());
+        let data_offset: usize = *((self.ptr_repr.ptr + 4usize) as *mut u8) as usize;
+        if self.gc_info_norm().is_owned() {
+            (self.ptr_repr.ptr + data_offset as usize) as *mut T
+        } else {
+            let ptr: *const *mut T = (self.ptr_repr.ptr + data_offset) as *const *mut T;
+            *ptr
+        }
+    }
+
     pub unsafe fn move_out<T>(&self) -> T
         where T: 'static,
               Void: StaticBase<T>
     {
         debug_assert!(self.is_ref());
         let mut maybe_uninit: MaybeUninit<T> = MaybeUninit::uninit();
-        if self.is_container() {
-            let dyn_base: *mut dyn DynBase = self.untagged_dyn_base();
+        if !self.is_container() {
+            let dyn_base: *mut dyn DynBase = self.ptr;
             #[cfg(debug_assertions)]
             dyn_base.as_mut().unchecked_unwrap().move_out_ck(
                 &mut maybe_uninit as *mut _ as *mut (),
@@ -202,6 +244,25 @@ impl Value {
                 &mut maybe_uninit as *mut _ as *mut (),
             );
         }
+        maybe_uninit.assume_init()
+    }
+
+    pub unsafe fn move_out_norm<T>(&self) -> T
+        where T: 'static,
+              Void: StaticBase<T>
+    {
+        debug_assert!(self.is_ref());
+        let mut maybe_uninit: MaybeUninit<T> = MaybeUninit::uninit();
+        let dyn_base: *mut dyn DynBase = self.ptr;
+        #[cfg(debug_assertions)]
+        dyn_base.as_mut().unchecked_unwrap().move_out_ck(
+            &mut maybe_uninit as *mut _ as *mut (),
+            <Void as StaticBase<T>>::type_id()
+        );
+        #[cfg(not(debug_assertions))]
+            dyn_base.as_mut().unchecked_unwrap().move_out(
+            &mut maybe_uninit as *mut _ as *mut ()
+        );
         maybe_uninit.assume_init()
     }
 }
