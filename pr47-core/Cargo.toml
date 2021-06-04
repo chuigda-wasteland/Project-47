@@ -14,13 +14,18 @@ license = "MIT"
 smallvec = "1.6.1"
 unchecked_unwrap = "3"
 
+async-std = { optional = true, version = "1" }
+async-trait = { optional = true, version = "0.1" }
+futures = { optional = true, version = "0.3" }
+tokio = { optional = true, version = "1", features = ["rt", "sync"] }
+
 pr47-codegen = { path="../pr47-codegen" }
 
 [features]
-default = ["optimized-rtlc"]
-
-async = []
+default = ["optimized-rtlc", "async-tokio"]
 no-rtlc = []
 optimized-rtlc = []
-afterburn = []
-specialization = []
+
+async-tokio = ["async", "tokio"]
+async-astd = ["async", "async-std"]
+async = ["async-trait", "futures"]

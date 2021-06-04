@@ -1,21 +1,22 @@
 pub mod custom_vt;
+pub mod exception;
 pub mod traits;
 pub mod tyck;
 pub mod value_typed;
 pub mod wrapper;
 
+use std::marker::PhantomData;
 use std::mem::MaybeUninit;
+
+use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
 use crate::data::traits::StaticBase;
 use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
-use crate::data::wrapper::{GC_INFO_MASK, DynBase, GcInfo, Wrapper};
+use crate::data::wrapper::{DynBase, GC_INFO_MASK, GcInfo, Wrapper};
 use crate::util::mem::FatPointer;
 use crate::util::unsafe_from::UnsafeFrom;
 use crate::util::void::Void;
-
-use unchecked_unwrap::UncheckedUnwrap;
-use std::marker::PhantomData;
 
 pub const TAG_BITS_MASK: u8 = 0b00000_111;
 pub const TAG_BITS_MASK_USIZE: usize = TAG_BITS_MASK as usize;
