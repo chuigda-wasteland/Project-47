@@ -4,5 +4,3 @@ use crate::data::Value;
 pub struct VMGenericVec {
     inner: Vec<Value>
 }
-
-

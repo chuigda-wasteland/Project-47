@@ -1,3 +1,5 @@
+pub use futures::future::join_all;
+
 #[cfg(feature = "async-tokio")]
 pub use tokio::{
     sync::{
