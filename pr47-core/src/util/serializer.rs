@@ -1,7 +1,13 @@
-//! ## `serializer.rs`: "User space", runtime unaware coroutine serializer
+//! # `serializer.rs`: "User space", runtime unaware coroutine serializer
 //!
 //! This serializer could make sure only one of the participating `task`s can can run at one time,
-//! no matter which runtime the user chose.
+//! no matter which runtime the user chose. However, `task`s can still benefit from asynchronous
+//! completion of `Future`s.
+//!
+//! The purpose of making this "coroutine serializer" is that Pr47 heavily relies on
+//! *Run-Time Lifetime Checking* (RTLC) and related analysis, which are hard to go multi-threading.
+//! Forcing everything to happen in a single-threaded, sequential, serialized behavior would
+//! solve this problem easily.
 
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
@@ -18,45 +24,70 @@ use crate::util::async_utils::oneshot::{Sender, Receiver};
 use crate::util::unchecked_option::UncheckedOption;
 use crate::util::unchecked_cell::UncheckedCellOps;
 
+/// Basic context shared by multiple `Serializer`s in the same *serialization group*.
+///
+/// The `SharedContext` serves as the manager of tasks, task IDs and task completion signals. Read
+/// documentations of methods and fields for more information.
 pub struct SharedContext {
+    /// Take down the task ID allocation status.
     next_task_id: u32,
+    /// All running tasks. The key part is task ID, and the value part serves as a receiver of
+    /// "task completion" signal.
     running_tasks: HashMap<u32, Receiver<()>>
 }
 
 impl SharedContext {
+    /// Creates a new `SharedContext`.
     pub fn new() -> Self {
         Self {
-            next_task_id: 0,
+            next_task_id: 1,
             running_tasks: HashMap::new()
         }
     }
 
-    pub fn get_next_id(&mut self) -> u32 {
-        let r: u32 = self.next_task_id;
-        self.next_task_id += 1;
-        r
-    }
-
+    /// Add a new task to context, saving the "completion signal receiver" to the context, returning
+    /// the allocated task ID.
+    ///
+    /// The allocated task ID starts from `1` instead of `0`, since the main task is not managed
+    /// by `SharedContext`.
     pub fn add_task(&mut self, rx: Receiver<()>) -> u32 {
         let task_id: u32 = self.get_next_id();
         self.running_tasks.insert(task_id, rx);
         task_id
     }
 
+    /// Remove the given task from context, together with its "completion signal receiver". This
+    /// is called on child task exit, in order to reduce the burden of main task.
     pub fn remove_task(&mut self, task_id: u32) {
         self.running_tasks.remove(&task_id);
     }
 
+    /// Retrieve all tasks and their "completion signal receiver", cleaning internal storage of
+    /// `SharedContext`. This is used by main task to `await` for all running child tasks.
     pub fn get_all_tasks(&mut self) -> HashMap<u32, Receiver<()>> {
         replace(&mut self.running_tasks, HashMap::new())
     }
+
+    /// Allocate one task ID.
+    fn get_next_id(&mut self) -> u32 {
+        let r: u32 = self.next_task_id;
+        self.next_task_id += 1;
+        r
+    }
 }
 
+/// A `MutexGuard` guarding a unique access to `SharedContext`. Also serves as a
+/// "running permission" for tasks.
 type Permit = MutexGuard<'static, SharedContext>;
 
+/// Serializer context of one task
 pub struct Serializer {
+    /// Context shared by all tasks in the same serialization group.
     shared: Arc<Mutex<SharedContext>>,
+    /// Running permission of the current task.
     permit: UnsafeCell<UncheckedOption<Permit>>,
+    /// Task ID of the current task. `0` implies main task, while other values are used for
+    /// children tasks.
     pub task_id: u32
 }
 
@@ -66,11 +97,10 @@ impl Serializer {
         let mut permit: Permit = unsafe {
             transmute::<>(shared.lock().await)
         };
-        let task_id: u32 = permit.get_next_id();
         Self {
             shared,
             permit: UnsafeCell::new(UncheckedOption::new(permit)),
-            task_id
+            task_id: 0
         }
     }
 

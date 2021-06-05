@@ -1,3 +1,5 @@
+//! # `async_utils.rs`: Re-exports asynchronous structures from `tokio`, `async-std` and `futures`
+
 pub use futures::future::join_all;
 
 #[cfg(feature = "async-tokio")]
