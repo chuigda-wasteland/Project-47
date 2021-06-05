@@ -1,6 +1,6 @@
 use crate::syntax::id::Identifier;
-use crate::util::location::{SingleLineRange, SourceLocation};
 use crate::syntax::ty::ConcreteType;
+use crate::util::location::{SingleLineRange, SourceLocation};
 
 #[derive(Debug)]
 pub enum ConcreteExpr {
