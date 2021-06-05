@@ -2,11 +2,11 @@ use crate::data::Value;
 use crate::ffi::Signature;
 use crate::data::exception::Exception;
 
-pub trait VMContext: 'static + Sized + Send + Sync {
+pub trait VMContext: 'static + Sized + Send {
     // TODO the design has not been determined
 }
 
-pub trait RustFunction {
+pub trait Function: 'static {
     fn signature(&self) -> Signature;
 
     fn call_tyck(
