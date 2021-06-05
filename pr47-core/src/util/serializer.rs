@@ -144,3 +144,14 @@ impl Serializer {
         self.permit.get_mut().take()
     }
 }
+
+impl Drop for Serializer {
+    fn drop(&mut self) {
+        let mut permit: Permit = unsafe { self.permit.get_mut().take() };
+        if self.task_id == 0 {
+            assert_eq!(permit.running_tasks.len(), 0);
+        } else {
+            permit.remove_task(self.task_id);
+        }
+    }
+}
