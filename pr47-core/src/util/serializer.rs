@@ -116,6 +116,9 @@ impl Serializer {
             unsafe {
                 let running_tasks: HashMap<u32, Receiver<()>> =
                     self.permit.get_mut_ref_unchecked().get_mut().get_all_tasks();
+                if running_tasks.len() == 0 {
+                    break;
+                }
                 let fut: JoinAll<_> = join_all(
                     running_tasks.into_iter().map(|(_tid, rx): (u32, Receiver<()>)| async move {
                         rx.await.unchecked_unwrap()
