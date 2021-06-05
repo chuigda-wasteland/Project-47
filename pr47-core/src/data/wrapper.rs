@@ -1,12 +1,13 @@
 use std::any::TypeId;
 use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::addr_of;
+
+use unchecked_unwrap::UncheckedUnwrap;
+
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfo;
 use crate::util::void::Void;
 use crate::util::unsafe_from::UnsafeFrom;
-
-use unchecked_unwrap::UncheckedUnwrap;
 
 pub const GC_MARKED_MASK: u8 = 0b1_00_00000;
 pub const GC_INFO_MASK: u8   = 0b0_00_11111;

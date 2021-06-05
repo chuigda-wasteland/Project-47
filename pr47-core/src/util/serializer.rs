@@ -1,3 +1,8 @@
+//! ## `serializer.rs`: "User space", runtime unaware coroutine serializer
+//!
+//! This serializer could make sure only one of the participating `task`s can can run at one time,
+//! no matter which runtime the user chose.
+
 use std::collections::HashMap;
 use std::future::Future;
 use std::mem::{ManuallyDrop, transmute};
@@ -115,6 +120,30 @@ impl SerializerCommons {
     }
 }
 
+macro_rules! serializer_impls {
+    () => {
+        pub async fn co_yield(&mut self) {
+            self.commons.co_yield().await
+        }
+
+        pub async fn co_await<FUT, T>(&mut self, fut: FUT) -> T
+            where FUT: Future<Output=T>,
+                  T: Send + Sync
+        {
+            self.commons.co_await(fut).await
+        }
+
+        pub async fn co_spawn<F, ARGS, FUT, T>(&mut self, f: F, args: ARGS) -> task::JoinHandle<T>
+            where F: (FnOnce(&mut ChildSerializer, ARGS) -> FUT) + Send + 'static,
+                  ARGS: Send + 'static,
+                  FUT: Future<Output=T> + Send,
+                  T: Send + 'static
+        {
+            self.commons.co_spawn(f, args).await
+        }
+    }
+}
+
 pub struct MainSerializer {
     commons: SerializerCommons
 }
@@ -148,6 +177,8 @@ impl MainSerializer {
             ).await;
         }
     }
+
+    serializer_impls!{}
 }
 
 pub struct ChildSerializer {
@@ -159,4 +190,8 @@ impl Drop for ChildSerializer {
     fn drop(&mut self) {
         self.commons.permit.running_tasks.remove(&self.task_id);
     }
+}
+
+impl ChildSerializer {
+    serializer_impls!{}
 }
