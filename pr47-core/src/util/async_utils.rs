@@ -22,3 +22,30 @@ pub use async_std::{
 
 #[cfg(feature = "async-astd")]
 pub use futures::channel::oneshot;
+
+use std::future::Future;
+use std::time::Duration;
+
+#[cfg(all(test, feature = "async-tokio"))]
+pub fn block_on_future<F, R>(fut: F) -> R
+    where F: Future<Output=R> + Send + 'static
+{
+    tokio::runtime::Runtime::new().unwrap().block_on(fut)
+}
+
+#[cfg(all(test, feature = "async-astd"))]
+pub fn block_on_future<F, R>(fut: F) -> R
+    where F: Future<Output=R> + Send + 'static
+{
+    async_std::task::block_on(fut)
+}
+
+#[cfg(all(test, feature = "async-tokio"))]
+pub async fn testing_sleep(duration: Duration) {
+    tokio::time::sleep(duration).await
+}
+
+#[cfg(all(test, feature = "async-astd"))]
+pub async fn testing_sleep(duration: Duration) {
+    async_std::task::sleep(duration).await
+}

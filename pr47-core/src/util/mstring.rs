@@ -70,6 +70,7 @@ mod test {
     use crate::util::mstring::{StringHandle, StringPool};
 
     #[test]
+    #[ignore]
     fn test_mstring() {
         let mut strings = vec![];
         for i in 0..=255 {
@@ -90,6 +91,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn test_mstring_repeated_insert() {
         let mut strings = vec![];
         for i in 0..=255 {

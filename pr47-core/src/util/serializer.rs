@@ -94,7 +94,7 @@ pub struct Serializer {
 impl Serializer {
     pub async fn new() -> Self {
         let shared: Arc<Mutex<SharedContext>> = Arc::new(Mutex::new(SharedContext::new()));
-        let mut permit: Permit = unsafe {
+        let permit: Permit = unsafe {
             transmute::<>(shared.lock().await)
         };
         Self {
@@ -104,13 +104,13 @@ impl Serializer {
         }
     }
 
-    pub async fn co_yield(&mut self) {
+    pub async fn co_yield(&self) {
         unsafe { drop(self.release_permit()); }
         yield_now().await;
         unsafe { self.acquire_permit().await; }
     }
 
-    pub async fn co_await<FUT, T>(&mut self, fut: FUT) -> T
+    pub async fn co_await<FUT, T>(&self, fut: FUT) -> T
         where FUT: Future<Output=T>,
               T: Send + Sync
     {
@@ -120,8 +120,8 @@ impl Serializer {
         ret
     }
 
-    pub async fn co_spawn<F, ARGS, FUT, T>(&mut self, f: F, args: ARGS) -> task::JoinHandle<T>
-        where F: (FnOnce(&mut Serializer, ARGS) -> FUT) + Send + 'static,
+    pub async fn co_spawn<F, ARGS, FUT, T>(&self, f: F, args: ARGS) -> task::JoinHandle<T>
+        where F: (FnOnce(&Serializer, ARGS) -> FUT) + Send + 'static,
               ARGS: Send + 'static,
               FUT: Future<Output=T> + Send,
               T: Send + 'static
@@ -132,8 +132,7 @@ impl Serializer {
         };
         let child_serializer: Serializer = unsafe { self.derive_child_serializer(task_id) };
         let x: task::JoinHandle<T> = task::spawn(async move {
-            let mut child_serializer: Serializer = child_serializer;
-            let r: T = f(&mut child_serializer, args).await;
+            let r: T = f(&child_serializer, args).await;
             unsafe { tx.send(()).unchecked_unwrap(); }
             r
         });
@@ -141,7 +140,7 @@ impl Serializer {
         x
     }
 
-    pub async fn finish(&mut self) {
+    pub async fn finish(&self) {
         loop {
             unsafe {
                 let running_tasks: HashMap<u32, Receiver<()>> =
@@ -159,7 +158,7 @@ impl Serializer {
         }
     }
 
-    unsafe fn derive_child_serializer(&mut self, task_id: u32) -> Serializer {
+    unsafe fn derive_child_serializer(&self, task_id: u32) -> Serializer {
         let shared: Arc<Mutex<SharedContext>> = self.shared.clone();
         let permit: Permit = self.release_permit();
         Serializer {
@@ -169,12 +168,13 @@ impl Serializer {
         }
     }
 
-    async unsafe fn acquire_permit(&mut self) {
-        self.permit.get_mut().set(transmute::<>(self.shared.lock().await))
+    async unsafe fn acquire_permit(&self) {
+        let permit: Permit = transmute::<>(self.shared.lock().await);
+        self.permit.get_mut_ref_unchecked().set(permit);
     }
 
-    #[must_use] unsafe fn release_permit(&mut self) -> Permit {
-        self.permit.get_mut().take()
+    #[must_use] unsafe fn release_permit(&self) -> Permit {
+        self.permit.get_mut_ref_unchecked().take()
     }
 }
 
@@ -186,5 +186,42 @@ impl Drop for Serializer {
         } else {
             permit.remove_task(self.task_id);
         }
+    }
+}
+
+unsafe impl Send for Serializer {}
+unsafe impl Sync for Serializer {}
+
+#[cfg(test)]
+mod test {
+    use crate::util::serializer::Serializer;
+    use crate::util::async_utils::{block_on_future, testing_sleep};
+    use std::time::Duration;
+
+    #[test]
+    #[ignore]
+    fn basic_test_print() {
+        async fn test_impl() {
+            let serializer: Serializer = Serializer::new().await;
+            eprintln!("line 1");
+            serializer.co_spawn(|serializer: &Serializer, x: ()| async move {
+                eprintln!("line 2");
+                serializer.co_yield().await;
+                eprintln!("line 3");
+            }, ()).await;
+            eprintln!("line 4");
+            serializer.co_spawn(|serializer: &Serializer, x: ()| async move {
+                eprintln!("line 5");
+                serializer.co_yield().await;
+                eprintln!("line 6");
+                serializer.co_await(testing_sleep(Duration::from_millis(500))).await;
+                eprintln!("line 7");
+            }, ()).await;
+            eprintln!("line 8");
+            serializer.finish();
+            eprintln!("line 9");
+        }
+
+        block_on_future(test_impl());
     }
 }
