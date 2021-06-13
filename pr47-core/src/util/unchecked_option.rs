@@ -64,7 +64,8 @@ impl<T> UncheckedOption<T> {
     /// debug build, or cause potential resource leaks in release build. This function does not have
     /// UB, but still marked as `unsafe` in order to remind user.
     pub unsafe fn set(&mut self, t: T) {
-        self.inner.replace(t).unwrap();
+        let origin: Option<T> = self.inner.replace(t);
+        assert!(origin.is_none());
     }
 }
 

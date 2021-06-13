@@ -23,8 +23,11 @@ pub use async_std::{
 #[cfg(feature = "async-astd")]
 pub use futures::channel::oneshot;
 
-use std::future::Future;
-use std::time::Duration;
+#[cfg(test)]
+use std::{
+    future::Future,
+    time::Duration
+};
 
 #[cfg(all(test, feature = "async-tokio"))]
 pub fn block_on_future<F, R>(fut: F) -> R

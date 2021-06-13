@@ -121,7 +121,7 @@ impl Serializer {
     }
 
     pub async fn co_spawn<F, ARGS, FUT, T>(&self, f: F, args: ARGS) -> task::JoinHandle<T>
-        where F: (FnOnce(&Serializer, ARGS) -> FUT) + Send + 'static,
+        where F: (FnOnce(Serializer, ARGS) -> FUT) + Send + 'static,
               ARGS: Send + 'static,
               FUT: Future<Output=T> + Send,
               T: Send + 'static
@@ -132,8 +132,8 @@ impl Serializer {
         };
         let child_serializer: Serializer = unsafe { self.derive_child_serializer(task_id) };
         let x: task::JoinHandle<T> = task::spawn(async move {
-            let r: T = f(&child_serializer, args).await;
-            unsafe { tx.send(()).unchecked_unwrap(); }
+            let r: T = f(child_serializer, args).await;
+            let _ = tx.send(());
             r
         });
         unsafe { self.acquire_permit().await; }
@@ -194,23 +194,22 @@ unsafe impl Sync for Serializer {}
 
 #[cfg(test)]
 mod test {
+    use std::time::Duration;
     use crate::util::serializer::Serializer;
     use crate::util::async_utils::{block_on_future, testing_sleep};
-    use std::time::Duration;
 
     #[test]
-    #[ignore]
     fn basic_test_print() {
         async fn test_impl() {
             let serializer: Serializer = Serializer::new().await;
             eprintln!("line 1");
-            serializer.co_spawn(|serializer: &Serializer, x: ()| async move {
+            serializer.co_spawn(|serializer: Serializer, _x: ()| async move {
                 eprintln!("line 2");
                 serializer.co_yield().await;
                 eprintln!("line 3");
             }, ()).await;
             eprintln!("line 4");
-            serializer.co_spawn(|serializer: &Serializer, x: ()| async move {
+            serializer.co_spawn(|serializer: Serializer, _x: ()| async move {
                 eprintln!("line 5");
                 serializer.co_yield().await;
                 eprintln!("line 6");
@@ -218,10 +217,12 @@ mod test {
                 eprintln!("line 7");
             }, ()).await;
             eprintln!("line 8");
-            serializer.finish();
+            serializer.finish().await;
             eprintln!("line 9");
         }
 
+        eprintln!("launching test");
         block_on_future(test_impl());
+        eprintln!("mission accomplished");
     }
 }
