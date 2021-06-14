@@ -76,9 +76,9 @@ impl SharedContext {
     }
 }
 
-/// A `MutexGuard` guarding a unique access to `SharedContext`. Also serves as a
-/// "running permission" for tasks.
-type Permit<T> = MutexGuard<'static, (SharedContext, T)>;
+/// A `MutexGuard` guarding a unique access to `SharedContext` and `SerializedData`. This mainly
+/// serves as a "running permission" for tasks.
+type Permit<SerializedData> = MutexGuard<'static, (SharedContext, SerializedData)>;
 
 /// Serializer context of one task
 pub struct Serializer<SerializedData: 'static> {
@@ -92,6 +92,7 @@ pub struct Serializer<SerializedData: 'static> {
 }
 
 impl<SD: 'static> Serializer<SD> {
+    /// Creates a new, main serializer context with given `shared_data`
     pub async fn new(shared_data: SD) -> Self {
         let shared: Arc<Mutex<(SharedContext, SD)>>
             = Arc::new(Mutex::new((SharedContext::new(), shared_data)));
@@ -104,16 +105,20 @@ impl<SD: 'static> Serializer<SD> {
     }
 
     // TODO is this function really unsafe?
-    pub unsafe fn get_data_mut(&self) -> &mut SD {
+    /// Given the fact that the permit is held, retrieve the shared data. I'm not sure if this
+    /// is safe or unsafe.
+    pub unsafe fn get_shared_data_mut(&self) -> &mut SD {
         &mut (*self.permit.get()).get_mut().1
     }
 
+    /// Interrupt current `task`, yield execution to one of other `task`s.
     pub async fn co_yield(&self) {
         unsafe { drop(self.release_permit()); }
         yield_now().await;
         unsafe { self.acquire_permit().await; }
     }
 
+    /// Interrupt current `task`, await for given `fut`. During this time other `task`s may run.
     pub async fn co_await<FUT, T>(&self, fut: FUT) -> T
         where FUT: Future<Output=T>,
               T: Send + Sync
@@ -124,6 +129,7 @@ impl<SD: 'static> Serializer<SD> {
         ret
     }
 
+    /// Spawn a new `task` managed by the current serialization group
     pub async fn co_spawn<F, ARGS, FUT, T>(&self, f: F, args: ARGS) -> task::JoinHandle<T>
         where F: (FnOnce(Serializer<SD>, ARGS) -> FUT) + Send + 'static,
               ARGS: Send + 'static,
@@ -144,6 +150,7 @@ impl<SD: 'static> Serializer<SD> {
         x
     }
 
+    /// Called on main `task` exit, wait for all other `task`s to finish.
     pub async fn finish(&self) {
         loop {
             unsafe {
