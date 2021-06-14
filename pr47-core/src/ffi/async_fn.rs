@@ -1,37 +1,53 @@
+use std::future::Future;
+use std::pin::Pin;
+
 use async_trait::async_trait;
 
 use crate::data::Value;
 use crate::data::exception::Exception;
+use crate::data::traits::StaticBase;
+use crate::data::wrapper::GcInfo;
 use crate::ffi::Signature;
 use crate::util::serializer::Serializer;
+use crate::util::void::Void;
 
-#[async_trait]
+pub enum AsyncGcInfoGuard {
+    DoNothing,
+    SetGcInfo(Value, GcInfo)
+}
+
 pub trait AsyncVMContext: 'static + Sized + Send + Sync {
     fn serializer(&self) -> &Serializer;
 }
 
-#[async_trait]
+pub type AsyncReturnType = Result<Box<[Value]>, Exception>;
+
+pub struct Promise {
+    pub fut: Pin<Box<dyn Future<Output = AsyncReturnType> + Send + 'static>>,
+    pub guards: Box<[AsyncGcInfoGuard]>
+}
+
+// TODO should we make it a `StaticBase`?
+impl StaticBase<Promise> for Void {}
+
 pub trait AsyncFunction: 'static {
     fn signature(&self) -> Signature;
 
-    async fn call_tyck<'a>(
-        &'a self,
-        context: &'a impl AsyncVMContext,
-        args: &'a [Value],
-        rets: &'a mut [&'a mut Value]
-    ) -> Option<Exception>;
+    fn call_tyck(
+        &self,
+        context: &impl AsyncVMContext,
+        args: &[Value]
+    ) -> Promise;
 
-    async unsafe fn call_rtlc<'a>(
-        &'a self,
-        context: &'a impl AsyncVMContext,
-        args: &'a [Value],
-        rets: &'a mut [&'a mut Value]
-    ) -> Option<Exception>;
+    unsafe fn call_rtlc(
+        &self,
+        context: &impl AsyncVMContext,
+        args: &[Value]
+    ) -> Promise;
 
-    async unsafe fn call_unchecked<'a>(
-        &'a self,
-        context: &'a impl AsyncVMContext,
-        args: &'a [Value],
-        rets: &'a mut [&'a mut Value]
-    ) -> Option<Exception>;
+    unsafe fn call_unchecked(
+        &self,
+        context: &impl AsyncVMContext,
+        args: &[Value]
+    ) -> Promise;
 }
