@@ -78,25 +78,24 @@ impl SharedContext {
 
 /// A `MutexGuard` guarding a unique access to `SharedContext`. Also serves as a
 /// "running permission" for tasks.
-type Permit = MutexGuard<'static, SharedContext>;
+type Permit<T> = MutexGuard<'static, (SharedContext, T)>;
 
 /// Serializer context of one task
-pub struct Serializer {
+pub struct Serializer<SerializedData: 'static> {
     /// Context shared by all tasks in the same serialization group.
-    shared: Arc<Mutex<SharedContext>>,
+    shared: Arc<Mutex<(SharedContext, SerializedData)>>,
     /// Running permission of the current task.
-    permit: UnsafeCell<UncheckedOption<Permit>>,
+    permit: UnsafeCell<UncheckedOption<Permit<SerializedData>>>,
     /// Task ID of the current task. `0` implies main task, while other values are used for
     /// children tasks.
     pub task_id: u32
 }
 
-impl Serializer {
-    pub async fn new() -> Self {
-        let shared: Arc<Mutex<SharedContext>> = Arc::new(Mutex::new(SharedContext::new()));
-        let permit: Permit = unsafe {
-            transmute::<>(shared.lock().await)
-        };
+impl<SD: 'static> Serializer<SD> {
+    pub async fn new(shared_data: SD) -> Self {
+        let shared: Arc<Mutex<(SharedContext, SD)>>
+            = Arc::new(Mutex::new((SharedContext::new(), shared_data)));
+        let permit: Permit<SD> = unsafe { transmute::<>(shared.lock().await) };
         Self {
             shared,
             permit: UnsafeCell::new(UncheckedOption::new(permit)),
@@ -121,16 +120,16 @@ impl Serializer {
     }
 
     pub async fn co_spawn<F, ARGS, FUT, T>(&self, f: F, args: ARGS) -> task::JoinHandle<T>
-        where F: (FnOnce(Serializer, ARGS) -> FUT) + Send + 'static,
+        where F: (FnOnce(Serializer<SD>, ARGS) -> FUT) + Send + 'static,
               ARGS: Send + 'static,
               FUT: Future<Output=T> + Send,
               T: Send + 'static
     {
         let (tx, rx): (Sender<()>, Receiver<()>) = oneshot::channel();
         let task_id: u32 = unsafe {
-            self.permit.get_mut_ref_unchecked().get_mut().add_task(rx)
+            self.permit.get_mut_ref_unchecked().get_mut().0.add_task(rx)
         };
-        let child_serializer: Serializer = unsafe { self.derive_child_serializer(task_id) };
+        let child_serializer: Serializer<SD> = unsafe { self.derive_child_serializer(task_id) };
         let x: task::JoinHandle<T> = task::spawn(async move {
             let r: T = f(child_serializer, args).await;
             let _ = tx.send(());
@@ -144,7 +143,7 @@ impl Serializer {
         loop {
             unsafe {
                 let running_tasks: HashMap<u32, Receiver<()>> =
-                    self.permit.get_mut_ref_unchecked().get_mut().get_all_tasks();
+                    self.permit.get_mut_ref_unchecked().get_mut().0.get_all_tasks();
                 if running_tasks.len() == 0 {
                     break;
                 }
@@ -158,9 +157,9 @@ impl Serializer {
         }
     }
 
-    unsafe fn derive_child_serializer(&self, task_id: u32) -> Serializer {
-        let shared: Arc<Mutex<SharedContext>> = self.shared.clone();
-        let permit: Permit = self.release_permit();
+    unsafe fn derive_child_serializer(&self, task_id: u32) -> Serializer<SD> {
+        let shared: Arc<Mutex<(SharedContext, SD)>> = self.shared.clone();
+        let permit: Permit<SD> = self.release_permit();
         Serializer {
             shared,
             permit: UnsafeCell::new(UncheckedOption::new(permit)),
@@ -169,28 +168,28 @@ impl Serializer {
     }
 
     async unsafe fn acquire_permit(&self) {
-        let permit: Permit = transmute::<>(self.shared.lock().await);
+        let permit: Permit<SD> = transmute::<>(self.shared.lock().await);
         self.permit.get_mut_ref_unchecked().set(permit);
     }
 
-    #[must_use] unsafe fn release_permit(&self) -> Permit {
+    #[must_use] unsafe fn release_permit(&self) -> Permit<SD> {
         self.permit.get_mut_ref_unchecked().take()
     }
 }
 
-impl Drop for Serializer {
+impl<SD: 'static> Drop for Serializer<SD> {
     fn drop(&mut self) {
-        let mut permit: Permit = unsafe { self.permit.get_mut().take() };
+        let mut permit: Permit<SD> = unsafe { self.permit.get_mut().take() };
         if self.task_id == 0 {
-            assert_eq!(permit.running_tasks.len(), 0);
+            assert_eq!(permit.0.running_tasks.len(), 0);
         } else {
-            permit.remove_task(self.task_id);
+            permit.0.remove_task(self.task_id);
         }
     }
 }
 
-unsafe impl Send for Serializer {}
-unsafe impl Sync for Serializer {}
+unsafe impl<SD: 'static> Send for Serializer<SD> {}
+unsafe impl<SD: 'static> Sync for Serializer<SD> {}
 
 #[cfg(test)]
 mod test {
@@ -201,15 +200,15 @@ mod test {
     #[test]
     fn basic_test_print() {
         async fn test_impl() {
-            let serializer: Serializer = Serializer::new().await;
+            let serializer: Serializer<()> = Serializer::new(()).await;
             eprintln!("line 1");
-            serializer.co_spawn(|serializer: Serializer, _x: ()| async move {
+            serializer.co_spawn(|serializer: Serializer<()>, _x: ()| async move {
                 eprintln!("line 2");
                 serializer.co_yield().await;
                 eprintln!("line 3");
             }, ()).await;
             eprintln!("line 4");
-            serializer.co_spawn(|serializer: Serializer, _x: ()| async move {
+            serializer.co_spawn(|serializer: Serializer<()>, _x: ()| async move {
                 eprintln!("line 5");
                 serializer.co_yield().await;
                 eprintln!("line 6");

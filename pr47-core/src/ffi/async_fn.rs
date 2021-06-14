@@ -15,7 +15,7 @@ pub enum AsyncGcInfoGuard {
 }
 
 pub trait AsyncVMContext: 'static + Sized + Send + Sync {
-    fn serializer(&self) -> &Serializer;
+    fn serializer(&self) -> &Serializer<() /* TODO what we need to guard? */>;
 }
 
 pub type AsyncReturnType = Result<Box<[Value]>, Exception>;
@@ -38,12 +38,6 @@ pub trait AsyncFunction: 'static {
     ) -> Promise;
 
     unsafe fn call_rtlc(
-        &self,
-        context: &impl AsyncVMContext,
-        args: &[Value]
-    ) -> Promise;
-
-    unsafe fn call_unchecked(
         &self,
         context: &impl AsyncVMContext,
         args: &[Value]
