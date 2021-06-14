@@ -103,6 +103,11 @@ impl<SD: 'static> Serializer<SD> {
         }
     }
 
+    // TODO is this function really unsafe?
+    pub unsafe fn get_data_mut(&self) -> &mut SD {
+        &mut (*self.permit.get()).get_mut().1
+    }
+
     pub async fn co_yield(&self) {
         unsafe { drop(self.release_permit()); }
         yield_now().await;
