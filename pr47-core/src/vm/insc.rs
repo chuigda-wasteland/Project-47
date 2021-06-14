@@ -1,6 +1,7 @@
 //! ## `insc.rs`: defines instruction set for the VM.
 
 use std::ptr::NonNull;
+
 use crate::data::tyck::TyckInfo;
 
 /// An VM instruction
@@ -444,6 +445,12 @@ pub enum Insc {
     /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned
     /// promise to `RET`. **No type checking**.
     FFICallAsync(usize, Vec<usize>, usize),
+
+    /// `FFI-CALL-ASYNC-TYCK [FUNC-ID] [ARGS..] [RET]`
+    ///
+    /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned
+    /// promise to `RET`. *Performs type checking**.
+    FFICallAsyncTyck(usize, Vec<usize>, usize),
 
     JumpIfTrue(usize, usize),
     JumpIfFalse(usize, usize),

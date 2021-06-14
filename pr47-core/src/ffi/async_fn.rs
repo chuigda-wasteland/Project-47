@@ -1,8 +1,6 @@
 use std::future::Future;
 use std::pin::Pin;
 
-use async_trait::async_trait;
-
 use crate::data::Value;
 use crate::data::exception::Exception;
 use crate::data::traits::StaticBase;

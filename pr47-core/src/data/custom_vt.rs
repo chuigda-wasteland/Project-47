@@ -1,3 +1,4 @@
+#[cfg(debug_assertions)]
 use std::any::TypeId;
 use std::ptr::NonNull;
 
