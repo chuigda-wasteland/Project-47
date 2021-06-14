@@ -408,26 +408,43 @@ pub enum Insc {
     /// `CALL-UNCHECKED [FUNC-ID] [ARGS..] [RETS..]`
     ///
     /// Call the function denoted by `FUNC-ID` with given `ARGS`, store the return values to `RETS`.
-    /// **No type checking and no lifetime checking**.
+    /// **No type checking**.
     Call(usize, Vec<usize>, Vec<usize>),
-
-    /// `CALL-RTLC [FUNC-ID] [ARGS..] [RETS..]`
-    ///
-    /// Similar to `CALL-UNCHECKED`, but **performs run-time lifetime checking**.
-    /// Still **no type checking**.
-    CallRtlc(usize, Vec<usize>, Vec<usize>),
 
     /// `CALL-TYCK [FUNC-ID] [ARGS..] [RETS..]`
     ///
-    /// Similar to `CALL-TYCK`, but **performs both lifetime checking and type checking**.
+    /// Similar to `CALL-TYCK`, but **performs type checking**.
     CallTyck(usize, Vec<usize>, Vec<usize>),
 
+    /// `CALL-PTR [SRC] [ARGS..] [RETS..]`
+    ///
+    /// Call the function stored in function pointer `SRC` with given `ARGS`, store the return
+    /// values to `RETS`. **No type checking**.
     CallPtr(usize, Vec<usize>, Vec<usize>),
+
+    /// `CALL-PTR-TYCK [SRC] [ARGS..] [RETS..]`
+    ///
+    /// Similar to `CALL-PTR`, but **performs type checking**.
     CallPtrTyck(usize, Vec<usize>, Vec<usize>),
-    CallOverload(usize, Vec<usize>, Vec<usize>),
+
+    // TODO consider what to use for overloaded function
+    // CallOverload(usize, Vec<usize>, Vec<usize>),
+
+    /// `FFI-CALL-TYCK [FFI-FUNC-ID] [ARGS..] [RETS..]`
     FFICallTyck(usize, Vec<usize>, Vec<usize>),
+
+    /// `FFI-CALL-RTLC [FFI-FUNC-ID] [ARGS..] [RETS..]`
     FFICallRtlc(usize, Vec<usize>, Vec<usize>),
+
+    /// `FFI-CALL [FFI-FUNC-ID] [ARGS..] [RETS..]`
     FFICall(usize, Vec<usize>, Vec<usize>),
+
+    /// `FFI-CALL-ASYNC [FUNC-ID] [ARGS..] [RET]`
+    ///
+    /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned
+    /// promise to `RET`. **No type checking**.
+    FFICallAsync(usize, Vec<usize>, usize),
+
     JumpIfTrue(usize, usize),
     JumpIfFalse(usize, usize),
     Jump(usize)

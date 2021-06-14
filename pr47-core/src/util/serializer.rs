@@ -148,7 +148,7 @@ impl Serializer {
                 if running_tasks.len() == 0 {
                     break;
                 }
-                let fut: JoinAll<_> = join_all(
+                let fut: JoinAll<_ /*: impl Future<Output=()>*/> = join_all(
                     running_tasks.into_iter().map(|(_tid, rx): (u32, Receiver<()>)| async move {
                         rx.await.unchecked_unwrap()
                     })
