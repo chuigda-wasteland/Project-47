@@ -15,7 +15,9 @@ pub enum AsyncGcInfoGuard {
 }
 
 pub trait AsyncVMContext: 'static + Sized + Send + Sync {
-    fn serializer(&self) -> &Serializer<() /* TODO what we need to guard? */>;
+    type SharedData;
+
+    fn serializer(&self) -> &Serializer<Self::SharedData>;
 }
 
 pub type AsyncReturnType = Result<Box<[Value]>, Exception>;
