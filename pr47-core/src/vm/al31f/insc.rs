@@ -435,22 +435,38 @@ pub enum Insc {
     FFICallTyck(usize, Vec<usize>, Vec<usize>),
 
     /// `FFI-CALL-RTLC [FFI-FUNC-ID] [ARGS..] [RETS..]`
+    #[cfg(feature = "optimized-rtlc")]
     FFICallRtlc(usize, Vec<usize>, Vec<usize>),
 
     /// `FFI-CALL [FFI-FUNC-ID] [ARGS..] [RETS..]`
     FFICall(usize, Vec<usize>, Vec<usize>),
 
+    /// `FFI-CALL-ASYNC-TYCK [FUNC-ID] [ARGS..] [RET]`
+    ///
+    /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned promise
+    /// to `RET`. *Performs type checking**.
+    FFICallAsyncTyck(usize, Vec<usize>, usize),
+
     /// `FFI-CALL-ASYNC [FUNC-ID] [ARGS..] [RET]`
     ///
     /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned
-    /// promise to `RET`. **No type checking**.
+    /// promise to `RET`. **No type checking**. Please note that when feature `optimized-rtlc`
+    /// is enabled, all async FFI calls have RTLC.
+    #[cfg(all(feature = "async", feature = "optimized-rtlc"))]
     FFICallAsync(usize, Vec<usize>, usize),
 
-    /// `FFI-CALL-ASYNC-TYCK [FUNC-ID] [ARGS..] [RET]`
+    /// `FFI-CALL-ASYNC-UNCHECKED [FUNC-ID] [ARGS..] [RET]`
     ///
-    /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned
-    /// promise to `RET`. *Performs type checking**.
-    FFICallAsyncTyck(usize, Vec<usize>, usize),
+    /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned promise
+    /// to `RET`. *No type checking and no RTLC*.
+    #[cfg(all(feature = "async", feature = "no-rtlc"))]
+    FFICallAsyncUnchecked(usize, Vec<usize>, usize),
+
+    /// `AWAIT [FUT] [RETS..]`
+    ///
+    /// Await the given promise, store its results into given destinations.
+    #[cfg(feature = "async")]
+    Await(usize, Vec<usize>),
 
     JumpIfTrue(usize, usize),
     JumpIfFalse(usize, usize),

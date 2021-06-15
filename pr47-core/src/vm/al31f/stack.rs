@@ -3,7 +3,6 @@ use std::mem::MaybeUninit;
 #[cfg(not(debug_assertions))]
 use unchecked_unwrap::UncheckedUnwrap;
 
-
 use crate::data::Value;
 
 #[cfg(debug_assertions)]
@@ -122,7 +121,7 @@ impl<'a> Stack<'a> {
         &mut self,
         ret_values: &[usize]
     ) -> Option<(StackSlice, usize)> {
-        let frame_count = self.frames.len();
+        let frame_count: usize = self.frames.len();
         if frame_count == 1 {
             return None;
         }
@@ -134,12 +133,19 @@ impl<'a> Stack<'a> {
             StackSlice(&mut self.values[this_frame.frame_start..this_frame.frame_end] as *mut _);
         let mut prev_slice =
             StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
-
         assert_eq!(ret_values.len(), this_frame.ret_value_locs.len());
-        for (ret_value /*: &usize*/, ret_value_loc /*: &usize*/) in
-            ret_values.iter().zip(this_frame.ret_value_locs)
-        {
-            prev_slice.set_value(*ret_value_loc, this_slice.get_value(*ret_value))
+        if ret_values.len() != 0 {
+            if ret_values.len() == 1 {
+                let from: usize = this_frame.ret_value_locs[0];
+                let dest: usize = ret_values[0];
+                prev_slice.set_value(dest, this_slice.get_value(from));
+            } else {
+                for (ret_value /*: &usize*/, ret_value_loc /*: &usize*/) in
+                    ret_values.iter().zip(this_frame.ret_value_locs)
+                {
+                    prev_slice.set_value(*ret_value_loc, this_slice.get_value(*ret_value))
+                }
+            }
         }
         let ret_addr: usize = this_frame.ret_addr;
         self.values.truncate(prev_frame.frame_end);
@@ -216,10 +222,18 @@ impl<'a> Stack<'a> {
         let mut prev_slice: StackSlice =
             StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
 
-        for (ret_value /*: &usize*/, ret_value_loc /*: &usize*/) in
-            ret_values.iter().zip(this_frame.ret_value_locs)
-        {
-            prev_slice.set_value(*ret_value_loc, this_slice.get_value(*ret_value))
+        if ret_values.len() != 0 {
+            if (ret_values.len() == 1) {
+                let from: usize = *this_frame.ret_value_locs.get_unchecked(0);
+                let dest: usize = *ret_values.get_unchecked(0);
+                prev_slice.set_value(dest, this_slice.get_value(from));
+            } else {
+                for (ret_value /*: &usize*/, ret_value_loc /*: &usize*/) in
+                    ret_values.iter().zip(this_frame.ret_value_locs)
+                {
+                    prev_slice.set_value(*ret_value_loc, this_slice.get_value(*ret_value))
+                }
+            }
         }
         let ret_addr: usize = this_frame.ret_addr;
         self.values.truncate(prev_frame.frame_end);
