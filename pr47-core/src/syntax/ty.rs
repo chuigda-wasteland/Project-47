@@ -1,4 +1,3 @@
-use crate::util::mstring::StringHandle;
 use crate::util::location::{SingleLineRange, SourceLocation};
 
 #[derive(Debug)]
@@ -22,7 +21,7 @@ pub enum ConcreteSimpleTypeContent {
     CharType,
     StringType,
     DeducedType,
-    UserType(StringHandle)
+    UserType(String)
 }
 
 #[derive(Debug)]

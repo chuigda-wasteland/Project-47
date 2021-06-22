@@ -3,7 +3,6 @@ use crate::syntax::expr::ConcreteExpr;
 use crate::syntax::stmt::ConcreteCompoundStmt;
 use crate::syntax::attr::AttrList;
 use crate::util::location::{SourceLocation, SingleLineRange};
-use crate::util::mstring::StringHandle;
 
 #[derive(Debug)]
 pub enum ConcreteDecl {
@@ -15,7 +14,7 @@ pub enum ConcreteDecl {
 pub struct ConcreteVarDecl {
     pub attrs: Option<AttrList>,
 
-    pub var_name: StringHandle,
+    pub var_name: String,
     pub var_type: Option<ConcreteType>,
     pub init_expr: Option<ConcreteExpr>,
 
@@ -25,7 +24,7 @@ pub struct ConcreteVarDecl {
 
 #[derive(Debug)]
 pub struct FunctionParam {
-    pub param_name: StringHandle,
+    pub param_name: String,
     pub param_type: Option<ConcreteType>,
 
     pub param_name_range: SingleLineRange
@@ -35,7 +34,7 @@ pub struct FunctionParam {
 pub struct ConcreteFuncDecl {
     pub attrs: Option<AttrList>,
 
-    pub func_name: StringHandle,
+    pub func_name: String,
     pub func_param_list: Vec<FunctionParam>,
     pub func_return_type: Option<ConcreteType>,
     pub func_body: Option<ConcreteCompoundStmt>,

@@ -1,4 +1,3 @@
-use crate::util::mstring::StringHandle;
 use crate::util::location::{SingleLineRange, SourceLocation, MultiLineRange};
 
 #[derive(Debug)]
@@ -23,7 +22,7 @@ pub struct ValueOnlyAttr {
 
 #[derive(Debug)]
 pub struct KeyValuePairAttr {
-    pub key: StringHandle,
+    pub key: String,
     pub value: AttrValue,
 
     pub key_range: SingleLineRange
@@ -45,13 +44,13 @@ pub struct AttrIntValue {
 
 #[derive(Debug)]
 pub struct AttrIdentifierValue {
-    pub value: StringHandle,
+    pub value: String,
     pub value_range: SingleLineRange
 }
 
 #[derive(Debug)]
 pub struct AttrStrValue {
-    pub value: StringHandle,
+    pub value: String,
     pub value_range: MultiLineRange
 }
 
@@ -62,3 +61,4 @@ pub struct AttrListValue {
     pub left_paren_loc: SourceLocation,
     pub right_paren_loc: SourceLocation
 }
+
