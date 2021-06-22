@@ -6,20 +6,21 @@ use crate::util::location::{SourceLocation, SingleLineRange};
 
 #[derive(Debug)]
 pub enum ConcreteDecl {
-    VarDecl(ConcreteVarDecl),
+    VarDecl(ConcreteObjectDecl),
+    ConstDecl(ConcreteObjectDecl),
     FuncDecl(ConcreteFuncDecl)
 }
 
 #[derive(Debug)]
-pub struct ConcreteVarDecl {
+pub struct ConcreteObjectDecl {
     pub attrs: Option<AttrList>,
 
-    pub var_name: String,
-    pub var_type: Option<ConcreteType>,
+    pub name: String,
+    pub obj_type: Option<ConcreteType>,
     pub init_expr: Option<ConcreteExpr>,
 
-    pub var_kwd_range: SingleLineRange,
-    pub var_name_range: SingleLineRange
+    pub kwd_range: SingleLineRange,
+    pub name_range: SingleLineRange
 }
 
 #[derive(Debug)]
