@@ -7,6 +7,7 @@ description = "A semi-experimental programming language. Still working in progre
 readme = "README.md"
 repository = "https://github.com/Pr47/Pr47"
 license = "MIT"
+resolver = "2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,9 +17,12 @@ unchecked_unwrap = "3"
 async-std = { optional = true, version = "1" }
 async-trait = { optional = true, version = "0.1" }
 futures = { optional = true, version = "0.3" }
-tokio = { optional = true, version = "1", features = ["rt", "rt-multi-thread", "sync", "time"] }
+tokio = { optional = true, version = "1", features = ["rt", "sync", "time"] }
 
 pr47-codegen = { path="../pr47-codegen" }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread"] }
 
 [features]
 default = ["optimized-rtlc", "async-tokio"]

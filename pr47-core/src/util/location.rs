@@ -1,6 +1,4 @@
-use std::fmt::Debug;
-
-pub trait SourceRange : Debug + Copy + Into<MultiLineRange> {
+pub trait SourceRange : Copy + Into<MultiLineRange> {
     fn unknown() -> Self;
     fn is_unknown(&self) -> bool;
 
@@ -10,7 +8,7 @@ pub trait SourceRange : Debug + Copy + Into<MultiLineRange> {
     fn end_col(&self) -> u32;
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct SourceLocation {
     pub line: u32,
     pub col: u32
@@ -53,7 +51,7 @@ impl SourceRange for SourceLocation {
     fn end_col(&self) -> u32 { self.col + 1 }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub struct SingleLineRange {
     pub line: u32,
     pub start_col: u32,
@@ -112,7 +110,7 @@ impl SourceRange for SingleLineRange {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub struct MultiLineRange {
     pub start: SourceLocation,
     pub end: SourceLocation

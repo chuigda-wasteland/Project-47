@@ -4,14 +4,12 @@ use crate::syntax::stmt::ConcreteCompoundStmt;
 use crate::syntax::attr::AttrList;
 use crate::util::location::{SourceLocation, SingleLineRange};
 
-#[derive(Debug)]
 pub enum ConcreteDecl {
     VarDecl(ConcreteObjectDecl),
     ConstDecl(ConcreteObjectDecl),
     FuncDecl(ConcreteFuncDecl)
 }
 
-#[derive(Debug)]
 pub struct ConcreteObjectDecl {
     pub attrs: Option<AttrList>,
 
@@ -23,7 +21,6 @@ pub struct ConcreteObjectDecl {
     pub name_range: SingleLineRange
 }
 
-#[derive(Debug)]
 pub struct FunctionParam {
     pub param_name: String,
     pub param_type: Option<ConcreteType>,
@@ -31,7 +28,6 @@ pub struct FunctionParam {
     pub param_name_range: SingleLineRange
 }
 
-#[derive(Debug)]
 pub struct ConcreteFuncDecl {
     pub attrs: Option<AttrList>,
 

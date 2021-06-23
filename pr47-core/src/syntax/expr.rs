@@ -2,7 +2,6 @@ use crate::syntax::id::Identifier;
 use crate::syntax::ty::ConcreteType;
 use crate::util::location::{SingleLineRange, SourceLocation};
 
-#[derive(Debug)]
 pub enum ConcreteExpr {
     LiteralExpr(ConcreteLiteralExpr),
     StringLiteralExpr(ConcreteStringLiteralExpr),
@@ -17,13 +16,11 @@ pub enum ConcreteExpr {
     AsExpr(ConcreteAsExpr)
 }
 
-#[derive(Debug)]
 pub struct ConcreteLiteralExpr {
     pub content: LiteralExprContent,
     pub range: SingleLineRange
 }
 
-#[derive(Debug)]
 pub enum LiteralExprContent {
     Byte(u8),
     Int(i64),
@@ -32,18 +29,15 @@ pub enum LiteralExprContent {
     Boolean(bool)
 }
 
-#[derive(Debug)]
 pub struct ConcreteIdRefExpr {
     pub id: Identifier
 }
 
-#[derive(Debug)]
 pub struct ConcreteStringLiteralExpr {
     pub value: String,
     pub range: SingleLineRange
 }
 
-#[derive(Debug)]
 pub enum UnaryOp {
     BitNot,
     Not,
@@ -61,7 +55,6 @@ impl UnaryOp {
     }
 }
 
-#[derive(Debug)]
 pub struct ConcreteUnaryExpr {
     pub op: UnaryOp,
     pub operand: Box<ConcreteExpr>,
@@ -69,7 +62,6 @@ pub struct ConcreteUnaryExpr {
     pub op_loc: SourceLocation
 }
 
-#[derive(Debug)]
 pub enum BinaryOp {
     BitAnd, BitOr, BitXor,
     Add, Sub,
@@ -103,7 +95,6 @@ impl BinaryOp {
     }
 }
 
-#[derive(Debug)]
 pub struct ConcreteBinaryExpr {
     pub op: BinaryOp,
     pub lhs: Box<ConcreteExpr>,
@@ -112,7 +103,6 @@ pub struct ConcreteBinaryExpr {
     pub op_loc: SingleLineRange
 }
 
-#[derive(Debug)]
 pub struct ConcreteAssignExpr {
     pub lhs: Box<ConcreteExpr>,
     pub rhs: Box<ConcreteExpr>,
@@ -120,7 +110,6 @@ pub struct ConcreteAssignExpr {
     pub op_loc: SourceLocation
 }
 
-#[derive(Debug)]
 pub struct ConcreteFuncCallExpr {
     pub func: Box<ConcreteExpr>,
     pub args: Vec<Box<ConcreteExpr>>,
@@ -129,7 +118,6 @@ pub struct ConcreteFuncCallExpr {
     pub right_paren: SourceLocation
 }
 
-#[derive(Debug)]
 pub struct ConcreteSubscriptExpr {
     pub base: Box<ConcreteExpr>,
     pub idx: Box<ConcreteExpr>,
@@ -138,7 +126,6 @@ pub struct ConcreteSubscriptExpr {
     pub right_bracket: SourceLocation
 }
 
-#[derive(Debug)]
 pub struct ConcreteFieldRefExpr {
     pub base: Box<ConcreteExpr>,
     pub id: Identifier,
@@ -146,7 +133,6 @@ pub struct ConcreteFieldRefExpr {
     pub dot_loc: SourceLocation
 }
 
-#[derive(Debug)]
 pub struct ConcreteMethodCallExpr {
     pub base: Box<ConcreteExpr>,
     pub func_id: Identifier,
@@ -157,7 +143,6 @@ pub struct ConcreteMethodCallExpr {
     pub right_paren: SourceLocation
 }
 
-#[derive(Debug)]
 pub struct ConcreteAsExpr {
     pub operand: Box<ConcreteExpr>,
     pub dest_type: ConcreteType,

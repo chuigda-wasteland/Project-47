@@ -1,6 +1,5 @@
 use crate::util::location::{SingleLineRange, SourceLocation, MultiLineRange};
 
-#[derive(Debug)]
 pub struct AttrList {
     pub attributes: Vec<Attribute>,
 
@@ -9,18 +8,15 @@ pub struct AttrList {
     pub right_bracket_loc: SourceLocation
 }
 
-#[derive(Debug)]
 pub enum Attribute {
     ValueOnly(ValueOnlyAttr),
     KVPair(KeyValuePairAttr)
 }
 
-#[derive(Debug)]
 pub struct ValueOnlyAttr {
     pub value: AttrValue
 }
 
-#[derive(Debug)]
 pub struct KeyValuePairAttr {
     pub key: String,
     pub value: AttrValue,
@@ -28,7 +24,6 @@ pub struct KeyValuePairAttr {
     pub key_range: SingleLineRange
 }
 
-#[derive(Debug)]
 pub enum AttrValue {
     IntValue(AttrIntValue),
     IdentifierValue(AttrIdentifierValue),
@@ -36,25 +31,21 @@ pub enum AttrValue {
     List(AttrListValue)
 }
 
-#[derive(Debug)]
 pub struct AttrIntValue {
     pub value: i64,
     pub value_range: SingleLineRange
 }
 
-#[derive(Debug)]
 pub struct AttrIdentifierValue {
     pub value: String,
     pub value_range: SingleLineRange
 }
 
-#[derive(Debug)]
 pub struct AttrStrValue {
     pub value: String,
     pub value_range: MultiLineRange
 }
 
-#[derive(Debug)]
 pub struct AttrListValue {
     pub value: Vec<Attribute>,
 

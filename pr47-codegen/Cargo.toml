@@ -3,6 +3,7 @@ name = "pr47-codegen"
 version = "0.0.1"
 authors = ["ICEY <icey@icey.tech>"]
 edition = "2018"
+resolver = "2"
 
 [lib]
 proc-macro = true
