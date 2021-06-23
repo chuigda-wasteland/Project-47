@@ -115,3 +115,15 @@ impl<T: ZeroInit, I: SliceIndex<[T]>> IndexMut<I> for ZeroVec<T> {
         IndexMut::index_mut(&mut **self, index)
     }
 }
+
+unsafe impl ZeroInit for i8 {}
+unsafe impl ZeroInit for i16 {}
+unsafe impl ZeroInit for i32 {}
+unsafe impl ZeroInit for i64 {}
+unsafe impl ZeroInit for u8 {}
+unsafe impl ZeroInit for u16 {}
+unsafe impl ZeroInit for u32 {}
+unsafe impl ZeroInit for u64 {}
+
+unsafe impl<T1, T2> ZeroInit for (T1, T2) where T1: ZeroInit, T2: ZeroInit {}
+unsafe impl<T1, T2, T3> ZeroInit for (T1, T2, T3) where T1: ZeroInit, T2: ZeroInit, T3: ZeroInit {}
