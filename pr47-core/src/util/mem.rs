@@ -1,5 +1,7 @@
+use std::hash::Hash;
+
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Hash, Debug, Eq, PartialEq)]
 pub struct FatPointer {
     pub ptr: usize,
     pub trivia: usize

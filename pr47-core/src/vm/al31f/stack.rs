@@ -223,7 +223,7 @@ impl<'a> Stack<'a> {
             StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
 
         if ret_values.len() != 0 {
-            if (ret_values.len() == 1) {
+            if ret_values.len() == 1 {
                 let from: usize = *this_frame.ret_value_locs.get_unchecked(0);
                 let dest: usize = *ret_values.get_unchecked(0);
                 prev_slice.set_value(dest, this_slice.get_value(from));
@@ -241,3 +241,4 @@ impl<'a> Stack<'a> {
         Some((prev_slice, ret_addr))
     }
 }
+
