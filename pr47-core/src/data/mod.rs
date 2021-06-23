@@ -17,6 +17,7 @@ use crate::data::wrapper::{DynBase, GC_INFO_MASK, GcInfo, Wrapper};
 use crate::util::mem::FatPointer;
 use crate::util::unsafe_from::UnsafeFrom;
 use crate::util::void::Void;
+use crate::util::zvec::ZeroInit;
 
 pub const TAG_BITS_MASK: u8 = 0b00000_111;
 pub const TAG_BITS_MASK_USIZE: usize = TAG_BITS_MASK as usize;
@@ -267,6 +268,8 @@ impl Value {
         maybe_uninit.assume_init()
     }
 }
+
+unsafe impl ZeroInit for Value {}
 
 #[repr(transparent)]
 pub struct TypedValue<T: 'static> {

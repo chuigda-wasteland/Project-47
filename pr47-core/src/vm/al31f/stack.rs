@@ -1,7 +1,7 @@
 #[cfg(not(debug_assertions))]
-use std::mem::MaybeUninit;
-#[cfg(not(debug_assertions))]
 use unchecked_unwrap::UncheckedUnwrap;
+#[cfg(not(debug_assertions))]
+use crate::util::zvec::ZeroVec;
 
 use crate::data::Value;
 
@@ -22,18 +22,18 @@ impl StackSlice {
 
 #[cfg(not(debug_assertions))]
 #[derive(Copy, Clone)]
-pub struct StackSlice(*mut [MaybeUninit<Value>]);
+pub struct StackSlice(*mut [Value]);
 
 #[cfg(not(debug_assertions))]
 impl StackSlice {
     pub unsafe fn set_value(&mut self, idx: usize, value: Value) {
-        let dest: &mut MaybeUninit<Value> = (*self.0).get_unchecked_mut(idx);
-        *dest.as_mut_ptr() = value;
+        let dest: &mut Value = (*self.0).get_unchecked_mut(idx);
+        *dest = value;
     }
 
     pub unsafe fn get_value(&mut self, idx: usize) -> Value {
-        let src: &MaybeUninit<Value> = (*self.0).get_unchecked(idx);
-        *src.as_ptr()
+        let src: &Value = (*self.0).get_unchecked(idx);
+        *src
     }
 }
 
@@ -156,7 +156,7 @@ impl<'a> Stack<'a> {
 
 #[cfg(not(debug_assertions))]
 pub struct Stack<'a> {
-    pub values: Vec<MaybeUninit<Value>>,
+    pub values: ZeroVec<Value>,
     pub frames: Vec<FrameInfo<'a>>
 }
 
@@ -164,7 +164,7 @@ pub struct Stack<'a> {
 impl<'a> Stack<'a> {
     pub fn new() -> Self {
         Self {
-            values: Vec::with_capacity(64),
+            values: ZeroVec::with_capacity(64),
             frames: Vec::with_capacity(4)
         }
     }
@@ -174,10 +174,10 @@ impl<'a> Stack<'a> {
         frame_size: usize,
         args: &[Value]
     ) -> StackSlice {
-        self.values.resize(frame_size, MaybeUninit::uninit());
+        self.values.resize(frame_size);
         for (i /*: usize*/, arg /*: &Value*/) in args.iter().enumerate() {
-            let dest: &mut MaybeUninit<Value> = self.values.get_unchecked_mut(i);
-            *dest.as_mut_ptr() = *arg;
+            let dest: &mut Value = self.values.get_unchecked_mut(i);
+            *dest = *arg;
         }
         self.frames.push(FrameInfo::new(0, frame_size, &[], 0));
         StackSlice(&mut self.values[..] as *mut _)
@@ -194,7 +194,7 @@ impl<'a> Stack<'a> {
         let (this_frame_start, this_frame_end): (usize, usize)
             = (this_frame.frame_start, this_frame.frame_end);
         let new_frame_end: usize = this_frame_end + frame_size;
-        self.values.resize(new_frame_end, MaybeUninit::uninit());
+        self.values.resize(new_frame_end);
         self.frames.push(FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr));
         let mut old_slice: StackSlice =
             StackSlice(&mut self.values[this_frame_start..this_frame_end] as *mut _);
@@ -236,9 +236,8 @@ impl<'a> Stack<'a> {
             }
         }
         let ret_addr: usize = this_frame.ret_addr;
-        self.values.truncate(prev_frame.frame_end);
+        self.values.resize(prev_frame.frame_end);
         self.frames.pop().unchecked_unwrap();
         Some((prev_slice, ret_addr))
     }
 }
-
