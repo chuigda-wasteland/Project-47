@@ -1,4 +1,5 @@
 use std::any::TypeId;
+use std::iter::Iterator;
 use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::addr_of;
 
@@ -6,58 +7,56 @@ use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfo;
+use crate::util::mem::FatPointer;
 use crate::util::void::Void;
 use crate::util::unsafe_from::UnsafeFrom;
 
-pub const GC_MARKED_MASK: u8 = 0b1_00_00000;
-pub const GC_INFO_MASK: u8   = 0b0_00_11111;
-
-pub const GC_INFO_READ_MASK: u8   = 0b0_00_1_0_0_0_0;
-pub const GC_INFO_WRITE_MASK: u8  = 0b0_00_0_1_0_0_0;
-pub const GC_INFO_MOVE_MASK: u8   = 0b0_00_0_0_1_0_0;
-pub const GC_INFO_DELETE_MASK: u8 = 0b0_00_0_0_0_1_0;
-pub const GC_INFO_OWNED_MASK: u8  = 0b0_00_0_0_0_0_1;
+pub const OWN_INFO_READ_MASK: u8    = 0b000_1_0_0_0_0;
+pub const OWN_INFO_WRITE_MASK: u8   = 0b000_0_1_0_0_0;
+pub const OWN_INFO_MOVE_MASK: u8    = 0b000_0_0_1_0_0;
+pub const OWN_INFO_COLLECT_MASK: u8 = 0b000_0_0_0_1_0;
+pub const OWN_INFO_OWNED_MASK: u8   = 0b000_0_0_0_0_1;
 
 #[repr(u8)]
 #[derive(Clone, Copy, Eq, PartialEq)]
-pub enum GcInfo {
+pub enum OwnershipInfo {
     // R = Read
     // W = Write
     // M = Move
-    // D = Delete
-    // O = Virtual Machine Owned
-    //                    M    R W M D O
-    Owned             = 0b0_00_1_1_1_1_1,
-    SharedFromRust    = 0b0_00_1_0_0_0_0,
-    MutSharedFromRust = 0b0_00_1_1_0_0_0,
-    SharedToRust      = 0b0_00_1_0_0_0_1,
-    MutSharedToRust   = 0b0_00_0_0_0_0_1,
-    MovedToRust       = 0b0_00_0_0_0_1_0
+    // C = Collectable
+    // O = Owned by VM
+    //                        R W M C O
+    VMOwned           = 0b000_1_1_1_1_1,
+    SharedFromRust    = 0b000_1_0_0_1_0,
+    MutSharedFromRust = 0b000_1_1_0_1_0,
+    SharedToRust      = 0b000_1_0_0_0_1,
+    MutSharedToRust   = 0b000_0_0_0_0_1,
+    MovedToRust       = 0b000_0_0_0_1_0
 }
 
-impl GcInfo {
+impl OwnershipInfo {
     #[inline(always)] pub fn is_readable(self) -> bool {
-        (self as u8) & GC_INFO_READ_MASK != 0
+        (self as u8) & OWN_INFO_READ_MASK != 0
     }
 
     #[inline(always)] pub fn is_writeable(self) -> bool {
-        (self as u8) & GC_INFO_WRITE_MASK != 0
+        (self as u8) & OWN_INFO_WRITE_MASK != 0
     }
 
     #[inline(always)] pub fn is_movable(self) -> bool {
-        (self as u8) & GC_INFO_MOVE_MASK != 0
+        (self as u8) & OWN_INFO_MOVE_MASK != 0
     }
 
-    #[inline(always)] pub fn is_deletable(self) -> bool {
-        (self as u8) & GC_INFO_DELETE_MASK != 0
+    #[inline(always)] pub fn is_collectable(self) -> bool {
+        (self as u8) & OWN_INFO_COLLECT_MASK != 0
     }
 
     #[inline(always)] pub fn is_owned(self) -> bool {
-        (self as u8) & GC_INFO_OWNED_MASK != 0
+        (self as u8) & OWN_INFO_OWNED_MASK != 0
     }
 }
 
-impl UnsafeFrom<u8> for GcInfo {
+impl UnsafeFrom<u8> for OwnershipInfo {
     unsafe fn unsafe_from(data: u8) -> Self {
         std::mem::transmute::<u8, Self>(data)
     }
@@ -72,17 +71,19 @@ pub union WrapperData<T: 'static> {
 #[repr(C, align(8))]
 pub struct Wrapper<T: 'static> {
     /* +0 */ pub refcount: u32,
-    /* +4 */ pub gc_info: u8,
-    /* +5 */ pub data_offset: u8,
+    /* +4 */ pub ownership_info: u8,
+    /* +5 */ pub gc_info: u8,
+    /* +6 */ pub data_offset: u8,
 
-    pub data: WrapperData<T>
+    /* +data_offset */ pub data: WrapperData<T>
 }
 
 impl<T: 'static> Wrapper<T> {
     pub fn new_owned(data: T) -> Self {
         let mut ret: Wrapper<T> = Self {
             refcount: 0,
-            gc_info: GcInfo::Owned as u8,
+            ownership_info: OwnershipInfo::VMOwned as u8,
+            gc_info: 0,
             data_offset: 0,
             data: WrapperData {
                 owned: ManuallyDrop::new(MaybeUninit::new(data))
@@ -95,7 +96,8 @@ impl<T: 'static> Wrapper<T> {
     pub fn new_ref(ptr: *const T) -> Self {
         let mut ret: Wrapper<T> = Self {
             refcount: 1,
-            gc_info: GcInfo::SharedFromRust as u8,
+            ownership_info: OwnershipInfo::SharedFromRust as u8,
+            gc_info: 0,
             data_offset: 0,
             data: WrapperData {
                 ptr: ptr as *mut T
@@ -108,7 +110,8 @@ impl<T: 'static> Wrapper<T> {
     pub fn new_mut_ref(ptr: *mut T) -> Self {
         let mut ret: Wrapper<T> = Self {
             refcount: 1,
-            gc_info: GcInfo::MutSharedFromRust as u8,
+            ownership_info: OwnershipInfo::MutSharedFromRust as u8,
+            gc_info: 0,
             data_offset: 0,
             data: WrapperData {
                 ptr
@@ -131,6 +134,8 @@ pub trait DynBase {
 
     #[cfg(not(debug_assertions))]
     unsafe fn move_out(&mut self, out: *mut ());
+
+    fn children(&self) -> Option<Box<dyn Iterator<Item=FatPointer>>>;
 }
 
 impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
@@ -149,10 +154,10 @@ impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
     #[cfg(debug_assertions)]
     unsafe fn move_out_ck(&mut self, out: *mut (), type_id: TypeId) {
         debug_assert_eq!(self.dyn_type_id(), type_id);
-        debug_assert!(GcInfo::unsafe_from(self.gc_info).is_movable());
+        debug_assert!(OwnershipInfo::unsafe_from(self.ownership_info).is_movable());
         let dest: &mut MaybeUninit<T> = (out as *mut MaybeUninit<T>).as_mut().unchecked_unwrap();
         *dest.as_mut_ptr() = ManuallyDrop::take(&mut self.data.owned).assume_init();
-        self.gc_info = GcInfo::MovedToRust as u8;
+        self.ownership_info = OwnershipInfo::MovedToRust as u8;
     }
 
     #[cfg(not(debug_assertions))]
@@ -160,7 +165,14 @@ impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
         let dest: &mut MaybeUninit<T>
             = (out as *mut MaybeUninit<T>).as_mut().unchecked_unwrap();
         *dest.as_mut_ptr() = ManuallyDrop::take(&mut self.data.owned).assume_init();
-        self.gc_info = GcInfo::MovedToRust as u8;
+        self.ownership_info = OwnershipInfo::MovedToRust as u8;
+    }
+
+    #[inline]
+    fn children(&self) -> Option<Box<dyn Iterator<Item=FatPointer>>> {
+        debug_assert_ne!(self.ownership_info & OWN_INFO_READ_MASK, 0);
+        // TODO implement
+        None
     }
 }
 
@@ -192,8 +204,9 @@ mod test {
         };
 
         assert_eq!(addr_of!(w.refcount) as usize - addr_of!(w) as usize, 0);
-        assert_eq!(addr_of!(w.gc_info) as usize - addr_of!(w) as usize, 4);
-        assert_eq!(addr_of!(w.data_offset) as usize - addr_of!(w) as usize, 5);
+        assert_eq!(addr_of!(w.ownership_info) as usize - addr_of!(w) as usize, 4);
+        assert_eq!(addr_of!(w.gc_info) as usize - addr_of!(w) as usize, 5);
+        assert_eq!(addr_of!(w.data_offset) as usize - addr_of!(w) as usize, 6);
 
         let w: Wrapper<()> = Wrapper {
             refcount: 42,
@@ -205,6 +218,7 @@ mod test {
         };
 
         assert_eq!(addr_of!(w.refcount) as usize - addr_of!(w) as usize, 0);
+        assert_eq!(addr_of!(w.ownership_info) as usize - addr_of!(w) as usize, 4);
         assert_eq!(addr_of!(w.gc_info) as usize - addr_of!(w) as usize, 4);
         assert_eq!(addr_of!(w.data_offset) as usize - addr_of!(w) as usize, 5);
 
@@ -218,6 +232,7 @@ mod test {
         };
 
         assert_eq!(addr_of!(w.refcount) as usize - addr_of!(w) as usize, 0);
+        assert_eq!(addr_of!(w.ownership_info) as usize - addr_of!(w) as usize, 4);
         assert_eq!(addr_of!(w.gc_info) as usize - addr_of!(w) as usize, 4);
         assert_eq!(addr_of!(w.data_offset) as usize - addr_of!(w) as usize, 5);
     }

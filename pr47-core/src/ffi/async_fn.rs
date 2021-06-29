@@ -4,14 +4,14 @@ use std::pin::Pin;
 use crate::data::Value;
 use crate::data::exception::Exception;
 use crate::data::traits::StaticBase;
-use crate::data::wrapper::GcInfo;
+use crate::data::wrapper::OwnershipInfo;
 use crate::ffi::Signature;
 use crate::util::serializer::Serializer;
 use crate::util::void::Void;
 
-pub enum AsyncGcInfoGuard {
+pub enum AsyncOwnInfoGuard {
     DoNothing,
-    SetGcInfo(Value, GcInfo)
+    SetOwnInfo(Value, OwnershipInfo)
 }
 
 pub trait AsyncVMContext: 'static + Sized + Send + Sync {
@@ -24,7 +24,7 @@ pub type AsyncReturnType = Result<Box<[Value]>, Exception>;
 
 pub struct Promise {
     pub fut: Pin<Box<dyn Future<Output = AsyncReturnType> + Send + 'static>>,
-    pub guards: Box<[AsyncGcInfoGuard]>
+    pub guards: Box<[AsyncOwnInfoGuard]>
 }
 
 // TODO should we make it a `StaticBase`?
@@ -45,3 +45,4 @@ pub trait AsyncFunction: 'static {
         args: &[Value]
     ) -> Promise;
 }
+

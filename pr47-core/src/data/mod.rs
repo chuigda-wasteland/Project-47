@@ -13,7 +13,7 @@ use unchecked_unwrap::UncheckedUnwrap;
 use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
 use crate::data::traits::StaticBase;
 use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
-use crate::data::wrapper::{DynBase, GC_INFO_MASK, GcInfo, Wrapper};
+use crate::data::wrapper::{DynBase, OwnershipInfo, Wrapper};
 use crate::util::mem::FatPointer;
 use crate::util::unsafe_from::UnsafeFrom;
 use crate::util::void::Void;
@@ -160,38 +160,38 @@ impl Value {
 
     #[cfg(debug_assertions)]
     fn assert_shared(&self) {
-        let gc_info: GcInfo = unsafe { self.gc_info() };
-        assert!(gc_info == GcInfo::SharedFromRust
-                || gc_info == GcInfo::SharedToRust);
+        let ownership_info: OwnershipInfo = unsafe { self.ownership_info() };
+        assert!(ownership_info == OwnershipInfo::SharedFromRust
+                || ownership_info == OwnershipInfo::SharedToRust);
     }
 
-    pub unsafe fn gc_info(&self) -> GcInfo {
+    pub unsafe fn ownership_info(&self) -> OwnershipInfo {
         debug_assert!(self.is_ref());
-        UnsafeFrom::unsafe_from(*((self.untagged_ptr_field() + 4usize) as *const u8) & GC_INFO_MASK)
+        UnsafeFrom::unsafe_from(*((self.untagged_ptr_field() + 4usize) as *const u8))
     }
 
-    pub unsafe fn gc_info_norm(&self) -> GcInfo {
+    pub unsafe fn ownership_info_norm(&self) -> OwnershipInfo {
         debug_assert!(self.is_ref());
-        UnsafeFrom::unsafe_from(*((self.ptr_repr.ptr + 4usize) as *const u8) & GC_INFO_MASK)
+        UnsafeFrom::unsafe_from(*((self.ptr_repr.ptr + 4usize) as *const u8))
     }
 
-    pub unsafe fn set_gc_info(&mut self, gc_info: GcInfo) {
+    pub unsafe fn set_ownership_info(&mut self, ownership_info: OwnershipInfo) {
         debug_assert!(self.is_ref());
-        *((self.untagged_ptr_field() + 4usize) as *mut u8) = gc_info as u8;
+        *((self.untagged_ptr_field() + 4usize) as *mut u8) = ownership_info as u8;
     }
 
-    pub unsafe fn set_gc_info_norm(&mut self, gc_info: GcInfo) {
+    pub unsafe fn set_ownership_info_norm(&mut self, ownership_info: OwnershipInfo) {
         debug_assert!(self.is_ref());
-        *((self.ptr_repr.ptr + 4usize) as *mut u8) = gc_info as u8;
+        *((self.ptr_repr.ptr + 4usize) as *mut u8) = ownership_info as u8;
     }
 
     pub unsafe fn get_as_mut_ptr<T>(&self) -> *mut T
         where T: 'static,
               Void: StaticBase<T>
     {
-        debug_assert!(self.gc_info().is_readable());
-        let data_offset: usize = *((self.untagged_ptr_field() + 5usize) as *mut u8) as usize;
-        if self.gc_info().is_owned() {
+        debug_assert!(self.ownership_info().is_readable());
+        let data_offset: usize = *((self.untagged_ptr_field() + 6usize) as *mut u8) as usize;
+        if self.ownership_info().is_owned() {
             (self.untagged_ptr_field() + data_offset as usize) as *mut T
         } else {
             let ptr: *const *mut T = (self.untagged_ptr_field() + data_offset) as *const *mut T;
@@ -203,9 +203,9 @@ impl Value {
         where T: 'static,
               Void: StaticBase<T>
     {
-        debug_assert!(self.gc_info().is_readable());
-        let data_offset: usize = *((self.ptr_repr.ptr + 4usize) as *mut u8) as usize;
-        if self.gc_info_norm().is_owned() {
+        debug_assert!(self.ownership_info().is_readable());
+        let data_offset: usize = *((self.ptr_repr.ptr + 6usize) as *mut u8) as usize;
+        if self.ownership_info_norm().is_owned() {
             (self.ptr_repr.ptr + data_offset as usize) as *mut T
         } else {
             let ptr: *const *mut T = (self.ptr_repr.ptr + data_offset) as *const *mut T;
@@ -299,3 +299,4 @@ impl TypedValue<char> {
 impl TypedValue<bool> {
     // TODO
 }
+
