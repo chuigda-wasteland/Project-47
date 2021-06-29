@@ -1,6 +1,8 @@
 use std::any::TypeId;
+use std::iter::Iterator;
 
 use crate::data::tyck::TyckInfo;
+use crate::util::mem::FatPointer;
 use crate::util::void::Void;
 
 pub trait StaticBase<T: 'static> {
@@ -22,6 +24,11 @@ pub trait StaticBase<T: 'static> {
 
     fn type_name() -> String {
         std::any::type_name::<T>().into()
+    }
+
+    #[inline]
+    fn children(_t: &T) -> Option<Box<dyn Iterator<Item=FatPointer>>> {
+        None
     }
 }
 
