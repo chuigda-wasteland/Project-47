@@ -8,8 +8,8 @@ use unchecked_unwrap::UncheckedUnwrap;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfo;
 use crate::util::mem::FatPointer;
-use crate::util::void::Void;
 use crate::util::unsafe_from::UnsafeFrom;
+use crate::util::void::Void;
 
 pub const OWN_INFO_READ_MASK: u8    = 0b000_1_0_0_0_0;
 pub const OWN_INFO_WRITE_MASK: u8   = 0b000_0_1_0_0_0;
@@ -17,6 +17,10 @@ pub const OWN_INFO_MOVE_MASK: u8    = 0b000_0_0_1_0_0;
 pub const OWN_INFO_COLLECT_MASK: u8 = 0b000_0_0_0_1_0;
 pub const OWN_INFO_OWNED_MASK: u8   = 0b000_0_0_0_0_1;
 
+/// Ownership information
+///
+/// At one time, a Pr47 heap value may be *owned by the VM*, *shared/mutably shared from Rust*,
+/// *shared/mutably shared to Rust* or *moved to Rust* while only having a vacant shell.
 #[repr(u8)]
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum OwnershipInfo {
@@ -29,7 +33,7 @@ pub enum OwnershipInfo {
     VMOwned           = 0b000_1_1_1_1_1,
     SharedFromRust    = 0b000_1_0_0_1_0,
     MutSharedFromRust = 0b000_1_1_0_1_0,
-    SharedToRust      = 0b000_1_0_0_0_1,
+    SharedToRust      = 0b000_1_0_0_0_1, // also used by global constant objects
     MutSharedToRust   = 0b000_0_0_0_0_1,
     MovedToRust       = 0b000_0_0_0_1_0
 }
@@ -62,10 +66,13 @@ impl UnsafeFrom<u8> for OwnershipInfo {
     }
 }
 
+/// Internal representation of `Wrapper` data. Can be either
+///   * A piece of owned data, represented by a `ManuallyDrop<MaybeUninit<T>>`
+///   * A reference to data shared from Rust, represented by a `*mut T`
 #[repr(C)]
 pub union WrapperData<T: 'static> {
-    pub ptr: *mut T,
-    pub owned: ManuallyDrop<MaybeUninit<T>>
+    pub owned: ManuallyDrop<MaybeUninit<T>>,
+    pub ptr: *mut T
 }
 
 #[repr(C, align(8))]

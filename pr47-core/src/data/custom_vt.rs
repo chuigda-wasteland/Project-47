@@ -62,4 +62,3 @@ pub struct ContainerPtr {
     pub data_ptr: *mut u8,
     pub vt: *mut ContainerVT
 }
-

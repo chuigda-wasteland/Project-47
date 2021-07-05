@@ -22,6 +22,38 @@ use crate::util::zvec::ZeroInit;
 pub const TAG_BITS_MASK: u8 = 0b00000_111;
 pub const TAG_BITS_MASK_USIZE: usize = TAG_BITS_MASK as usize;
 
+/// A generic stack value of Pr47. A stack value may be
+///   * A *value-typed data*, see `pr47::data::value_typed::ValueTypedData`
+///   * A *normal reference* to "heap" object, see `pr47::data::wrapper::DynBase`
+///   * A *custom pointer* to container objects created in Pr47 VM, see
+///     `pr47::data::wrapper::custom_vt::ContainerVT`
+///
+/// A normal reference may be either *owned*, or *shared/mutably shared from Rust*. Check
+/// documentation of `pr47::data::wrapper::Wrapper` for more information. A custom pointer should
+/// never be shared from Rust, since it is only used when creating containers from Pr47 VM.
+///
+/// Pr47 uses tagged pointers to distinguish these three kinds of values:
+///
+/// ```text
+/// +-----------------------------+
+/// |          FatPointer         |
+/// +--------------+--------------+
+/// |      ptr     |    trivia    |
+/// +-------|------+--------------+
+///         |
+///         |
+/// +------------------------------+---+---+---+
+/// |        PTR-BITS ... 3        | 2 | 1 | 0 |
+/// +------------------------------+---+---+---+
+/// | 8 byte aligned pointer value | U | C | V |
+/// +------------------------------+---+---+---+
+/// ```
+///
+///   * `U`: Unused
+///   * `C`: Container
+///   * `V`: Value-typed
+///
+/// Since `pr47::data::wrapper::Wrapper` is 8 byte aligned, it is safe to use such a tagged-pointer
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union Value {
@@ -31,6 +63,7 @@ pub union Value {
 }
 
 impl Value {
+    /// Create a new "owned" `Value`
     pub fn new_owned<T>(data: T) -> Self
         where T: 'static,
               Void: StaticBase<T>
@@ -40,6 +73,7 @@ impl Value {
         }
     }
 
+    /// Create a new "shared" `Value`
     pub fn new_shared<T>(data: &T) -> Self
         where T: 'static,
               Void: StaticBase<T>
@@ -49,6 +83,7 @@ impl Value {
         }
     }
 
+    /// Create a new "mutably shared" `Value`
     pub fn new_mut_shared<T>(data: &mut T) -> Self
         where T: 'static,
               Void: StaticBase<T>
@@ -58,36 +93,42 @@ impl Value {
         }
     }
 
+    /// Create a new integer `Value`
     pub fn new_int(int_value: i64) -> Self {
         Self {
             vt_data: ValueTypedData::from(int_value)
         }
     }
 
+    /// Create a new floating point number `Value`
     pub fn new_float(float_value: f64) -> Self {
         Self {
             vt_data: ValueTypedData::from(float_value)
         }
     }
 
+    /// Create a new character `Value`
     pub fn new_char(char_value: char) -> Self {
         Self {
             vt_data: ValueTypedData::from(char_value)
         }
     }
 
+    /// Create a new boolean `Value`
     pub fn new_bool(bool_value: bool) -> Self {
         Self {
             vt_data: ValueTypedData::from(bool_value)
         }
     }
 
+    /// Create a new `null` `Value`
     pub fn new_null() -> Self {
         Self {
             ptr_repr: FatPointer::new(0, 0)
         }
     }
 
+    /// Check if a `Value` is `null`.
     pub fn is_null(&self) -> bool {
         unsafe {
             self.ptr_repr.ptr == 0 && self.ptr_repr.trivia == 0
@@ -95,29 +136,35 @@ impl Value {
 
     }
 
+    /// Check if a `Value` is value-typed
     pub fn is_value(&self) -> bool {
         unsafe {
             self.ptr_repr.ptr & (VALUE_TYPE_MASK as usize) != 0
         }
     }
 
+    /// Check if a `Value` is reference-typed
     pub fn is_ref(&self) -> bool {
         unsafe {
             self.ptr_repr.ptr & (VALUE_TYPE_MASK as usize) == 0
         }
     }
 
+    /// Check if a `Value` is a custom pointer
     pub fn is_container(&self) -> bool {
         unsafe {
             self.ptr_repr.ptr & (CONTAINER_MASK as usize) == 0
         }
     }
 
+    /// Assuming that `self` may be a custom pointer, get the untagged pointer
     #[inline(always)] pub unsafe fn untagged_ptr_field(&self) -> usize {
         debug_assert_eq!(self.ptr_repr.ptr & CONTAINER_MASK as usize, 0);
         self.ptr_repr.ptr & !TAG_BITS_MASK_USIZE
     }
 
+    /// Assuming that `self` may be a custom pointer, get the untagged fat pointer
+    /// `*mut dyn DynBase`
     #[inline(always)] pub unsafe fn untagged_dyn_base(&self) -> *mut dyn DynBase {
         debug_assert_eq!(self.ptr_repr.ptr & CONTAINER_MASK as usize, 0);
         std::mem::transmute::<FatPointer, *mut dyn DynBase>(
@@ -125,39 +172,47 @@ impl Value {
         )
     }
 
+    /// Assuming that `self` may be a custom pointer, get the reference counting
     pub unsafe fn ref_count(&self) -> u32 {
         #[cfg(debug_assertions)] self.assert_shared();
         *(self.untagged_ptr_field() as *const u32)
     }
 
+    /// Given that `self` **MUST NOT** be a custom pointer, get the reference counting
     pub unsafe fn ref_count_norm(&self) -> u32 {
         #[cfg(debug_assertions)] self.assert_shared();
         debug_assert!(!self.is_container());
         *(self.ptr_repr.ptr as *const u32)
     }
 
+    /// Assuming that `self` may be a custom pointer, increase the reference counting
     pub unsafe fn incr_ref_count(&mut self) {
         #[cfg(debug_assertions)] self.assert_shared();
         *(self.untagged_ptr_field() as *mut u32) += 1
     }
 
+    /// Given that `self` **MUST NOT** be a custom pointer, increase the reference counting
     pub unsafe fn incr_ref_count_norm(&self) {
         #[cfg(debug_assertions)] self.assert_shared();
         debug_assert!(!self.is_container());
         *(self.ptr_repr.ptr as *mut u32) += 1
     }
 
+    /// Assuming that `self` may be a custom pointer, decrease the reference counting
     pub unsafe fn decr_ref_count(&mut self) {
         #[cfg(debug_assertions)] self.assert_shared();
         *(self.untagged_ptr_field() as *mut u32) -= 1
     }
 
+    /// Given that `self` **MUST NOT** be a custom pointer, decrease the reference counting
     pub unsafe fn decr_ref_count_norm(&self) {
         #[cfg(debug_assertions)] self.assert_shared();
         debug_assert!(!self.is_container());
         *(self.ptr_repr.ptr as *mut u32) -= 1
     }
 
+    /// Assert `self` to be in a shared status, thus the reference-counting field of `self`
+    /// is valid.
     #[cfg(debug_assertions)]
     fn assert_shared(&self) {
         let ownership_info: OwnershipInfo = unsafe { self.ownership_info() };
@@ -165,26 +220,32 @@ impl Value {
                 || ownership_info == OwnershipInfo::SharedToRust);
     }
 
+    /// Assuming that `self` may be a custom pointer, get the ownership info
     pub unsafe fn ownership_info(&self) -> OwnershipInfo {
         debug_assert!(self.is_ref());
         UnsafeFrom::unsafe_from(*((self.untagged_ptr_field() + 4usize) as *const u8))
     }
 
+    /// Given that `self` **MUST NOT** be a custom pointer, get the ownership info
     pub unsafe fn ownership_info_norm(&self) -> OwnershipInfo {
         debug_assert!(self.is_ref());
         UnsafeFrom::unsafe_from(*((self.ptr_repr.ptr + 4usize) as *const u8))
     }
 
+    /// Assuming that `self` may be a custom pointer, set the ownership info
     pub unsafe fn set_ownership_info(&mut self, ownership_info: OwnershipInfo) {
         debug_assert!(self.is_ref());
         *((self.untagged_ptr_field() + 4usize) as *mut u8) = ownership_info as u8;
     }
 
+    /// Given that `self` **MUST NOT** be a custom pointer, set the ownership info
     pub unsafe fn set_ownership_info_norm(&mut self, ownership_info: OwnershipInfo) {
         debug_assert!(self.is_ref());
         *((self.ptr_repr.ptr + 4usize) as *mut u8) = ownership_info as u8;
     }
 
+    /// Given that `self` **MUST** be a reference, assuming that `self` may be a custom pointer,
+    /// get a pointer to the referenced data
     pub unsafe fn get_as_mut_ptr<T>(&self) -> *mut T
         where T: 'static,
               Void: StaticBase<T>
@@ -199,6 +260,8 @@ impl Value {
         }
     }
 
+    /// Given that `self` **MUST** be a reference and **MUST BOT** be a custom pointer, get a
+    /// pointer to the referenced data
     pub unsafe fn get_as_mut_ptr_norm<T>(&self) -> *mut T
         where T: 'static,
               Void: StaticBase<T>
@@ -213,6 +276,8 @@ impl Value {
         }
     }
 
+    /// Given that `self` **MUST** be a reference to `T` typed VM-owned data, assuming that `self`
+    /// may be a custom pointer, move the referenced data out
     pub unsafe fn move_out<T>(&self) -> T
         where T: 'static,
               Void: StaticBase<T>
@@ -249,6 +314,8 @@ impl Value {
         maybe_uninit.assume_init()
     }
 
+    /// Given that `self` **MUST** be a reference to `T` typed VM-owned data, and **MUST NOT** be a
+    /// custom pointer, move out the referenced data out
     pub unsafe fn move_out_norm<T>(&self) -> T
         where T: 'static,
               Void: StaticBase<T>
@@ -299,4 +366,3 @@ impl TypedValue<char> {
 impl TypedValue<bool> {
     // TODO
 }
-
