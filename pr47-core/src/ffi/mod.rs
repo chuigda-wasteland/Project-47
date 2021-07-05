@@ -19,7 +19,7 @@ pub enum DataOption {
 pub struct Signature {
     pub param_types: Box<[TyckInfo]>,
     pub param_options: Box<[DataOption]>,
-    pub ret_type: TyckInfo,
-    pub ret_option: DataOption,
+    pub ret_type: Box<[TyckInfo]>,
+    pub ret_option: Box<[DataOption]>,
     pub exceptions: Box<[TypeId]>
 }
