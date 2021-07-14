@@ -90,10 +90,9 @@ impl Alloc for DefaultAlloc {
         // do nothing
     }
 
-    #[cfg(debug_assertions)]
     unsafe fn collect(&mut self) {
         for ptr in self.managed.iter() {
-            assert_eq!(ptr.ptr & (VALUE_TYPE_MASK as usize), 0);
+            debug_assert_eq!(ptr.ptr & (VALUE_TYPE_MASK as usize), 0);
             let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
             (*wrapper).gc_info = DefaultGCStatus::Unmarked as u8;
         }
@@ -101,11 +100,19 @@ impl Alloc for DefaultAlloc {
         let mut to_scan: VecDeque<FatPointer> = VecDeque::new();
 
         for stack /*: &*const Stack*/ in self.stacks.iter() {
+            #[cfg(debug_assertions)]
             for stack_value /*: &Option<Value>*/ in &(**stack).values {
                 if let Some(stack_value /*: &Value*/) = stack_value {
                     if !stack_value.is_null() && !stack_value.is_value() {
                         to_scan.push_back(stack_value.ptr_repr);
                     }
+                }
+            }
+
+            #[cfg(not(debug_assertions))]
+            for stack_value /*: &Value*/ in &(**stack).values {
+                if !stack_value.is_null() && !stack_value.is_value() {
+                    to_scan.push_back(stack_value.ptr_repr);
                 }
             }
         }
