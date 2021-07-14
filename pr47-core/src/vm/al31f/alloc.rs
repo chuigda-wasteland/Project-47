@@ -66,13 +66,13 @@ impl Default for DefaultAlloc {
 
 impl Drop for DefaultAlloc {
     fn drop(&mut self) {
-        for stack in self.stacks {
-            let stack: *mut Stack = stack as *mut _;
+        for stack in self.stacks.iter() {
+            let stack: *mut Stack = *stack as *mut _;
             let boxed: Box<Stack> = unsafe { Box::from_raw(stack) };
             drop(boxed);
         }
 
-        for ptr in self.managed {
+        for ptr in self.managed.iter() {
             let raw_ptr: usize = (ptr.ptr & PTR_BITS_MASK_USIZE) as _;
             let wrapper: *mut Wrapper<()> = raw_ptr as _;
 
@@ -85,7 +85,7 @@ impl Drop for DefaultAlloc {
                 let vt: *const ContainerVT = ptr.trivia as *const _;
                 unsafe { ((*vt).drop_fn)(container) };
             } else {
-                let dyn_base: *mut dyn DynBase = unsafe { transmute::<>(ptr) };
+                let dyn_base: *mut dyn DynBase = unsafe { transmute::<>(*ptr) };
                 let boxed: Box<dyn DynBase> = unsafe { Box::from_raw(dyn_base) };
                 drop(boxed);
             }
