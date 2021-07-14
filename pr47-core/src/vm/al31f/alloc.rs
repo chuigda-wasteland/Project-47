@@ -64,10 +64,34 @@ impl Default for DefaultAlloc {
     }
 }
 
-// TODO
-// impl Drop for DefaultAlloc {
-//     ...
-// }
+impl Drop for DefaultAlloc {
+    fn drop(&mut self) {
+        for stack in self.stacks {
+            let stack: *mut Stack = stack as *mut _;
+            let boxed: Box<Stack> = unsafe { Box::from_raw(stack) };
+            drop(boxed);
+        }
+
+        for ptr in self.managed {
+            let raw_ptr: usize = (ptr.ptr & PTR_BITS_MASK_USIZE) as _;
+            let wrapper: *mut Wrapper<()> = raw_ptr as _;
+
+            if unsafe { !(*wrapper).ownership_info } & OWN_INFO_COLLECT_MASK != 0 {
+                panic!("failed to re-claim object {:X} on destruction", raw_ptr);
+            }
+
+            if ptr.ptr & (CONTAINER_MASK as usize) != 0 {
+                let container: *mut () = raw_ptr as *mut _;
+                let vt: *const ContainerVT = ptr.trivia as *const _;
+                unsafe { ((*vt).drop_fn)(container) };
+            } else {
+                let dyn_base: *mut dyn DynBase = unsafe { transmute::<>(ptr) };
+                let boxed: Box<dyn DynBase> = unsafe { Box::from_raw(dyn_base) };
+                drop(boxed);
+            }
+        }
+    }
+}
 
 impl Alloc for DefaultAlloc {
     unsafe fn add_stack(&mut self, stack: *const Stack<'_>) {
