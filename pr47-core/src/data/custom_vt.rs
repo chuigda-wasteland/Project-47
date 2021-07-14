@@ -13,7 +13,9 @@ pub type MoveOutCkFn = fn(this: *mut (), out: *mut (), type_id: TypeId);
 #[cfg(not(debug_assertions))]
 pub type MoveOutFn = fn(this: *mut (), out: *mut ());
 
-pub type ChildrenFn = fn(this: *mut ()) -> Box<dyn Iterator<Item=FatPointer>>;
+pub type ChildrenFn = fn(this: *const ()) -> Box<dyn Iterator<Item=FatPointer>>;
+
+pub type DropFn = fn(this: *mut());
 
 pub struct ContainerVT {
     pub tyck_info: NonNull<ContainerTyckInfo>,
@@ -22,7 +24,8 @@ pub struct ContainerVT {
     pub move_out_fn: MoveOutCkFn,
     #[cfg(not(debug_assertions))]
     pub move_out_fn: MoveOutFn,
-    pub children_fn: ChildrenFn
+    pub children_fn: ChildrenFn,
+    pub drop_fn: DropFn
 }
 
 impl ContainerVT {
@@ -31,13 +34,15 @@ impl ContainerVT {
         tyck_info: NonNull<ContainerTyckInfo>,
         type_name: impl ToString,
         move_out_fn: MoveOutCkFn,
-        children_fn: ChildrenFn
+        children_fn: ChildrenFn,
+        drop_fn: DropFn
     ) -> Self {
         Self {
             tyck_info,
             type_name: type_name.to_string(),
             move_out_fn,
-            children_fn
+            children_fn,
+            drop_fn
         }
     }
 
@@ -46,13 +51,15 @@ impl ContainerVT {
         tyck_info: NonNull<ContainerTyckInfo>,
         type_name: impl ToString,
         move_out_fn: MoveOutFn,
-        children_fn: ChildrenFn
+        children_fn: ChildrenFn,
+        drop_fn: DropFn
     ) -> Self {
         Self {
             tyck_info,
             type_name: type_name.to_string(),
             move_out_fn,
-            children_fn
+            children_fn,
+            drop_fn
         }
     }
 }

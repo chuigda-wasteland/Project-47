@@ -1,8 +1,12 @@
 use std::collections::{HashSet, VecDeque};
 use std::mem::transmute;
 
-use crate::vm::al31f::stack::Stack;
+use crate::data::PTR_BITS_MASK_USIZE;
+use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
+use crate::data::value_typed::VALUE_TYPE_MASK;
+use crate::data::wrapper::{DynBase, Wrapper, OWN_INFO_COLLECT_MASK};
 use crate::util::mem::FatPointer;
+use crate::vm::al31f::stack::Stack;
 
 /// Abstract memory manager of `AL31F` engine
 pub trait Alloc {
@@ -28,6 +32,12 @@ pub struct DefaultAlloc {
     debt: usize,
     max_debt: usize,
     gc_allowed: bool
+}
+
+#[repr(u8)]
+pub enum DefaultGCStatus {
+    Unmarked = 0,
+    Marked = 1
 }
 
 pub const DEFAULT_MAX_DEBT: usize = 512;
@@ -80,8 +90,71 @@ impl Alloc for DefaultAlloc {
         // do nothing
     }
 
+    #[cfg(debug_assertions)]
     unsafe fn collect(&mut self) {
-        let mut _to_collect: VecDeque<FatPointer> = VecDeque::new();
+        for ptr in self.managed.iter() {
+            assert_eq!(ptr.ptr & (VALUE_TYPE_MASK as usize), 0);
+            let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
+            (*wrapper).gc_info = DefaultGCStatus::Unmarked as u8;
+        }
+
+        let mut to_scan: VecDeque<FatPointer> = VecDeque::new();
+
+        for stack /*: &*const Stack*/ in self.stacks.iter() {
+            for stack_value /*: &Option<Value>*/ in &(**stack).values {
+                if let Some(stack_value /*: &Value*/) = stack_value {
+                    if !stack_value.is_null() && !stack_value.is_value() {
+                        to_scan.push_back(stack_value.ptr_repr);
+                    }
+                }
+            }
+        }
+
+        while !to_scan.is_empty() {
+            let ptr: FatPointer = to_scan.pop_front().unwrap();
+            let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
+
+            if (*wrapper).gc_info == (DefaultGCStatus::Marked as u8) {
+                continue;
+            }
+
+            (*wrapper).gc_info = DefaultGCStatus::Marked as u8;
+            if ptr.trivia & (CONTAINER_MASK as usize) != 0 {
+                let dyn_base: *mut dyn DynBase = transmute::<>(ptr);
+                if let Some(children /*: Box<dyn Iterator>*/) = (*dyn_base).children() {
+                    for child in children {
+                        to_scan.push_back(child);
+                    }
+                }
+            } else {
+                let container_vt: *const ContainerVT = ptr.trivia as *const _;
+                let ptr: *const () = (ptr.ptr & PTR_BITS_MASK_USIZE) as *const _;
+                for child /*: FatPointer*/ in ((*container_vt).children_fn)(ptr) {
+                    to_scan.push_back(child);
+                }
+            }
+        }
+
+        let mut to_collect: Vec<FatPointer> = Vec::new();
+        for ptr /*: FatPointer*/ in self.managed.iter() {
+            let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
+            if (*wrapper).ownership_info & OWN_INFO_COLLECT_MASK != 0 {
+                to_collect.push(*ptr);
+            }
+        }
+
+        for ptr /*: FatPointer*/ in to_collect {
+            if ptr.ptr & (CONTAINER_MASK as usize) != 0 {
+                let container: *mut () = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
+                let vt: *const ContainerVT = ptr.trivia as *const _;
+                ((*vt).drop_fn)(container);
+            } else {
+                let dyn_base: *mut dyn DynBase = transmute::<>(ptr);
+                let boxed: Box<dyn DynBase> = Box::from_raw(dyn_base);
+                drop(boxed);
+            }
+            self.managed.remove(&ptr);
+        }
     }
 
     fn set_gc_allowed(&mut self, allowed: bool) {

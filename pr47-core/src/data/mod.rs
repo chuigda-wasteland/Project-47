@@ -22,6 +22,9 @@ use crate::util::zvec::ZeroInit;
 pub const TAG_BITS_MASK: u8 = 0b00000_111;
 pub const TAG_BITS_MASK_USIZE: usize = TAG_BITS_MASK as usize;
 
+pub const PTR_BITS_MASK: u8 = !TAG_BITS_MASK;
+pub const PTR_BITS_MASK_USIZE: usize = !TAG_BITS_MASK_USIZE;
+
 /// A generic stack value of Pr47. A stack value may be
 ///   * A *value-typed data*, see `pr47::data::value_typed::ValueTypedData`
 ///   * A *normal reference* to "heap" object, see `pr47::data::wrapper::DynBase`

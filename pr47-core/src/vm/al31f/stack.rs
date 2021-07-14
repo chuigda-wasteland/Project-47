@@ -1,7 +1,5 @@
 #[cfg(not(debug_assertions))]
 use unchecked_unwrap::UncheckedUnwrap;
-#[cfg(not(debug_assertions))]
-use crate::util::zvec::ZeroVec;
 
 use crate::data::Value;
 
@@ -156,7 +154,7 @@ impl<'a> Stack<'a> {
 
 #[cfg(not(debug_assertions))]
 pub struct Stack<'a> {
-    pub values: ZeroVec<Value>,
+    pub values: Vec<Value>,
     pub frames: Vec<FrameInfo<'a>>
 }
 
@@ -164,7 +162,7 @@ pub struct Stack<'a> {
 impl<'a> Stack<'a> {
     pub fn new() -> Self {
         Self {
-            values: ZeroVec::with_capacity(64),
+            values: Vec::with_capacity(64),
             frames: Vec::with_capacity(4)
         }
     }
@@ -174,7 +172,7 @@ impl<'a> Stack<'a> {
         frame_size: usize,
         args: &[Value]
     ) -> StackSlice {
-        self.values.resize(frame_size);
+        self.values.resize(frame_size, Value::new_null());
         for (i /*: usize*/, arg /*: &Value*/) in args.iter().enumerate() {
             let dest: &mut Value = self.values.get_unchecked_mut(i);
             *dest = *arg;
@@ -194,7 +192,7 @@ impl<'a> Stack<'a> {
         let (this_frame_start, this_frame_end): (usize, usize)
             = (this_frame.frame_start, this_frame.frame_end);
         let new_frame_end: usize = this_frame_end + frame_size;
-        self.values.resize(new_frame_end);
+        self.values.resize(new_frame_end, Value::new_null());
         self.frames.push(FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr));
         let mut old_slice: StackSlice =
             StackSlice(&mut self.values[this_frame_start..this_frame_end] as *mut _);
@@ -236,7 +234,7 @@ impl<'a> Stack<'a> {
             }
         }
         let ret_addr: usize = this_frame.ret_addr;
-        self.values.resize(prev_frame.frame_end);
+        self.values.truncate(prev_frame.frame_end);
         self.frames.pop().unchecked_unwrap();
         Some((prev_slice, ret_addr))
     }
