@@ -15,6 +15,17 @@ pub struct TestContainer<T: 'static> {
     _phantom: PhantomData<T>
 }
 
+impl<T: 'static> TestContainer<T>
+    where Void: StaticBase<T>
+{
+    pub fn new() -> Self {
+        Self {
+            elements: Vec::new(),
+            _phantom: PhantomData::default()
+        }
+    }
+}
+
 impl<T: 'static> StaticBase<TestContainer<T>> for Void
     where Void: StaticBase<T>
 {
@@ -35,8 +46,8 @@ impl<T: 'static> StaticBase<TestContainer<T>> for Void
     }
 
     fn tyck(tyck_info: &TyckInfo) -> bool {
-        if let TyckInfo::Container(ContainerTyckInfo{ type_id, params }) = tyck_info {
-            TypeId::of::<T>() == *type_id
+        if let TyckInfo::Container(ContainerTyckInfo { type_id, params }) = tyck_info {
+            TypeId::of::<TestContainer<()>>() == *type_id
             && params.len() == 1
             && <Void as StaticBase<T>>::tyck(unsafe { params.get_unchecked(0).as_ref() })
         } else {

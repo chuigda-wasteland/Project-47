@@ -6,6 +6,7 @@ use crate::data::Value;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfo;
 use crate::data::wrapper::{Wrapper, WrapperData, DynBase, OwnershipInfo};
+use crate::ds::test_container::TestContainer;
 use crate::util::mem::FatPointer;
 use crate::util::void::Void;
 
@@ -122,7 +123,7 @@ impl StaticBase<TestStruct2> for Void {
         assert!(!v.is_container());
 
         unsafe {
-            let dyn_base: *mut dyn DynBase = v.untagged_dyn_base();
+            let dyn_base: *mut dyn DynBase = v.ptr;
             let dyn_base: &dyn DynBase = dyn_base.as_ref().unwrap();
 
             assert_eq!(dyn_base.dyn_type_id(), TypeId::of::<TestStruct>());
@@ -213,4 +214,60 @@ impl StaticBase<TestStruct2> for Void {
 
 #[test] fn test_value_assoc_val() {
     let v: Value = Value::new_int(114514);
+
+    assert!(v.is_value());
+    assert!(!v.is_ref());
+    assert!(!v.is_container());
+    assert!(!v.is_null());
 }
+
+#[test] fn test_value_assoc_container() {
+    let value1: Value = Value::new_owned(TestStruct2());
+    let value2: Value = Value::new_owned(TestStruct2());
+
+    let mut test_container: TestContainer<TestStruct2> = TestContainer::new();
+    unsafe {
+        test_container.elements.push(value1.ptr_repr);
+        test_container.elements.push(value2.ptr_repr);
+    }
+
+    let v: Value = Value::new_owned(test_container);
+
+    assert!(v.is_ref());
+    assert!(!v.is_value());
+    assert!(!v.is_null());
+    assert!(!v.is_container());
+
+    unsafe {
+        let dyn_base: *mut dyn DynBase = v.ptr;
+        let dyn_base: &dyn DynBase = dyn_base.as_ref().unwrap();
+        assert_eq!(dyn_base.dyn_type_name(), "TestContainer");
+        assert_eq!(dyn_base.dyn_type_id(), TypeId::of::<TestContainer<()>>());
+
+        // Note: this piece of code definitely produces a memory leak. This is one of the predicted
+        // behaviors, and won't affect library correctness.
+        let tyck_info: TyckInfo = <Void as StaticBase<TestContainer<TestStruct2>>>::tyck_info();
+        assert!(dyn_base.dyn_tyck(&tyck_info));
+
+        let children: Vec<FatPointer> = dyn_base.children().unwrap().collect::<Vec<_>>();
+        assert_eq!(children.len(), 2);
+        assert_eq!(children[0], value1.ptr_repr);
+        assert_eq!(children[1], value2.ptr_repr);
+    }
+
+    unsafe {
+        let dyn_base: *mut dyn DynBase = v.ptr;
+        let dyn_base: Box<dyn DynBase> = Box::from_raw(dyn_base);
+        drop(dyn_base);
+
+        let dyn_base: *mut dyn DynBase = value1.ptr;
+        let dyn_base: Box<dyn DynBase> = Box::from_raw(dyn_base);
+        drop(dyn_base);
+
+        let dyn_base: *mut dyn DynBase = value2.ptr;
+        let dyn_base: Box<dyn DynBase> = Box::from_raw(dyn_base);
+        drop(dyn_base);
+    }
+}
+
+#[test] fn test_value_assoc_custom_container() {}
