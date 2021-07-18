@@ -9,13 +9,13 @@ use crate::util::mem::FatPointer;
 pub const CONTAINER_MASK: u8 = 0b00000_010;
 
 #[cfg(debug_assertions)]
-pub type MoveOutCkFn = fn(this: *mut (), out: *mut (), type_id: TypeId);
+pub type MoveOutCkFn = unsafe fn(this: *mut (), out: *mut (), type_id: TypeId);
 #[cfg(not(debug_assertions))]
-pub type MoveOutFn = fn(this: *mut (), out: *mut ());
+pub type MoveOutFn = unsafe fn(this: *mut (), out: *mut ());
 
-pub type ChildrenFn = fn(this: *const ()) -> Box<dyn Iterator<Item=FatPointer>>;
+pub type ChildrenFn = unsafe fn(this: *const ()) -> Box<dyn Iterator<Item=FatPointer>>;
 
-pub type DropFn = fn(this: *mut());
+pub type DropFn = unsafe fn(this: *mut());
 
 pub struct ContainerVT {
     pub tyck_info: NonNull<ContainerTyckInfo>,

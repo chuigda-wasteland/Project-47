@@ -27,7 +27,7 @@ pub trait StaticBase<T: 'static> {
     }
 
     #[inline]
-    fn children(_t: &T) -> Option<Box<dyn Iterator<Item=FatPointer>>> {
+    fn children<'a>(_t: &'a T) -> Option<Box<dyn Iterator<Item=FatPointer> + 'a>> {
         None
     }
 }
