@@ -109,11 +109,12 @@ impl StaticBase<TestStruct2> for Void {
 }
 
 /// Ensure the value-related functions work properly
-#[test] fn test_value_assoc() {
+#[test] fn test_value_assoc_ref() {
     let v: Value = Value::new_owned(TestStruct {
         field1: 114, field2: 514, field3: "1919810".to_string()
     });
 
+    //noinspection RsDropRef
     fn test_once(v: &Value) {
         assert!(v.is_ref());
         assert!(!v.is_value());
@@ -195,4 +196,21 @@ impl StaticBase<TestStruct2> for Void {
 
     test_once(&v);
     test_once(&v);
+
+    unsafe {
+        let test_struct: TestStruct = v.move_out_norm();
+        assert_eq!(test_struct.field1, 114);
+        assert_eq!(test_struct.field2, 514);
+        assert_eq!(test_struct.field3, "1919810");
+
+        assert_eq!(v.ownership_info(), OwnershipInfo::MovedToRust);
+        assert_eq!(v.ownership_info_norm(), OwnershipInfo::MovedToRust);
+
+        let dyn_base: Box<dyn DynBase> = Box::from_raw(v.ptr);
+        drop(dyn_base);
+    }
+}
+
+#[test] fn test_value_assoc_val() {
+    let v: Value = Value::new_int(114514);
 }

@@ -174,7 +174,7 @@ impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
         debug_assert_eq!(self.dyn_type_id(), type_id);
         debug_assert!(OwnershipInfo::unsafe_from(self.ownership_info).is_movable());
         let dest: &mut MaybeUninit<T> = (out as *mut MaybeUninit<T>).as_mut().unchecked_unwrap();
-        *dest.as_mut_ptr() = ManuallyDrop::take(&mut self.data.owned).assume_init();
+        std::ptr::write(dest.as_mut_ptr(), ManuallyDrop::take(&mut self.data.owned).assume_init());
         self.ownership_info = OwnershipInfo::MovedToRust as u8;
     }
 
@@ -182,7 +182,7 @@ impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
     unsafe fn move_out(&mut self, out: *mut ()) {
         let dest: &mut MaybeUninit<T>
             = (out as *mut MaybeUninit<T>).as_mut().unchecked_unwrap();
-        *dest.as_mut_ptr() = ManuallyDrop::take(&mut self.data.owned).assume_init();
+        std::ptr::write(dest.as_mut_ptr(), ManuallyDrop::take(&mut self.data.owned).assume_init());
         self.ownership_info = OwnershipInfo::MovedToRust as u8;
     }
 

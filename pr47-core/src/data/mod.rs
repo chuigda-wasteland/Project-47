@@ -360,6 +360,7 @@ impl Value {
               Void: StaticBase<T>
     {
         debug_assert!(self.is_ref());
+        debug_assert!(!self.is_container());
         let mut maybe_uninit: MaybeUninit<T> = MaybeUninit::uninit();
         let dyn_base: *mut dyn DynBase = self.ptr;
         #[cfg(debug_assertions)]

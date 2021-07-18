@@ -63,7 +63,7 @@ unsafe fn test_container_move_out_ck(this: *mut (), out: *mut (), type_id: TypeI
 
     assert_eq!(this.ownership_info, OwnershipInfo::VMOwned as u8);
     let test_container: TestContainer<()> = ManuallyDrop::take(&mut this.data.owned).assume_init();
-    *out.as_mut_ptr() = test_container;
+    std::ptr::write(out.as_mut_ptr(), test_container);
     this.ownership_info = OwnershipInfo::MovedToRust as u8;
 }
 
@@ -73,7 +73,7 @@ unsafe fn test_container_move_out(this: *mut (), out: *mut ()) {
     let out: &mut MaybeUninit<TestContainer<()>> = &mut *(out as *mut MaybeUninit<_>);
 
     let test_container: TestContainer<()> = ManuallyDrop::take(&mut this.data.owned).assume_init();
-    *out.as_mut_ptr() = test_container;
+    std::ptr::write(out.as_mut_ptr(), test_container);
     this.ownership_info = OwnershipInfo::MovedToRust as u8;
 }
 
