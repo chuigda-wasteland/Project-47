@@ -76,6 +76,20 @@ impl Value {
         }
     }
 
+    pub fn new_container<T>(data: T, vt: *const ContainerVT) -> Self
+        where T: 'static,
+              Void: StaticBase<T>
+    {
+        let wrapper: Box<Wrapper<T>> = Box::new(Wrapper::new_owned(data));
+        let ptr: usize = (Box::leak(wrapper) as *mut _ as usize) | (CONTAINER_MASK as usize);
+        let trivia: usize = vt as _;
+        Self {
+            ptr_repr: FatPointer {
+                ptr, trivia
+            }
+        }
+    }
+
     /// Create a new "shared" `Value`
     pub fn new_shared<T>(data: &T) -> Self
         where T: 'static,

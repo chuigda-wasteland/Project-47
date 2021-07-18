@@ -6,9 +6,10 @@ use crate::data::Value;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfo;
 use crate::data::wrapper::{Wrapper, WrapperData, DynBase, OwnershipInfo};
-use crate::ds::test_container::TestContainer;
+use crate::ds::test_container::{TestContainer, create_test_container_vt};
 use crate::util::mem::FatPointer;
 use crate::util::void::Void;
+use crate::data::custom_vt::ContainerVT;
 
 #[allow(dead_code)]
 struct TestStruct {
@@ -270,4 +271,48 @@ impl StaticBase<TestStruct2> for Void {
     }
 }
 
-#[test] fn test_value_assoc_custom_container() {}
+#[test] fn test_value_assoc_custom_container() {
+    let value1: Value = Value::new_owned(TestStruct2());
+    let value2: Value = Value::new_owned(TestStruct2());
+
+    let mut test_container: TestContainer<TestStruct2> = TestContainer::new();
+    unsafe {
+        test_container.elements.push(value1.ptr_repr);
+        test_container.elements.push(value2.ptr_repr);
+    }
+
+    let test_container_vt: ContainerVT = create_test_container_vt::<TestStruct2>();
+    let v: Value = Value::new_container::<TestContainer<TestStruct2>>(
+        test_container,
+        &test_container_vt as _
+    );
+
+    assert!(v.is_ref());
+    assert!(v.is_container());
+    assert!(!v.is_value());
+    assert!(!v.is_null());
+
+    unsafe {
+        let _raw_ptr: usize = v.untagged_ptr_field();
+        let vt: *const ContainerVT = v.ptr_repr.trivia as *const _;
+        let vt: &ContainerVT = vt.as_ref().unwrap();
+
+        assert_eq!(vt.type_name, "TestContainer");
+    }
+
+    /*
+    unsafe {
+        let dyn_base: *mut dyn DynBase = v.ptr;
+        let dyn_base: Box<dyn DynBase> = Box::from_raw(dyn_base);
+        drop(dyn_base);
+
+        let dyn_base: *mut dyn DynBase = value1.ptr;
+        let dyn_base: Box<dyn DynBase> = Box::from_raw(dyn_base);
+        drop(dyn_base);
+
+        let dyn_base: *mut dyn DynBase = value2.ptr;
+        let dyn_base: Box<dyn DynBase> = Box::from_raw(dyn_base);
+        drop(dyn_base);
+    }
+    */
+}
