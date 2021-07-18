@@ -85,6 +85,17 @@ pub struct Wrapper<T: 'static> {
     /* +data_offset */ pub data: WrapperData<T>
 }
 
+impl<T: 'static> Drop for Wrapper<T> {
+    fn drop(&mut self) {
+        if self.ownership_info & OWN_INFO_COLLECT_MASK != 0 {
+            if self.ownership_info & OWN_INFO_OWNED_MASK != 0 {
+                let owned: T = unsafe { ManuallyDrop::take(&mut self.data.owned).assume_init() };
+                drop(owned);
+            }
+        }
+    }
+}
+
 impl<T: 'static> Wrapper<T> {
     pub fn new_owned(data: T) -> Self {
         let mut ret: Wrapper<T> = Self {
