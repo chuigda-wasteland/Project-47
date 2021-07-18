@@ -156,22 +156,22 @@ impl Value {
     /// Check if a `Value` is a custom pointer
     pub fn is_container(&self) -> bool {
         unsafe {
-            self.ptr_repr.ptr & (CONTAINER_MASK as usize) == 0
+            self.ptr_repr.ptr & (CONTAINER_MASK as usize) != 0
         }
     }
 
     /// Assuming that `self` may be a custom pointer, get the untagged pointer
     #[inline(always)] pub unsafe fn untagged_ptr_field(&self) -> usize {
-        debug_assert_eq!(self.ptr_repr.ptr & CONTAINER_MASK as usize, 0);
         self.ptr_repr.ptr & !TAG_BITS_MASK_USIZE
     }
 
-    /// Assuming that `self` may be a custom pointer, get the untagged fat pointer
+    /// Assuming that `self` **MUST NOT** be a custom pointer, get the fat pointer
     /// `*mut dyn DynBase`
     #[inline(always)] pub unsafe fn untagged_dyn_base(&self) -> *mut dyn DynBase {
         debug_assert_eq!(self.ptr_repr.ptr & CONTAINER_MASK as usize, 0);
+        debug_assert!(!self.is_container());
         std::mem::transmute::<FatPointer, *mut dyn DynBase>(
-            FatPointer::new(self.ptr_repr.ptr & !TAG_BITS_MASK_USIZE, self.ptr_repr.trivia)
+            FatPointer::new(self.ptr_repr.ptr, self.ptr_repr.trivia)
         )
     }
 
@@ -189,7 +189,7 @@ impl Value {
     }
 
     /// Assuming that `self` may be a custom pointer, increase the reference counting
-    pub unsafe fn incr_ref_count(&mut self) {
+    pub unsafe fn incr_ref_count(&self) {
         #[cfg(debug_assertions)] self.assert_shared();
         *(self.untagged_ptr_field() as *mut u32) += 1
     }
@@ -202,7 +202,7 @@ impl Value {
     }
 
     /// Assuming that `self` may be a custom pointer, decrease the reference counting
-    pub unsafe fn decr_ref_count(&mut self) {
+    pub unsafe fn decr_ref_count(&self) {
         #[cfg(debug_assertions)] self.assert_shared();
         *(self.untagged_ptr_field() as *mut u32) -= 1
     }
@@ -223,28 +223,64 @@ impl Value {
                 || ownership_info == OwnershipInfo::SharedToRust);
     }
 
-    /// Assuming that `self` may be a custom pointer, get the ownership info
+    /// Given that `self` **MUST** be a reference, assuming that `self` may be a custom pointer, get
+    /// the ownership info
     pub unsafe fn ownership_info(&self) -> OwnershipInfo {
         debug_assert!(self.is_ref());
         UnsafeFrom::unsafe_from(*((self.untagged_ptr_field() + 4usize) as *const u8))
     }
 
-    /// Given that `self` **MUST NOT** be a custom pointer, get the ownership info
+    /// Given that `self` **MUST** be a reference and **MUST NOT** be a custom pointer, get the
+    /// ownership info
     pub unsafe fn ownership_info_norm(&self) -> OwnershipInfo {
         debug_assert!(self.is_ref());
+        debug_assert!(!self.is_container());
         UnsafeFrom::unsafe_from(*((self.ptr_repr.ptr + 4usize) as *const u8))
     }
 
-    /// Assuming that `self` may be a custom pointer, set the ownership info
-    pub unsafe fn set_ownership_info(&mut self, ownership_info: OwnershipInfo) {
+    /// Given that `self` **MUST** be a reference, assuming that `self` may be a custom pointer,
+    /// set the ownership info
+    pub unsafe fn set_ownership_info(&self, ownership_info: OwnershipInfo) {
         debug_assert!(self.is_ref());
         *((self.untagged_ptr_field() + 4usize) as *mut u8) = ownership_info as u8;
     }
 
-    /// Given that `self` **MUST NOT** be a custom pointer, set the ownership info
-    pub unsafe fn set_ownership_info_norm(&mut self, ownership_info: OwnershipInfo) {
+    /// Given that `self` **MUST** be a reference and **MUST NOT** be a custom pointer, set the
+    /// ownership info
+    pub unsafe fn set_ownership_info_norm(&self, ownership_info: OwnershipInfo) {
         debug_assert!(self.is_ref());
+        debug_assert!(!self.is_container());
         *((self.ptr_repr.ptr + 4usize) as *mut u8) = ownership_info as u8;
+    }
+
+    /// Given that `self` **MUST** be a reference, assuming that `self` may be a custom pointer,
+    /// get the GC information
+    pub unsafe fn gc_info(&self) -> u8 {
+        debug_assert!(self.is_ref());
+        *((self.untagged_ptr_field() + 5usize) as *mut u8)
+    }
+
+    /// Given that `self` **MUST** be a reference and **MUST NOT** be a custom pointer, get the
+    /// GC information
+    pub unsafe fn gc_info_norm(&self) -> u8 {
+        debug_assert!(self.is_ref());
+        debug_assert!(!self.is_container());
+        *((self.ptr_repr.ptr + 5usize) as *mut u8)
+    }
+
+    /// Given that `self` **MUST** be a reference, assuming that `self` may be a custom pointer,
+    /// set the GC information
+    pub unsafe fn set_gc_info(&self, gc_info: u8) {
+        debug_assert!(self.is_ref());
+        *((self.untagged_ptr_field() + 5usize) as *mut u8) = gc_info;
+    }
+
+    /// Given that `self` **MUST** be a reference and **MUST BOT** be a custom pointer, set the GC
+    /// information
+    pub unsafe fn set_gc_info_norm(&self, gc_info: u8) {
+        debug_assert!(self.is_ref());
+        debug_assert!(!self.is_container());
+        *((self.ptr_repr.ptr + 5usize) as *mut u8) = gc_info;
     }
 
     /// Given that `self` **MUST** be a reference, assuming that `self` may be a custom pointer,
@@ -369,3 +405,6 @@ impl TypedValue<char> {
 impl TypedValue<bool> {
     // TODO
 }
+
+#[cfg(test)]
+mod test;

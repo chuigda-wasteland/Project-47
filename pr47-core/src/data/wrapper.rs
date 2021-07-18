@@ -22,7 +22,7 @@ pub const OWN_INFO_OWNED_MASK: u8   = 0b000_0_0_0_0_1;
 /// At one time, a Pr47 heap value may be *owned by the VM*, *shared/mutably shared from Rust*,
 /// *shared/mutably shared to Rust* or *moved to Rust* while only having a vacant shell.
 #[repr(u8)]
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum OwnershipInfo {
     // R = Read
     // W = Write
@@ -188,73 +188,12 @@ impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
 
     #[inline]
     fn children(&self) -> Option<Box<dyn Iterator<Item=FatPointer>>> {
-        debug_assert_ne!(self.ownership_info & OWN_INFO_READ_MASK, 0);
-        // TODO implement
-        None
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use std::ptr::{addr_of, null_mut};
-    use crate::data::wrapper::{Wrapper, WrapperData};
-
-    #[allow(dead_code)]
-    struct TestStruct {
-        field1: i32,
-        field2: i64,
-        field3: std::string::String
-    }
-
-    #[allow(dead_code)]
-    #[repr(align(16))]
-    struct TestStruct2();
-
-    #[test]
-    fn test_mem_layout() {
-        let w: Wrapper<TestStruct> = Wrapper {
-            refcount: 42,
-            ownership_info: 0,
-            gc_info: 0,
-            data_offset: 0,
-            data: WrapperData {
-                ptr: null_mut()
-            }
+        let vself: &T = if (self.ownership_info & OWN_INFO_OWNED_MASK) != 0 {
+            unsafe { &*(self.data.owned.as_ptr()) }
+        } else {
+            debug_assert_ne!(self.ownership_info & OWN_INFO_READ_MASK, 0);
+            unsafe { &*self.data.ptr }
         };
-
-        assert_eq!(addr_of!(w.refcount) as usize - addr_of!(w) as usize, 0);
-        assert_eq!(addr_of!(w.ownership_info) as usize - addr_of!(w) as usize, 4);
-        assert_eq!(addr_of!(w.gc_info) as usize - addr_of!(w) as usize, 5);
-        assert_eq!(addr_of!(w.data_offset) as usize - addr_of!(w) as usize, 6);
-
-        let w: Wrapper<()> = Wrapper {
-            refcount: 42,
-            ownership_info: 0,
-            gc_info: 0,
-            data_offset: 0,
-            data: WrapperData {
-                ptr: null_mut()
-            }
-        };
-
-        assert_eq!(addr_of!(w.refcount) as usize - addr_of!(w) as usize, 0);
-        assert_eq!(addr_of!(w.ownership_info) as usize - addr_of!(w) as usize, 4);
-        assert_eq!(addr_of!(w.gc_info) as usize - addr_of!(w) as usize, 5);
-        assert_eq!(addr_of!(w.data_offset) as usize - addr_of!(w) as usize, 6);
-
-        let w: Wrapper<TestStruct2> = Wrapper {
-            refcount: 42,
-            ownership_info: 0,
-            gc_info: 0,
-            data_offset: 0,
-            data: WrapperData {
-                ptr: null_mut()
-            }
-        };
-
-        assert_eq!(addr_of!(w.refcount) as usize - addr_of!(w) as usize, 0);
-        assert_eq!(addr_of!(w.ownership_info) as usize - addr_of!(w) as usize, 4);
-        assert_eq!(addr_of!(w.gc_info) as usize - addr_of!(w) as usize, 5);
-        assert_eq!(addr_of!(w.data_offset) as usize - addr_of!(w) as usize, 6);
+        <Void as StaticBase<T>>::children(vself)
     }
 }

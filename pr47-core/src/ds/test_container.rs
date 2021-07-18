@@ -90,7 +90,6 @@ unsafe fn test_container_drop(this: *mut()) {
     drop(test_container)
 }
 
-
 pub fn create_test_container_vt<T: 'static>() -> ContainerVT
     where Void: StaticBase<T>
 {
