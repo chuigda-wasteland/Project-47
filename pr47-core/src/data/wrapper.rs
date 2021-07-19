@@ -153,7 +153,7 @@ pub trait DynBase {
     #[cfg(not(debug_assertions))]
     unsafe fn move_out(&mut self, out: *mut ());
 
-    fn children(&self) -> Option<Box<dyn Iterator<Item=FatPointer>> + 'static>;
+    fn children(&self) -> Option<Box<dyn Iterator<Item=FatPointer> + 'static>>;
 }
 
 impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
@@ -187,7 +187,7 @@ impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
     }
 
     #[inline]
-    fn children(&self) -> Option<Box<dyn Iterator<Item=FatPointer>> + 'static> {
+    fn children(&self) -> Option<Box<dyn Iterator<Item=FatPointer> + 'static>> {
         let vself: *const T = if (self.ownership_info & OWN_INFO_OWNED_MASK) != 0 {
             unsafe { self.data.owned.as_ptr() }
         } else {
