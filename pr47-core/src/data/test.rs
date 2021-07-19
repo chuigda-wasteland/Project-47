@@ -103,7 +103,10 @@ impl StaticBase<TestStruct2> for Void {
     assert!(children.is_none());
 
     let mut out: MaybeUninit<TestStruct> = MaybeUninit::uninit();
+    #[cfg(debug_assertions)]
     unsafe { dyn_base.move_out_ck(&mut out as *mut _ as *mut (), TypeId::of::<TestStruct>()); }
+    #[cfg(not(debug_assertions))]
+    unsafe { dyn_base.move_out(&mut out as *mut _ as *mut ()); }
     let out: TestStruct = unsafe { out.assume_init() };
     assert_eq!(out.field1, 114);
     assert_eq!(out.field2, 514);

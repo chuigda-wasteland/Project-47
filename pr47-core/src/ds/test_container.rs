@@ -60,10 +60,14 @@ impl<T: 'static> StaticBase<TestContainer<T>> for Void
         "TestContainer".into()
     }
 
-    fn children<'a>(vself: &'a TestContainer<T>)
-        -> Option<Box<dyn Iterator<Item=FatPointer> + 'a>>
+    fn children(vself: *const TestContainer<T>)
+        -> Option<Box<dyn Iterator<Item=FatPointer> + 'static>>
     {
-        Some(Box::new(vself.elements.iter().map(|x: &FatPointer| *x)))
+        let vself: &TestContainer<T> = unsafe { &*vself };
+        let iter: Box<dyn Iterator<Item=FatPointer> + '_> =
+            Box::new(vself.elements.iter().map(|x: &FatPointer| *x));
+        let iter: Box<dyn Iterator<Item=FatPointer> + 'static> = unsafe { transmute::<>(iter) };
+        Some(iter)
     }
 }
 

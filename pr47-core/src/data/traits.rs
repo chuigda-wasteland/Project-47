@@ -26,8 +26,10 @@ pub trait StaticBase<T: 'static> {
         std::any::type_name::<T>().into()
     }
 
-    #[inline]
-    fn children<'a>(_t: &'a T) -> Option<Box<dyn Iterator<Item=FatPointer> + 'a>> {
+    // TODO: should we mark this as unsafe?
+    #[inline] fn children(_vself: *const T) 
+        -> Option<Box<dyn Iterator<Item=FatPointer> + 'static>> 
+    {
         None
     }
 }
