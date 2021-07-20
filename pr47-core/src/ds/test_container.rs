@@ -7,8 +7,9 @@ use crate::data::custom_vt::ContainerVT;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::{ContainerTyckInfo, TyckInfo};
 use crate::data::wrapper::{OwnershipInfo, Wrapper};
-use crate::util::mem::FatPointer;
+use crate::util::mem::{FatPointer, move_to_heap};
 use crate::util::void::Void;
+use crate::util::std_ext::VecExt;
 
 pub struct TestContainer<T: 'static> {
     pub elements: Vec<FatPointer>,
@@ -37,16 +38,13 @@ impl<T: 'static> StaticBase<TestContainer<T>> for Void
         let element_tyck_info: TyckInfo = <Void as StaticBase<T>>::tyck_info();
         TyckInfo::Container(ContainerTyckInfo {
             type_id: TypeId::of::<TestContainer<()>>(),
-            params: unsafe {
-                vec![
-                    NonNull::new_unchecked(Box::leak(Box::new(element_tyck_info)))
-                ]
-            }
+            params: vec![ move_to_heap(element_tyck_info) ].into_slice_ptr()
         })
     }
 
     fn tyck(tyck_info: &TyckInfo) -> bool {
         if let TyckInfo::Container(ContainerTyckInfo { type_id, params }) = tyck_info {
+            let params: &[NonNull<TyckInfo>] = unsafe { params.as_ref() };
             TypeId::of::<TestContainer<()>>() == *type_id
             && params.len() == 1
             && <Void as StaticBase<T>>::tyck(unsafe { params.get_unchecked(0).as_ref() })
@@ -112,11 +110,11 @@ pub fn create_test_container_vt<T: 'static>() -> ContainerVT
     let elem_tyck_info: TyckInfo = <Void as StaticBase<T>>::tyck_info();
     let tyck_info: ContainerTyckInfo = ContainerTyckInfo {
         type_id: TypeId::of::<TestContainer<()>>(),
-        params: vec![ NonNull::new(Box::leak(Box::new(elem_tyck_info))).unwrap() ]
+        params: vec![ move_to_heap(elem_tyck_info) ].into_slice_ptr()
     };
 
     ContainerVT {
-        tyck_info: NonNull::new(Box::leak(Box::new(tyck_info))).unwrap(),
+        tyck_info: move_to_heap(tyck_info),
         type_name: "TestContainer".to_string(),
         #[cfg(debug_assertions)]
         move_out_fn: test_container_move_out_ck,

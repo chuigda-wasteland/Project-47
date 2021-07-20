@@ -3,9 +3,8 @@ use std::any::TypeId;
 use std::iter::Iterator;
 use std::ptr::NonNull;
 
-use crate::data::tyck::{ContainerTyckInfo, TyckInfo};
+use crate::data::tyck::ContainerTyckInfo;
 use crate::util::mem::FatPointer;
-use crate::data::tyck::TyckInfo::Container;
 
 pub const CONTAINER_MASK: u8 = 0b00000_010;
 
@@ -61,27 +60,6 @@ impl ContainerVT {
             move_out_fn,
             children_fn,
             drop_fn
-        }
-    }
-
-    pub fn container_tyck(&self, tyck_info: &TyckInfo) -> bool {
-        if let Container(ContainerTyckInfo { type_id, params }) = tyck_info {
-            let self_tyck_info: &ContainerTyckInfo = unsafe { self.tyck_info.as_ref() };
-            *type_id == self_tyck_info.type_id
-            && params.len() == self_tyck_info.params.len()
-            && params.iter()
-                .zip(self_tyck_info.params.iter())
-                .all(|(x, y): (&NonNull<TyckInfo>, &NonNull<TyckInfo>)| {
-                    unsafe {
-                        let _x: &TyckInfo = x.as_ref();
-                        let _y: &TyckInfo = y.as_ref();
-
-                        // TODO: implement this stuff
-                        true
-                    }
-                })
-        } else {
-            false
         }
     }
 }
