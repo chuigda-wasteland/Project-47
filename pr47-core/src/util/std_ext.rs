@@ -4,12 +4,17 @@ use crate::util::mem::{leak_as_ptr, reclaim_as_boxed};
 
 pub trait BoxedExt<T: ?Sized> {
     fn leak_as_ptr(self) -> NonNull<T>;
+    fn borrow_as_ptr(&self) -> NonNull<T>;
     unsafe fn reclaim(raw_ptr: NonNull<T>) -> Self;
 }
 
 impl<T: ?Sized> BoxedExt<T> for Box<T> {
     #[inline] fn leak_as_ptr(self) -> NonNull<T> {
         leak_as_ptr(self)
+    }
+
+    #[inline] fn borrow_as_ptr(&self) -> NonNull<T> {
+        unsafe { NonNull::new_unchecked(self.as_ref() as *const _ as *mut _) }
     }
 
     #[inline] unsafe fn reclaim(raw_ptr: NonNull<T>) -> Self {
