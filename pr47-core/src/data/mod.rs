@@ -14,7 +14,7 @@ use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
 use crate::data::traits::StaticBase;
 use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
 use crate::data::wrapper::{DynBase, OwnershipInfo, Wrapper};
-use crate::util::mem::FatPointer;
+use crate::util::mem::{FatPointer, move_to_heap};
 use crate::util::unsafe_from::UnsafeFrom;
 use crate::util::void::Void;
 use crate::util::zvec::ZeroInit;
@@ -72,7 +72,7 @@ impl Value {
               Void: StaticBase<T>
     {
         Self {
-            ptr: Box::leak(Box::new(Wrapper::new_owned(data)))
+            ptr: move_to_heap(Wrapper::new_owned(data)).as_ptr()
         }
     }
 
@@ -81,7 +81,7 @@ impl Value {
               Void: StaticBase<T>
     {
         let wrapper: Box<Wrapper<T>> = Box::new(Wrapper::new_owned(data));
-        let ptr: usize = (Box::leak(wrapper) as *mut _ as usize) | (CONTAINER_MASK as usize);
+        let ptr: usize = (move_to_heap(wrapper).as_ptr() as usize) | (CONTAINER_MASK as usize);
         let trivia: usize = vt as _;
         Self {
             ptr_repr: FatPointer {
@@ -96,7 +96,7 @@ impl Value {
               Void: StaticBase<T>
     {
         Self {
-            ptr: Box::leak(Box::new(Wrapper::new_ref(data as *const T)))
+            ptr: move_to_heap(Wrapper::new_ref(data as *const T)).as_ptr()
         }
     }
 
@@ -106,7 +106,7 @@ impl Value {
               Void: StaticBase<T>
     {
         Self {
-            ptr: Box::leak(Box::new(Wrapper::new_mut_ref(data as *mut T)))
+            ptr: move_to_heap(Wrapper::new_mut_ref(data as *mut T)).as_ptr()
         }
     }
 
