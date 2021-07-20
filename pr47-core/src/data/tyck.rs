@@ -111,7 +111,7 @@ impl TyckInfoPool {
         });
 
         let ret: NonNull<TyckInfo> = 
-            if let Some(tyck_info  /*: &Box<TyckInfo>*/) = self.pool.get(&query_tyck_info) {
+            if let Some(tyck_info /*: &Box<TyckInfo>*/) = self.pool.get(&query_tyck_info) {
                 tyck_info.borrow_as_ptr()
             } else {
                 let tyck_info: TyckInfo = TyckInfo::Container(ContainerTyckInfo {
@@ -126,5 +126,93 @@ impl TyckInfoPool {
 
         forget(query_tyck_info);
         ret
+    }
+}
+
+#[cfg(test)]
+mod test_tyck_info_pool {
+    use std::any::TypeId;
+    use std::ptr::NonNull;
+
+    use crate::data::tyck::{TyckInfo, TyckInfoPool};
+
+    struct TestType1();
+    struct TestType2();
+    struct TestType3();
+
+    #[test]
+    fn test_tyck_info_pool() {
+        let type1_id: TypeId = TypeId::of::<TestType1>();
+        let type2_id: TypeId = TypeId::of::<TestType2>();
+        let type3_id: TypeId = TypeId::of::<TestType3>();
+
+        let mut tyck_info_pool: TyckInfoPool = TyckInfoPool::new();
+
+        let tyck_info1: NonNull<TyckInfo> = tyck_info_pool.create_plain_type(type1_id);
+        let tyck_info2: NonNull<TyckInfo> = tyck_info_pool.create_plain_type(type2_id);
+        let tyck_info3: NonNull<TyckInfo> = tyck_info_pool.create_plain_type(type3_id);
+
+        let tyck_info1_1: NonNull<TyckInfo> = tyck_info_pool.create_plain_type(type1_id);
+        let tyck_info2_1: NonNull<TyckInfo> = tyck_info_pool.create_plain_type(type2_id);
+        let tyck_info3_1: NonNull<TyckInfo> = tyck_info_pool.create_plain_type(type3_id);
+
+        assert_eq!(tyck_info1, tyck_info1_1);
+        assert_eq!(tyck_info2, tyck_info2_1);
+        assert_eq!(tyck_info3, tyck_info3_1);
+
+        assert_ne!(tyck_info1, tyck_info2);
+        assert_ne!(tyck_info1, tyck_info3);
+        assert_ne!(tyck_info2, tyck_info3);
+
+        let type4_params: [NonNull<TyckInfo>; 2] = [tyck_info1, tyck_info2];
+        let type5_params: [NonNull<TyckInfo>; 2] = [tyck_info2, tyck_info3];
+        let type6_params: [NonNull<TyckInfo>; 2] = [tyck_info1, tyck_info3];
+
+        let tyck_info4: NonNull<TyckInfo> =
+            tyck_info_pool.create_container_type(type3_id, &type4_params);
+        let tyck_info5: NonNull<TyckInfo> =
+            tyck_info_pool.create_container_type(type3_id, &type5_params);
+        let tyck_info6: NonNull<TyckInfo> =
+            tyck_info_pool.create_container_type(type3_id, &type6_params);
+
+        let tyck_info4_1: NonNull<TyckInfo> =
+            tyck_info_pool.create_container_type(type3_id, &type4_params);
+        let tyck_info5_1: NonNull<TyckInfo> =
+            tyck_info_pool.create_container_type(type3_id, &type5_params);
+        let tyck_info6_1: NonNull<TyckInfo> =
+            tyck_info_pool.create_container_type(type3_id, &type6_params);
+
+        assert_eq!(tyck_info4, tyck_info4_1);
+        assert_eq!(tyck_info5, tyck_info5_1);
+        assert_eq!(tyck_info6, tyck_info6_1);
+
+        assert_ne!(tyck_info4, tyck_info5);
+        assert_ne!(tyck_info5, tyck_info6);
+        assert_ne!(tyck_info4, tyck_info6);
+
+        let type7_params: [NonNull<TyckInfo>; 3] = [tyck_info4, tyck_info5, tyck_info6];
+        let type9_params: [NonNull<TyckInfo>; 3] = [tyck_info6, tyck_info4, tyck_info5];
+
+        let tyck_info7: NonNull<TyckInfo> =
+            tyck_info_pool.create_container_type(type1_id, &type7_params);
+        let tyck_info8: NonNull<TyckInfo> =
+            tyck_info_pool.create_container_type(type2_id, &type7_params);
+        let tyck_info9: NonNull<TyckInfo> =
+            tyck_info_pool.create_container_type(type1_id, &type9_params);
+
+        let tyck_info7_1: NonNull<TyckInfo> =
+            tyck_info_pool.create_container_type(type1_id, &type7_params);
+        let tyck_info8_1: NonNull<TyckInfo> =
+            tyck_info_pool.create_container_type(type2_id, &type7_params);
+        let tyck_info9_1: NonNull<TyckInfo> =
+            tyck_info_pool.create_container_type(type1_id, &type9_params);
+
+        assert_eq!(tyck_info7, tyck_info7_1);
+        assert_eq!(tyck_info8, tyck_info8_1);
+        assert_eq!(tyck_info9, tyck_info9_1);
+
+        assert_ne!(tyck_info7, tyck_info8);
+        assert_ne!(tyck_info7, tyck_info9);
+        assert_ne!(tyck_info8, tyck_info9);
     }
 }
