@@ -1,7 +1,8 @@
 use std::any::TypeId;
 use std::iter::Iterator;
+use std::ptr::NonNull;
 
-use crate::data::tyck::TyckInfo;
+use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::util::mem::FatPointer;
 use crate::util::void::Void;
 
@@ -10,8 +11,8 @@ pub trait StaticBase<T: 'static> {
         TypeId::of::<T>()
     }
 
-    fn tyck_info() -> TyckInfo {
-        TyckInfo::Plain(TypeId::of::<T>())
+    fn tyck_info(tyck_info_pool: &mut TyckInfoPool) -> NonNull<TyckInfo> {
+        tyck_info_pool.create_plain_type(TypeId::of::<T>())
     }
 
     fn tyck(tyck_info: &TyckInfo) -> bool {
