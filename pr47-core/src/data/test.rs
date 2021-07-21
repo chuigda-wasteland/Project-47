@@ -1,10 +1,10 @@
 use std::any::TypeId;
 use std::mem::MaybeUninit;
-use std::ptr::{addr_of, null_mut};
+use std::ptr::{NonNull, addr_of, null_mut};
 
 use crate::data::Value;
 use crate::data::traits::StaticBase;
-use crate::data::tyck::TyckInfo;
+use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::data::wrapper::{Wrapper, WrapperData, DynBase, OwnershipInfo};
 use crate::ds::test_container::{TestContainer, create_test_container_vt};
 use crate::util::mem::FatPointer;
@@ -88,6 +88,8 @@ impl StaticBase<TestStruct2> for Void {
 
 /// Ensure the wrapper-related functions work properly
 #[test] fn test_dyn_base_assoc() {
+    let mut tyck_info_pool: TyckInfoPool = TyckInfoPool::new();
+
     let w: Wrapper<TestStruct> = Wrapper::new_owned(TestStruct {
         field1: 114, field2: 514, field3: "1919810".to_string()
     });
@@ -96,8 +98,9 @@ impl StaticBase<TestStruct2> for Void {
     assert_eq!(dyn_base.dyn_type_id(), TypeId::of::<TestStruct>());
     assert_eq!(dyn_base.dyn_type_name(), TEST_STRUCT_NAME);
 
-    let tyck_info: TyckInfo = <Void as StaticBase<TestStruct>>::tyck_info();
-    assert!(dyn_base.dyn_tyck(&tyck_info));
+    let tyck_info: NonNull<TyckInfo> =
+        <Void as StaticBase<TestStruct>>::tyck_info(&mut tyck_info_pool);
+    assert!(dyn_base.dyn_tyck(unsafe { tyck_info.as_ref() }));
 
     let children: Option<Box<dyn Iterator<Item=FatPointer>>> = dyn_base.children();
     assert!(children.is_none());
@@ -115,12 +118,14 @@ impl StaticBase<TestStruct2> for Void {
 
 /// Ensure the value-related functions work properly
 #[test] fn test_value_assoc_ref() {
+    let mut tyck_info_pool: TyckInfoPool = TyckInfoPool::new();
+
     let v: Value = Value::new_owned(TestStruct {
         field1: 114, field2: 514, field3: "1919810".to_string()
     });
 
     //noinspection RsDropRef
-    fn test_once(v: &Value) {
+    fn test_once(v: &Value, tyck_info_pool: &mut TyckInfoPool) {
         assert!(v.is_ref());
         assert!(!v.is_value());
         assert!(!v.is_null());
@@ -132,8 +137,9 @@ impl StaticBase<TestStruct2> for Void {
 
             assert_eq!(dyn_base.dyn_type_id(), TypeId::of::<TestStruct>());
             assert_eq!(dyn_base.dyn_type_name(), TEST_STRUCT_NAME);
-            let tyck_info: TyckInfo = <Void as StaticBase<TestStruct>>::tyck_info();
-            assert!(dyn_base.dyn_tyck(&tyck_info));
+            let tyck_info: NonNull<TyckInfo> =
+                <Void as StaticBase<TestStruct>>::tyck_info(tyck_info_pool);
+            assert!(dyn_base.dyn_tyck(tyck_info.as_ref()));
             let children: Option<Box<dyn Iterator<Item=FatPointer>>> = dyn_base.children();
             assert!(children.is_none());
 
@@ -199,8 +205,8 @@ impl StaticBase<TestStruct2> for Void {
         }
     }
 
-    test_once(&v);
-    test_once(&v);
+    test_once(&v, &mut tyck_info_pool);
+    test_once(&v, &mut tyck_info_pool);
 
     unsafe {
         let test_struct: TestStruct = v.move_out_norm();
@@ -226,6 +232,8 @@ impl StaticBase<TestStruct2> for Void {
 }
 
 #[test] fn test_value_assoc_container() {
+    let mut tyck_info_pool: TyckInfoPool = TyckInfoPool::new();
+
     let value1: Value = Value::new_owned(TestStruct2());
     let value2: Value = Value::new_owned(TestStruct2());
 
@@ -250,8 +258,9 @@ impl StaticBase<TestStruct2> for Void {
 
         // Note: this piece of code definitely produces a memory leak. This is one of the predicted
         // behaviors, and won't affect library correctness.
-        let tyck_info: TyckInfo = <Void as StaticBase<TestContainer<TestStruct2>>>::tyck_info();
-        assert!(dyn_base.dyn_tyck(&tyck_info));
+        let tyck_info: NonNull<TyckInfo> =
+            <Void as StaticBase<TestContainer<TestStruct2>>>::tyck_info(&mut tyck_info_pool);
+        assert!(dyn_base.dyn_tyck(tyck_info.as_ref()));
 
         let children: Vec<FatPointer> = dyn_base.children().unwrap().collect::<Vec<_>>();
         assert_eq!(children.len(), 2);
@@ -275,6 +284,8 @@ impl StaticBase<TestStruct2> for Void {
 }
 
 #[test] fn test_value_assoc_custom_container() {
+    let mut tyck_info_pool: TyckInfoPool = TyckInfoPool::new();
+
     let value1: Value = Value::new_owned(TestStruct2());
     let value2: Value = Value::new_owned(TestStruct2());
 
@@ -284,7 +295,8 @@ impl StaticBase<TestStruct2> for Void {
         test_container.elements.push(value2.ptr_repr);
     }
 
-    let test_container_vt: ContainerVT = create_test_container_vt::<TestStruct2>();
+    let test_container_vt: ContainerVT =
+        create_test_container_vt::<TestStruct2>(&mut tyck_info_pool);
     let v: Value = Value::new_container::<TestContainer<TestStruct2>>(
         test_container,
         &test_container_vt as _
