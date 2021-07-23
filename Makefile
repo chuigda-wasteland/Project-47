@@ -19,3 +19,11 @@ miri_test_pr47_core_data_value_assoc_container:
 .PHONY: miri_test_pr47_core_data_value_assoc_custom_container
 miri_test_pr47_core_data_value_assoc_custom_container:
 	@cargo +nightly miri test --package pr47 --lib data::test::test_value_assoc_custom_container
+
+.PHONY: miri_test_pr47_core_al31f_default_alloc_simple
+miri_test_pr47_core_al31f_default_alloc_simple:
+	@cargo +nightly miri test --package pr47 --lib vm::al31f::alloc::default_alloc::test::test_default_collector_simple
+
+.PHONY: miri_test_pr47_core_al31f_default_alloc_custom_vt
+miri_test_pr47_core_al31f_default_alloc_custom_vt:
+	@cargo +nightly miri test --package pr47 --lib vm::al31f::alloc::default_alloc::test::test_default_collector_custom_vt

@@ -98,9 +98,8 @@ unsafe fn test_container_children(this: *const ()) -> Box<dyn Iterator<Item=FatP
 }
 
 unsafe fn test_container_drop(this: *mut()) {
-    let this: &mut Wrapper<TestContainer<()>> = &mut *(this as *mut Wrapper<_>);
-    let test_container: TestContainer<()> = ManuallyDrop::take(&mut this.data.owned).assume_init();
-    drop(test_container)
+    let boxed: Box<Wrapper<TestContainer<()>>> = Box::from_raw(this as *mut _);
+    drop(boxed);
 }
 
 pub fn create_test_container_vt<T: 'static>(tyck_info_pool: &mut TyckInfoPool) -> ContainerVT

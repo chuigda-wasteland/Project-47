@@ -4,7 +4,6 @@ use std::mem::transmute;
 use crate::data::PTR_BITS_MASK_USIZE;
 use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
 use crate::data::wrapper::{DynBase, OWN_INFO_COLLECT_MASK, Wrapper};
-use crate::data::value_typed::VALUE_TYPE_MASK;
 use crate::util::mem::FatPointer;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::stack::Stack;
@@ -40,6 +39,11 @@ impl DefaultAlloc {
             gc_allowed: false
         }
     }
+
+    #[cfg(test)]
+    pub fn contains_ptr(&self, ptr: FatPointer) -> bool {
+        self.managed.contains(&ptr)
+    }
 }
 
 impl Default for DefaultAlloc {
@@ -50,11 +54,14 @@ impl Default for DefaultAlloc {
 
 impl Drop for DefaultAlloc {
     fn drop(&mut self) {
+        // TODO who will manage the stacks?
+        /*
         for stack /*: *const Stack*/ in self.stacks.iter() {
             let stack: *mut Stack = *stack as *mut _;
             let boxed: Box<Stack> = unsafe { Box::from_raw(stack) };
             drop(boxed);
         }
+        */
 
         for ptr /*: &FatPointer*/ in self.managed.iter() {
             let raw_ptr: usize = (ptr.ptr & PTR_BITS_MASK_USIZE) as _;
@@ -100,7 +107,6 @@ impl Alloc for DefaultAlloc {
 
     unsafe fn collect(&mut self) {
         for ptr /*: &FatPointer*/ in self.managed.iter() {
-            debug_assert_eq!(ptr.ptr & (VALUE_TYPE_MASK as usize), 0);
             let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
             (*wrapper).gc_info = DefaultGCStatus::Unmarked as u8;
         }
@@ -134,7 +140,7 @@ impl Alloc for DefaultAlloc {
             }
 
             (*wrapper).gc_info = DefaultGCStatus::Marked as u8;
-            if ptr.trivia & (CONTAINER_MASK as usize) != 0 {
+            if ptr.ptr & (CONTAINER_MASK as usize) == 0 {
                 let dyn_base: *mut dyn DynBase = transmute::<>(ptr);
                 if let Some(children /*: Box<dyn Iterator>*/) = (*dyn_base).children() {
                     for child /*: FatPointer*/ in children {
@@ -153,7 +159,9 @@ impl Alloc for DefaultAlloc {
         let mut to_collect: Vec<FatPointer> = Vec::new();
         for ptr /*: FatPointer*/ in self.managed.iter() {
             let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
-            if (*wrapper).ownership_info & OWN_INFO_COLLECT_MASK != 0 {
+            if (*wrapper).gc_info == DefaultGCStatus::Unmarked as u8
+                && (*wrapper).ownership_info & OWN_INFO_COLLECT_MASK != 0
+            {
                 to_collect.push(*ptr);
             }
         }
@@ -179,8 +187,114 @@ impl Alloc for DefaultAlloc {
 
 #[cfg(test)]
 mod test {
-    #[test]
-    fn test_default_collector() {
+    use crate::data::Value;
+    use crate::data::custom_vt::ContainerVT;
+    use crate::ds::test_container::{TestContainer, create_test_container_vt};
+    use crate::vm::al31f::alloc::Alloc;
+    use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
+    use crate::vm::al31f::stack::{Stack, StackSlice};
+    use crate::data::tyck::TyckInfoPool;
 
+    #[test] fn test_default_collector_simple() {
+        let mut alloc: DefaultAlloc = DefaultAlloc::new();
+        let mut stack: Stack = Stack::new();
+
+        let mut stack_slice: StackSlice = unsafe { stack.ext_func_call_grow_stack(3, &[]) };
+
+        let str1: Value = Value::new_owned::<String>("114".into());
+        let str2: Value = Value::new_owned::<String>("514".into());
+        let str3: Value = Value::new_owned::<String>("1919810".into());
+
+        let mut container: TestContainer<String> = TestContainer::new();
+        unsafe {
+            container.elements.push(str1.ptr_repr);
+            container.elements.push(str2.ptr_repr);
+            container.elements.push(str3.ptr_repr);
+        }
+
+        let container: Value = Value::new_owned::<TestContainer<String>>(container);
+
+        unsafe {
+            alloc.add_stack(&stack);
+            alloc.add_managed(str1.ptr_repr);
+            alloc.add_managed(str2.ptr_repr);
+            alloc.add_managed(str3.ptr_repr);
+            alloc.add_managed(container.ptr_repr);
+
+            stack_slice.set_value(0, container);
+            alloc.collect();
+            assert!(alloc.contains_ptr(str1.ptr_repr));
+            assert!(alloc.contains_ptr(str2.ptr_repr));
+            assert!(alloc.contains_ptr(str3.ptr_repr));
+            assert!(alloc.contains_ptr(container.ptr_repr));
+
+            stack_slice.set_value(0, str1);
+            stack_slice.set_value(1, str2);
+            stack_slice.set_value(2, str3);
+            alloc.collect();
+            assert!(alloc.contains_ptr(str1.ptr_repr));
+            assert!(alloc.contains_ptr(str2.ptr_repr));
+            assert!(alloc.contains_ptr(str3.ptr_repr));
+            assert!(!alloc.contains_ptr(container.ptr_repr));
+
+            stack_slice.set_value(1, Value::new_null());
+            alloc.collect();
+            assert!(alloc.contains_ptr(str1.ptr_repr));
+            assert!(!alloc.contains_ptr(str2.ptr_repr));
+            assert!(alloc.contains_ptr(str3.ptr_repr));
+            assert!(!alloc.contains_ptr(container.ptr_repr));
+        }
+    }
+
+    #[test] fn test_default_collector_custom_vt() {
+        let mut alloc: DefaultAlloc = DefaultAlloc::new();
+        let mut stack: Stack = Stack::new();
+        let mut tyck_info_pool: TyckInfoPool = TyckInfoPool::new();
+
+        let mut stack_slice: StackSlice = unsafe { stack.ext_func_call_grow_stack(3, &[]) };
+
+        let str1: Value = Value::new_owned::<String>("114".into());
+        let str2: Value = Value::new_owned::<String>("514".into());
+        let str3: Value = Value::new_owned::<String>("1919810".into());
+        let mut container: TestContainer<String> = TestContainer::new();
+        unsafe {
+            container.elements.push(str1.ptr_repr);
+            container.elements.push(str2.ptr_repr);
+            container.elements.push(str3.ptr_repr);
+        }
+        let vt: ContainerVT = create_test_container_vt::<String>(&mut tyck_info_pool);
+
+        let container: Value = Value::new_container::<TestContainer<String>>(container, &vt);
+
+        unsafe {
+            alloc.add_stack(&stack);
+            alloc.add_managed(str1.ptr_repr);
+            alloc.add_managed(str2.ptr_repr);
+            alloc.add_managed(str3.ptr_repr);
+            alloc.add_managed(container.ptr_repr);
+
+            stack_slice.set_value(0, container);
+            alloc.collect();
+            assert!(alloc.contains_ptr(str1.ptr_repr));
+            assert!(alloc.contains_ptr(str2.ptr_repr));
+            assert!(alloc.contains_ptr(str3.ptr_repr));
+            assert!(alloc.contains_ptr(container.ptr_repr));
+
+            stack_slice.set_value(0, str1);
+            stack_slice.set_value(1, str2);
+            stack_slice.set_value(2, str3);
+            alloc.collect();
+            assert!(alloc.contains_ptr(str1.ptr_repr));
+            assert!(alloc.contains_ptr(str2.ptr_repr));
+            assert!(alloc.contains_ptr(str3.ptr_repr));
+            assert!(!alloc.contains_ptr(container.ptr_repr));
+
+            stack_slice.set_value(1, Value::new_null());
+            alloc.collect();
+            assert!(alloc.contains_ptr(str1.ptr_repr));
+            assert!(!alloc.contains_ptr(str2.ptr_repr));
+            assert!(alloc.contains_ptr(str3.ptr_repr));
+            assert!(!alloc.contains_ptr(container.ptr_repr));
+        }
     }
 }

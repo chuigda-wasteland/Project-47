@@ -18,6 +18,7 @@ use crate::util::mem::{FatPointer, move_to_heap};
 use crate::util::unsafe_from::UnsafeFrom;
 use crate::util::void::Void;
 use crate::util::zvec::ZeroInit;
+use crate::util::std_ext::BoxedExt;
 
 pub const TAG_BITS_MASK: u8 = 0b00000_111;
 pub const TAG_BITS_MASK_USIZE: usize = TAG_BITS_MASK as usize;
@@ -81,8 +82,10 @@ impl Value {
               Void: StaticBase<T>
     {
         let wrapper: Box<Wrapper<T>> = Box::new(Wrapper::new_owned(data));
-        let ptr: usize = (move_to_heap(wrapper).as_ptr() as usize) | (CONTAINER_MASK as usize);
+        let ptr: usize = wrapper.leak_as_nonnull().as_ptr() as usize;
+        let ptr: usize = ptr | (CONTAINER_MASK as usize);
         let trivia: usize = vt as _;
+
         Self {
             ptr_repr: FatPointer {
                 ptr, trivia

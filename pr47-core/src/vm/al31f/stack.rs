@@ -13,7 +13,7 @@ impl StackSlice {
         (*self.0)[idx].replace(value);
     }
 
-    pub unsafe fn get_value(&mut self, idx: usize) -> Value {
+    pub unsafe fn get_value(&self, idx: usize) -> Value {
         (*self.0)[idx].unwrap()
     }
 }
@@ -105,7 +105,7 @@ impl<'a> Stack<'a> {
         let new_frame_end: usize = this_frame_end + frame_size;
         self.values.resize(new_frame_end, None);
         self.frames.push(FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr));
-        let mut old_slice: StackSlice =
+        let old_slice: StackSlice =
             StackSlice(&mut self.values[this_frame_start..this_frame_end] as *mut _);
         let mut new_slice: StackSlice =
             StackSlice(&mut self.values[this_frame_end..new_frame_end] as *mut _);
@@ -127,7 +127,7 @@ impl<'a> Stack<'a> {
         let this_frame: &FrameInfo = &self.frames[frame_count - 1];
         let prev_frame: &FrameInfo = &self.frames[frame_count - 2];
         assert_eq!(prev_frame.frame_end, this_frame.frame_start);
-        let mut this_slice =
+        let this_slice =
             StackSlice(&mut self.values[this_frame.frame_start..this_frame.frame_end] as *mut _);
         let mut prev_slice =
             StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
