@@ -2,11 +2,12 @@ use std::any::TypeId;
 use std::collections::HashSet;
 use std::cmp::{Eq, PartialEq};
 use std::hash::{Hash, Hasher};
+use std::hint::unreachable_unchecked;
 use std::mem::forget;
 use std::ptr::NonNull;
 
+use crate::util::mem::Korobka;
 use crate::util::std_ext::{BoxedExt, VecExt};
-use std::hint::unreachable_unchecked;
 
 pub struct ContainerTyckInfo {
     pub type_id: TypeId,
@@ -88,24 +89,24 @@ impl PartialEq for TyckInfo {
 impl Eq for TyckInfo {}
 
 pub struct TyckInfoPool {
-    pool: HashSet<Box<TyckInfo>>
+    pool: HashSet<Korobka<TyckInfo>>
 }
 
 impl TyckInfoPool {
     pub fn new() -> Self {
-        let mut pool: HashSet<Box<TyckInfo>> = HashSet::new();
-        pool.insert(Box::new(TyckInfo::Plain(TypeId::of::<String>())));
+        let mut pool: HashSet<Korobka<TyckInfo>> = HashSet::new();
+        pool.insert(Korobka::new(TyckInfo::Plain(TypeId::of::<String>())));
 
         Self { pool }
     }
 
     pub fn create_plain_type(&mut self, type_id: TypeId) -> NonNull<TyckInfo> {
         let tyck_info: TyckInfo = TyckInfo::Plain(type_id);
-        if let Some(tyck_info  /*: &Box<TyckInfo>*/) = self.pool.get(&tyck_info) {
-            tyck_info.borrow_as_ptr()
+        if let Some(tyck_info /*: &Korobka<TyckInfo>*/) = self.pool.get(&tyck_info) {
+            tyck_info.as_nonnull()
         } else {
-            let tyck_info: Box<TyckInfo> = Box::new(tyck_info);
-            let ret: NonNull<TyckInfo> = tyck_info.borrow_as_ptr();
+            let tyck_info: Korobka<TyckInfo> = Korobka::new(tyck_info);
+            let ret: NonNull<TyckInfo> = tyck_info.as_nonnull();
             self.pool.insert(tyck_info);
             ret
         }
@@ -122,15 +123,15 @@ impl TyckInfoPool {
         });
 
         let ret: NonNull<TyckInfo> = 
-            if let Some(tyck_info /*: &Box<TyckInfo>*/) = self.pool.get(&query_tyck_info) {
-                tyck_info.borrow_as_ptr()
+            if let Some(tyck_info /*: &Korobka<TyckInfo>*/) = self.pool.get(&query_tyck_info) {
+                tyck_info.as_nonnull()
             } else {
                 let tyck_info: TyckInfo = TyckInfo::Container(ContainerTyckInfo {
                     type_id: container_type_id,
                     params: Vec::from(params).into_slice_ptr()
                 });
-                let tyck_info: Box<TyckInfo> = Box::new(tyck_info);
-                let ret: NonNull<TyckInfo> = tyck_info.borrow_as_ptr();
+                let tyck_info: Korobka<TyckInfo> = Korobka::new(tyck_info);
+                let ret: NonNull<TyckInfo> = tyck_info.as_nonnull();
                 self.pool.insert(tyck_info);
                 ret
             };

@@ -315,19 +315,5 @@ impl StaticBase<TestStruct2> for Void {
         assert_eq!(vt.type_name, "TestContainer");
     }
 
-    /*
-    unsafe {
-        let dyn_base: *mut dyn DynBase = v.ptr;
-        let dyn_base: Box<dyn DynBase> = Box::from_raw(dyn_base);
-        drop(dyn_base);
-
-        let dyn_base: *mut dyn DynBase = value1.ptr;
-        let dyn_base: Box<dyn DynBase> = Box::from_raw(dyn_base);
-        drop(dyn_base);
-
-        let dyn_base: *mut dyn DynBase = value2.ptr;
-        let dyn_base: Box<dyn DynBase> = Box::from_raw(dyn_base);
-        drop(dyn_base);
-    }
-    */
+    // TODO deallocate memory here
 }

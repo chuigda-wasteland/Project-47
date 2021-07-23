@@ -1,16 +1,20 @@
+use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
+use std::marker::PhantomData;
+use std::ops::Deref;
 use std::ptr::NonNull;
+
+use crate::util::std_ext::BoxedExt;
 
 #[inline] pub fn move_to_heap<T>(data: T) -> NonNull<T> {
     let boxed: Box<T> = Box::new(data);
-    leak_as_ptr(boxed)
+    leak_as_nonnull(boxed)
 }
 
-#[inline] pub fn leak_as_ptr<T>(boxed: Box<T>) -> NonNull<T>
+#[inline] pub fn leak_as_nonnull<T>(boxed: Box<T>) -> NonNull<T>
     where T: ?Sized
 {
-    let leaked: &'_ mut T = Box::leak(boxed);
-    let ptr: *mut T = leaked as *mut T;
+    let ptr: *mut T = Box::into_raw(boxed);
     unsafe { NonNull::new_unchecked(ptr) }
 }
 
@@ -21,36 +25,60 @@ use std::ptr::NonNull;
 }
 
 #[repr(transparent)]
-#[derive(Copy, Clone)]
-pub struct Ptr<T>(NonNull<T>);
+pub struct Korobka<T>(NonNull<T>, PhantomData<T>);
 
-impl<T> Ptr<T> {
-    pub const fn new(raw_ptr: NonNull<T>) -> Self {
-        Self(raw_ptr)
-    }
-
-    pub const unsafe fn new_unchecked(raw_ptr: *mut T) -> Self {
-        Self(NonNull::new_unchecked(raw_ptr))
-    }
-
-    pub const fn cast<U>(self) -> Ptr<U> {
-        Ptr(self.0.cast::<U>())
-    }
-
-    pub const fn as_ptr(self) -> *mut T {
-        self.0.as_ptr()
-    }
-
-    pub unsafe fn as_ref<'a>(self) -> &'a T {
-        self.0.as_ref()
-    }
-
-    pub unsafe fn as_mut<'a>(mut self) -> &'a mut T {
-        self.0.as_mut()
+impl<T> Drop for Korobka<T> {
+    fn drop(&mut self) {
+        let boxed: Box<T> = unsafe { Box::reclaim(self.0) };
+        drop(boxed);
     }
 }
 
-impl<T> Hash for Ptr<T> where T: Hash {
+impl<T> Korobka<T> {
+    #[inline(always)] pub fn new(t: T) -> Self {
+        Self (Box::new(t).leak_as_nonnull(), PhantomData::default())
+    }
+
+    pub fn cast<U>(self) -> Korobka<U> {
+        Korobka(self.0.cast::<U>(), PhantomData::default())
+    }
+
+    pub const fn as_ptr(&self) -> *const T {
+        self.0.as_ptr() as *const _
+    }
+
+    pub const fn as_nonnull(&self) -> NonNull<T> {
+        self.0
+    }
+}
+
+impl<T> AsRef<T> for Korobka<T> {
+    fn as_ref(&self) -> &T {
+        unsafe { self.0.as_ref() }
+    }
+}
+
+impl<T> Borrow<T> for Korobka<T> {
+    fn borrow(&self) -> &T {
+        self.as_ref()
+    }
+}
+
+impl<T> Deref for Korobka<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_ref()
+    }
+}
+
+impl<T> From<Box<T>> for Korobka<T> {
+    fn from(boxed: Box<T>) -> Self {
+        Self (boxed.leak_as_nonnull(), PhantomData::default())
+    }
+}
+
+impl<T> Hash for Korobka<T> where T: Hash {
     fn hash<H: Hasher>(&self, state: &mut H) {
         unsafe {
             self.0.as_ref().hash(state);
@@ -58,13 +86,13 @@ impl<T> Hash for Ptr<T> where T: Hash {
     }
 }
 
-impl<T> PartialEq for Ptr<T> where T: PartialEq {
+impl<T> PartialEq for Korobka<T> where T: PartialEq {
     fn eq(&self, other: &Self) -> bool {
         unsafe { self.0.as_ref().eq(other.0.as_ref()) }
     }
 }
 
-impl<T> Eq for Ptr<T> where T: Eq + PartialEq {}
+impl<T> Eq for Korobka<T> where T: Eq + PartialEq {}
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
