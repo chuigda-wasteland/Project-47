@@ -10,36 +10,36 @@ use crate::util::void::Void;
 /// Trait used to assert that one type is cloneable.
 ///
 /// **Warning**: **DO NOT** implement this trait on yourself from user side.
-pub trait AssertClone<T> {}
+pub unsafe trait AssertClone<T> {}
 
 /// Trait used to assert that one type is a reference.
 ///
 /// **Warning**: **DO NOT** implement this trait on yourself from user side.
-pub trait AssertRef<T> {}
+pub unsafe trait AssertRef<T> {}
 
 /// Trait used to assert that one type is a mutable reference.
 ///
 /// **Warning**: **DO NOT** implement this trait on yourself from user side.
-pub trait AssertMutRef<T> {}
+pub unsafe trait AssertMutRef<T> {}
 
 /// Trait used to assert that one type is a exception-convertible `Result` type.
 ///
 /// **Warning**: **DO NOT** implement this trait on yourself from user side.
-pub trait AssertResult<T> {}
+pub unsafe trait AssertResult<T> {}
 
 /// Trait used to assert that one type is a null-convertible `Option` type.
 ///
 /// **Warning**: **DO NOT** implement this trait on yourself from user side.
-pub trait AssertOption<T> {}
+pub unsafe trait AssertOption<T> {}
 
-impl<T: Clone> AssertClone<T> for Void {}
+unsafe impl<T: Clone> AssertClone<T> for Void {}
 
-impl<T> AssertRef<&T> for Void {}
-impl<T> AssertRef<&mut T> for Void {}
-impl<T> AssertMutRef<&mut T> for Void {}
+unsafe impl<T> AssertRef<&T> for Void {}
+unsafe impl<T> AssertRef<&mut T> for Void {}
+unsafe impl<T> AssertMutRef<&mut T> for Void {}
 
-impl<T, E: 'static> AssertResult<core::result::Result<T, E>> for Void {}
-impl<T> AssertOption<core::option::Option<T>> for Void {}
+unsafe impl<T, E: 'static> AssertResult<core::result::Result<T, E>> for Void {}
+unsafe impl<T> AssertOption<core::option::Option<T>> for Void {}
 
 /// Assert that the type parameter `T` is cloneable.
 ///

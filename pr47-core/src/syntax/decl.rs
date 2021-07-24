@@ -1,7 +1,7 @@
-use crate::syntax::ty::ConcreteType;
+use crate::syntax::attr::AttrList;
 use crate::syntax::expr::ConcreteExpr;
 use crate::syntax::stmt::ConcreteCompoundStmt;
-use crate::syntax::attr::AttrList;
+use crate::syntax::ty::ConcreteType;
 use crate::util::location::{SourceLocation, SingleLineRange};
 
 pub enum ConcreteDecl {

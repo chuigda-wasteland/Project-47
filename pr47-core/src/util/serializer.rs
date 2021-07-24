@@ -20,19 +20,20 @@ use futures::future::JoinAll;
 use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::util::async_utils::{Mutex, MutexGuard, join_all, oneshot, task, yield_now};
-use crate::util::async_utils::oneshot::{Sender, Receiver};
+use crate::util::async_utils::oneshot::{Receiver, Sender};
 use crate::util::unchecked_cell::UncheckedCellOps;
 use crate::util::unchecked_option::UncheckedOption;
 
 /// Basic context shared by multiple `Serializer`s in the same *serialization group*.
 ///
-/// The `SharedContext` serves as the manager of tasks, task IDs and task completion signals. Read
-/// documentations of methods and fields for more information.
+/// The `SharedContext` serves as the manager of children tasks, task IDs and task completion
+/// signals. Read documentations of methods and fields for more information.
 pub struct SharedContext {
-    /// Take down the task ID allocation status.
+    /// Tracks the task ID allocation status.
     next_task_id: u32,
     /// All running tasks. The key part is task ID, and the value part serves as a receiver of
-    /// "task completion" signal.
+    /// "task completion" signal. Note that the main task (task_id == 0) itself is not managed
+    /// by this `HashMap`
     running_tasks: HashMap<u32, Receiver<()>>
 }
 
@@ -76,8 +77,8 @@ impl SharedContext {
     }
 }
 
-/// A `MutexGuard` guarding a unique access to `SharedContext` and `SerializedData`. This mainly
-/// serves as a "running permission" for tasks.
+/// A `MutexGuard` guarding unique access to `SharedContext` and `SerializedData`. Logically, this
+/// structure serves as a "running permission" for tasks.
 type Permit<SerializedData> = MutexGuard<'static, (SharedContext, SerializedData)>;
 
 /// Serializer context of one task
@@ -104,11 +105,13 @@ impl<SD: 'static> Serializer<SD> {
         }
     }
 
-    // TODO is this function really unsafe?
     /// Given the fact that the permit is held, retrieve the shared data. I'm not sure if this
     /// is safe or unsafe.
-    pub unsafe fn get_shared_data_mut(&self) -> &mut SD {
-        &mut (*self.permit.get()).get_mut().1
+    pub fn get_shared_data_mut(&self) -> &mut SD {
+        unsafe {
+            let permit: &mut UncheckedOption<Permit<SD>> = self.permit.get_mut_ref_unchecked();
+            &mut permit.get_mut().1
+        }
     }
 
     /// Interrupt current `task`, yield execution to one of other `task`s.
@@ -138,7 +141,8 @@ impl<SD: 'static> Serializer<SD> {
     {
         let (tx, rx): (Sender<()>, Receiver<()>) = oneshot::channel();
         let task_id: u32 = unsafe {
-            self.permit.get_mut_ref_unchecked().get_mut().0.add_task(rx)
+            let permit: &mut UncheckedOption<Permit<SD>> = self.permit.get_mut_ref_unchecked();
+            permit.get_mut().0.add_task(rx)
         };
         let child_serializer: Serializer<SD> = unsafe { self.derive_child_serializer(task_id) };
         let x: task::JoinHandle<T> = task::spawn(async move {

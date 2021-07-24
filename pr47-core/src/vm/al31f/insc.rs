@@ -430,7 +430,7 @@ pub enum Insc {
     /// Similar to `CALL-PTR`, but **performs type checking**.
     CallPtrTyck(usize, Vec<usize>, Vec<usize>),
 
-    // TODO consider what to use for overloaded function
+    /// `CALL-OVERLOAD [OVERLOAD-TBL] [ARGS..] [RETS..]`
     CallOverload(usize, Vec<usize>, Vec<usize>),
 
     /// `FFI-CALL-TYCK [FFI-FUNC-ID] [ARGS..] [RETS..]`

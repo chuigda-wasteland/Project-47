@@ -27,7 +27,6 @@ pub struct Promise {
     pub guards: Box<[AsyncOwnInfoGuard]>
 }
 
-// TODO should we make it a `StaticBase`?
 impl StaticBase<Promise> for Void {}
 
 pub trait AsyncFunctionBase: 'static {

@@ -18,9 +18,7 @@ pub mod vm;
 compile_error!("features `async-astd` and `async-tokio` are mutually exclusive");
 
 #[cfg(test)]
-#[macro_use]
-extern crate variant_count;
-
+#[macro_use] extern crate variant_count;
 
 #[cfg(test)]
 mod test {
