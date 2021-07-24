@@ -6,26 +6,26 @@ pub trait VMContext: 'static + Sized + Send {
     // TODO the design has not been determined
 }
 
-pub trait Function: 'static {
+pub trait Function<CTX: VMContext>: 'static {
     fn signature(&self) -> Signature;
 
     fn call_tyck(
         &self,
-        context: &impl VMContext,
+        context: &CTX,
         args: &[Value],
         rets: &mut [&mut Value]
     ) -> Option<Exception>;
 
     unsafe fn call_rtlc(
         &self,
-        context: &impl VMContext,
+        context: &CTX,
         args: &[Value],
         rets: &mut [&mut Value]
     ) -> Option<Exception>;
 
     unsafe fn call_unchecked(
         &self,
-        context: &impl VMContext,
+        context: &CTX,
         args: &[Value],
         rets: &mut [&mut Value]
     ) -> Option<Exception>;

@@ -21,8 +21,8 @@ use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::util::async_utils::{Mutex, MutexGuard, join_all, oneshot, task, yield_now};
 use crate::util::async_utils::oneshot::{Sender, Receiver};
-use crate::util::unchecked_option::UncheckedOption;
 use crate::util::unchecked_cell::UncheckedCellOps;
+use crate::util::unchecked_option::UncheckedOption;
 
 /// Basic context shared by multiple `Serializer`s in the same *serialization group*.
 ///
@@ -206,8 +206,8 @@ unsafe impl<SD: 'static> Sync for Serializer<SD> {}
 #[cfg(test)]
 mod test {
     use std::time::Duration;
-    use crate::util::serializer::Serializer;
     use crate::util::async_utils::{block_on_future, testing_sleep};
+    use crate::util::serializer::Serializer;
 
     #[test]
     #[cfg_attr(miri, ignore)]

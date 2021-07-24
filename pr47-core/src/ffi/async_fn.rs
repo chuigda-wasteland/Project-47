@@ -30,18 +30,18 @@ pub struct Promise {
 // TODO should we make it a `StaticBase`?
 impl StaticBase<Promise> for Void {}
 
-pub trait AsyncFunction: 'static {
+pub trait AsyncFunction<ACTX: AsyncVMContext>: 'static {
     fn signature(&self) -> Signature;
 
     fn call_tyck(
         &self,
-        context: &impl AsyncVMContext,
+        context: &ACTX,
         args: &[Value]
     ) -> Promise;
 
     unsafe fn call_rtlc(
         &self,
-        context: &impl AsyncVMContext,
+        context: &ACTX,
         args: &[Value]
     ) -> Promise;
 }

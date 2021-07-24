@@ -3,6 +3,7 @@ use std::any::TypeId;
 use std::iter::Iterator;
 use std::ptr::NonNull;
 
+use crate::data::Value;
 use crate::data::tyck::ContainerTyckInfo;
 use crate::util::mem::FatPointer;
 
@@ -16,6 +17,8 @@ pub type MoveOutFn = unsafe fn(this: *mut (), out: *mut ());
 pub type ChildrenFn = unsafe fn(this: *const ()) -> Box<dyn Iterator<Item=FatPointer>>;
 
 pub type DropFn = unsafe fn(this: *mut());
+
+pub type ContainerCtor = fn() -> Value;
 
 pub struct ContainerVT {
     pub tyck_info: NonNull<ContainerTyckInfo>,

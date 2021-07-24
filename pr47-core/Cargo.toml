@@ -23,6 +23,7 @@ pr47-codegen = { path="../pr47-codegen" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread"] }
+variant_count = "1"
 
 [features]
 default = ["optimized-rtlc", "async-tokio"]

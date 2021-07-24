@@ -2,11 +2,13 @@
 
 use std::ptr::NonNull;
 
+use crate::data::custom_vt::ContainerCtor;
 use crate::data::tyck::TyckInfo;
 
 /// An VM instruction
 ///
 /// This is a tri-address like instruction set for register machine.
+#[cfg_attr(test, derive(VariantCount))]
 pub enum Insc {
     /// `ADD-INT <INT@SRC1> <INT@SRC2> [DEST]`
     ///
@@ -429,7 +431,7 @@ pub enum Insc {
     CallPtrTyck(usize, Vec<usize>, Vec<usize>),
 
     // TODO consider what to use for overloaded function
-    // CallOverload(usize, Vec<usize>, Vec<usize>),
+    CallOverload(usize, Vec<usize>, Vec<usize>),
 
     /// `FFI-CALL-TYCK [FFI-FUNC-ID] [ARGS..] [RETS..]`
     FFICallTyck(usize, Vec<usize>, Vec<usize>),
@@ -470,5 +472,33 @@ pub enum Insc {
 
     JumpIfTrue(usize, usize),
     JumpIfFalse(usize, usize),
-    Jump(usize)
+    Jump(usize),
+
+    CreateObject,
+    CreateContainer(ContainerCtor, NonNull<TyckInfo>),
+
+    VecIndex(usize, usize, usize),
+    VecIndexPut(usize, usize, usize),
+    VecPush(usize, usize),
+    VecPop(usize, usize),
+    VecFirst(usize, usize),
+    VecLast(usize, usize),
+    VecLen(usize, usize),
+
+    StrConcat(usize, usize, usize),
+    StrAppend(usize, usize),
+    StrIndex(usize, usize, usize),
+    StrLen(usize, usize),
+
+    ObjectGet(usize, NonNull<str>, usize),
+    ObjectGetDyn(usize, usize, usize),
+
+    ObjectPut(usize, NonNull<str>, usize),
+    ObjectPutDyn(usize, usize, usize)
+}
+
+#[cfg(test)]
+#[cfg_attr(miri, ignore)]
+#[test] fn count_instructions() {
+    eprintln!("{}", Insc::VARIANT_COUNT);
 }
