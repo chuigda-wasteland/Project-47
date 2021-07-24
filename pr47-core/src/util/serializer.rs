@@ -210,6 +210,7 @@ mod test {
     use crate::util::async_utils::{block_on_future, testing_sleep};
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn basic_test_print() {
         async fn test_impl() {
             let serializer: Serializer<()> = Serializer::new(()).await;
