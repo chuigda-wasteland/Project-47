@@ -30,19 +30,35 @@ pub struct Promise {
 // TODO should we make it a `StaticBase`?
 impl StaticBase<Promise> for Void {}
 
+pub trait AsyncFunctionBase: 'static {
+    fn signature() -> Signature;
+
+    fn call_tyck<ACTX: AsyncVMContext>(context: &ACTX, args: &[Value]) -> Promise;
+
+    unsafe fn call_rtlc<ACTX: AsyncVMContext>(context: &ACTX, args: &[Value]) -> Promise;
+}
+
 pub trait AsyncFunction<ACTX: AsyncVMContext>: 'static {
     fn signature(&self) -> Signature;
 
-    fn call_tyck(
-        &self,
-        context: &ACTX,
-        args: &[Value]
-    ) -> Promise;
+    fn call_tyck(&self, context: &ACTX, args: &[Value]) -> Promise;
 
-    unsafe fn call_rtlc(
-        &self,
-        context: &ACTX,
-        args: &[Value]
-    ) -> Promise;
+    unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Promise;
 }
 
+impl<AFBase, CTX> AsyncFunction<CTX> for AFBase where
+    AFBase: AsyncFunctionBase,
+    CTX: AsyncVMContext
+{
+    fn signature(&self) -> Signature {
+        <AFBase as AsyncFunctionBase>::signature()
+    }
+
+    fn call_tyck(&self, context: &CTX, args: &[Value]) -> Promise {
+        <AFBase as AsyncFunctionBase>::call_tyck(context, args)
+    }
+
+    unsafe fn call_rtlc(&self, context: &CTX, args: &[Value]) -> Promise {
+        <AFBase as AsyncFunctionBase>::call_rtlc(context, args)
+    }
+}
