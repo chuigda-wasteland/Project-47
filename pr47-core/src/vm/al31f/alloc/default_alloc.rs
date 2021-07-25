@@ -84,6 +84,9 @@ impl Drop for DefaultAlloc {
     }
 }
 
+unsafe impl Send for DefaultAlloc {}
+unsafe impl Sync for DefaultAlloc {}
+
 impl Alloc for DefaultAlloc {
     unsafe fn add_stack(&mut self, stack: *const Stack<'_>) {
         self.stacks.insert(transmute::<>(stack));

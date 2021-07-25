@@ -2,7 +2,7 @@ use crate::util::mem::FatPointer;
 use crate::vm::al31f::stack::Stack;
 
 /// Abstract memory manager of `AL31F` engine
-pub trait Alloc {
+pub trait Alloc: 'static + Send + Sync {
     /// Add one stack to `Alloc` management
     unsafe fn add_stack(&mut self, stack: *const Stack<'_>);
     /// Remove one stack from `Alloc` management

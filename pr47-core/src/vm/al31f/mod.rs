@@ -1,17 +1,52 @@
-use std::marker::PhantomData;
-
-use crate::vm::al31f::alloc::Alloc;
-
 pub mod alloc;
 pub mod compiled;
 pub mod insc;
 pub mod stack;
 
+use std::marker::PhantomData;
+use std::ptr::NonNull;
+
+use crate::ffi::sync_fn::VMContext;
+use crate::util::serializer::Serializer;
+use crate::vm::al31f::alloc::Alloc;
+use crate::vm::al31f::compiled::CompiledProgram;
+use crate::vm::al31f::stack::Stack;
+
+#[cfg(feature = "async")]
+use crate::ffi::async_fn::AsyncVMContext;
 
 pub struct AL31F<A: Alloc> {
     pub alloc: A
 }
 
-pub struct VMTask<A: Alloc> {
+pub struct VMThread<'program, A: Alloc> {
+    #[cfg(feature = "async")]
+    vm: Serializer<AL31F<A>>,
+    #[cfg(not(feature = "async"))]
+    vm: AL31F<A>,
+
+    program: &'program CompiledProgram,
+    stack: Stack<'program>,
+}
+
+pub struct Combustor<A: Alloc> {
     _phantom: PhantomData<A>
+}
+
+pub struct AsyncCombustor<A: Alloc> {
+    vm_thread: NonNull<VMThread<'static, A>>
+}
+
+unsafe impl<A: Alloc> Send for AsyncCombustor<A> {}
+
+unsafe impl<A: Alloc> Sync for AsyncCombustor<A> {}
+
+impl<A: Alloc> VMContext for Combustor<A> {}
+
+impl<A: Alloc> AsyncVMContext for AsyncCombustor<A> {
+    type SharedData = AL31F<A>;
+
+    fn serializer(&self) -> &Serializer<Self::SharedData> {
+        unsafe { &self.vm_thread.as_ref().vm }
+    }
 }

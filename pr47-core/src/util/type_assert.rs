@@ -7,39 +7,46 @@
 use crate::data::traits::StaticBase;
 use crate::util::void::Void;
 
-/// Trait used to assert that one type is cloneable.
+/// Contains traits used by type assertions.
 ///
-/// **Warning**: **DO NOT** implement this trait on yourself from user side.
-pub unsafe trait AssertClone<T> {}
+/// **Warning**: These traits are really internal and made public due to Rust restrictions.
+/// Implementing any of these traits will *NOT* magically make your own `Result` or `Option` or so
+/// work, but will create bugs that are really hard to troubleshoot. Simply don't do that.
+pub mod helper_traits {
+    use crate::util::void::Void;
 
-/// Trait used to assert that one type is a reference.
-///
-/// **Warning**: **DO NOT** implement this trait on yourself from user side.
-pub unsafe trait AssertRef<T> {}
+    /// Trait used to assert that one type is cloneable.
+    pub unsafe trait AssertClone<T> {}
 
-/// Trait used to assert that one type is a mutable reference.
-///
-/// **Warning**: **DO NOT** implement this trait on yourself from user side.
-pub unsafe trait AssertMutRef<T> {}
+    /// Trait used to assert that one type is a reference.
+    pub unsafe trait AssertRef<T> {}
 
-/// Trait used to assert that one type is a exception-convertible `Result` type.
-///
-/// **Warning**: **DO NOT** implement this trait on yourself from user side.
-pub unsafe trait AssertResult<T> {}
+    /// Trait used to assert that one type is a mutable reference.
+    pub unsafe trait AssertMutRef<T> {}
 
-/// Trait used to assert that one type is a null-convertible `Option` type.
-///
-/// **Warning**: **DO NOT** implement this trait on yourself from user side.
-pub unsafe trait AssertOption<T> {}
+    /// Trait used to assert that one type is a exception-convertible `Result` type.
+    pub unsafe trait AssertResult<T> {}
 
-unsafe impl<T: Clone> AssertClone<T> for Void {}
+    /// Trait used to assert that one type is a null-convertible `Option` type.
+    pub unsafe trait AssertOption<T> {}
 
-unsafe impl<T> AssertRef<&T> for Void {}
-unsafe impl<T> AssertRef<&mut T> for Void {}
-unsafe impl<T> AssertMutRef<&mut T> for Void {}
+    unsafe impl<T: Clone> AssertClone<T> for Void {}
 
-unsafe impl<T, E: 'static> AssertResult<core::result::Result<T, E>> for Void {}
-unsafe impl<T> AssertOption<core::option::Option<T>> for Void {}
+    unsafe impl<T> AssertRef<&T> for Void {}
+    unsafe impl<T> AssertRef<&mut T> for Void {}
+    unsafe impl<T> AssertMutRef<&mut T> for Void {}
+
+    unsafe impl<T, E: 'static> AssertResult<core::result::Result<T, E>> for Void {}
+    unsafe impl<T> AssertOption<core::option::Option<T>> for Void {}
+}
+
+use crate::util::type_assert::helper_traits::{
+    AssertClone,
+    AssertMutRef,
+    AssertOption,
+    AssertRef,
+    AssertResult,
+};
 
 /// Assert that the type parameter `T` is cloneable.
 ///
