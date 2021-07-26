@@ -10,7 +10,7 @@ use crate::vm::al31f::stack::Stack;
 
 /// Default allocator for `AL31F`, with STW GC.
 pub struct DefaultAlloc {
-    stacks: HashSet<*const Stack<'static>>,
+    stacks: HashSet<*const Stack>,
     managed: HashSet<FatPointer>,
     debt: usize,
     max_debt: usize,
@@ -88,11 +88,11 @@ unsafe impl Send for DefaultAlloc {}
 unsafe impl Sync for DefaultAlloc {}
 
 impl Alloc for DefaultAlloc {
-    unsafe fn add_stack(&mut self, stack: *const Stack<'_>) {
+    unsafe fn add_stack(&mut self, stack: *const Stack) {
         self.stacks.insert(transmute::<>(stack));
     }
 
-    unsafe fn remove_stack(&mut self, stack: *const Stack<'_>) {
+    unsafe fn remove_stack(&mut self, stack: *const Stack) {
         let removed: bool = self.stacks.remove(&transmute::<>(stack));
         debug_assert!(removed);
     }
@@ -192,11 +192,11 @@ impl Alloc for DefaultAlloc {
 mod test {
     use crate::data::Value;
     use crate::data::custom_vt::ContainerVT;
+    use crate::data::tyck::TyckInfoPool;
     use crate::ds::test_container::{TestContainer, create_test_container_vt};
     use crate::vm::al31f::alloc::Alloc;
     use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
     use crate::vm::al31f::stack::{Stack, StackSlice};
-    use crate::data::tyck::TyckInfoPool;
 
     #[test] fn test_default_collector_simple() {
         let mut alloc: DefaultAlloc = DefaultAlloc::new();

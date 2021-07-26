@@ -1,7 +1,9 @@
-#[cfg(not(debug_assertions))]
-use unchecked_unwrap::UncheckedUnwrap;
+use std::ptr::NonNull;
 
 use crate::data::Value;
+
+#[cfg(not(debug_assertions))]
+use unchecked_unwrap::UncheckedUnwrap;
 
 #[cfg(debug_assertions)]
 #[derive(Copy, Clone)]
@@ -36,18 +38,18 @@ impl StackSlice {
 }
 
 #[derive(Debug)]
-pub struct FrameInfo<'a> {
+pub struct FrameInfo {
     pub frame_start: usize,
     pub frame_end: usize,
-    pub ret_value_locs: &'a [usize],
+    pub ret_value_locs: NonNull<[usize]>,
     pub ret_addr: usize
 }
 
-impl<'a> FrameInfo<'a> {
+impl FrameInfo {
     pub fn new(
         frame_start: usize,
         frame_end: usize,
-        ret_value_locs: &'a [usize],
+        ret_value_locs: NonNull<[usize]>,
         ret_addr: usize
     ) -> Self {
         Self {
@@ -60,13 +62,15 @@ impl<'a> FrameInfo<'a> {
 }
 
 #[cfg(debug_assertions)]
-pub struct Stack<'a> {
+pub struct Stack {
     pub values: Vec<Option<Value>>,
-    pub frames: Vec<FrameInfo<'a>>
+    pub frames: Vec<FrameInfo>
 }
 
+pub const EMPTY_RET_LOCS_SLICE: &'static [usize] = &[];
+
 #[cfg(debug_assertions)]
-impl<'a> Stack<'a> {
+impl Stack {
     pub fn new() -> Self {
         Self {
             values: Vec::with_capacity(64),
@@ -86,7 +90,7 @@ impl<'a> Stack<'a> {
         for (i /*: usize*/, arg /*: &Value*/) in args.iter().enumerate() {
             self.values[i].replace(*arg);
         }
-        self.frames.push(FrameInfo::new(0, frame_size, &[], 0));
+        self.frames.push(FrameInfo::new(0, frame_size, NonNull::from(EMPTY_RET_LOCS_SLICE), 0));
         StackSlice(&mut self.values[..] as *mut [Option<Value>])
     }
 
@@ -94,7 +98,7 @@ impl<'a> Stack<'a> {
         &mut self,
         frame_size: usize,
         arg_locs: &[usize],
-        ret_value_locs: &'a [usize],
+        ret_value_locs: NonNull<[usize]>,
         ret_addr: usize
     ) -> StackSlice {
         let this_frame: &FrameInfo = self.frames.last().unwrap();
@@ -131,15 +135,15 @@ impl<'a> Stack<'a> {
             StackSlice(&mut self.values[this_frame.frame_start..this_frame.frame_end] as *mut _);
         let mut prev_slice =
             StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
-        assert_eq!(ret_values.len(), this_frame.ret_value_locs.len());
+        assert_eq!(ret_values.len(), this_frame.ret_value_locs.as_ref().len());
         if ret_values.len() != 0 {
             if ret_values.len() == 1 {
-                let from: usize = this_frame.ret_value_locs[0];
+                let from: usize = this_frame.ret_value_locs.as_ref()[0];
                 let dest: usize = ret_values[0];
                 prev_slice.set_value(dest, this_slice.get_value(from));
             } else {
                 for (ret_value /*: &usize*/, ret_value_loc /*: &usize*/) in
-                    ret_values.iter().zip(this_frame.ret_value_locs)
+                    ret_values.iter().zip(this_frame.ret_value_locs.as_ref().iter())
                 {
                     prev_slice.set_value(*ret_value_loc, this_slice.get_value(*ret_value))
                 }
@@ -153,13 +157,13 @@ impl<'a> Stack<'a> {
 }
 
 #[cfg(not(debug_assertions))]
-pub struct Stack<'a> {
+pub struct Stack {
     pub values: Vec<Value>,
-    pub frames: Vec<FrameInfo<'a>>
+    pub frames: Vec<FrameInfo>
 }
 
 #[cfg(not(debug_assertions))]
-impl<'a> Stack<'a> {
+impl Stack {
     pub fn new() -> Self {
         Self {
             values: Vec::with_capacity(64),
@@ -177,7 +181,7 @@ impl<'a> Stack<'a> {
             let dest: &mut Value = self.values.get_unchecked_mut(i);
             *dest = *arg;
         }
-        self.frames.push(FrameInfo::new(0, frame_size, &[], 0));
+        self.frames.push(FrameInfo::new(0, frame_size, NonNull::from(EMPTY_RET_LOCS_SLICE), 0));
         StackSlice(&mut self.values[..] as *mut _)
     }
 
@@ -185,7 +189,7 @@ impl<'a> Stack<'a> {
         &mut self,
         frame_size: usize,
         arg_locs: &[usize],
-        ret_value_locs: &'a [usize],
+        ret_value_locs: NonNull<[usize]>,
         ret_addr: usize
     ) -> StackSlice {
         let this_frame: &FrameInfo = self.frames.last().unchecked_unwrap();
@@ -222,12 +226,12 @@ impl<'a> Stack<'a> {
 
         if ret_values.len() != 0 {
             if ret_values.len() == 1 {
-                let from: usize = *this_frame.ret_value_locs.get_unchecked(0);
+                let from: usize = *this_frame.ret_value_locs.as_ref().get_unchecked(0);
                 let dest: usize = *ret_values.get_unchecked(0);
                 prev_slice.set_value(dest, this_slice.get_value(from));
             } else {
                 for (ret_value /*: &usize*/, ret_value_loc /*: &usize*/) in
-                    ret_values.iter().zip(this_frame.ret_value_locs)
+                    ret_values.iter().zip(this_frame.ret_value_locs.as_ref().iter())
                 {
                     prev_slice.set_value(*ret_value_loc, this_slice.get_value(*ret_value))
                 }

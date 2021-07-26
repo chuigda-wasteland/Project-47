@@ -3,7 +3,6 @@ pub mod compiled;
 pub mod insc;
 pub mod stack;
 
-use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 use crate::ffi::sync_fn::VMContext;
@@ -19,22 +18,24 @@ pub struct AL31F<A: Alloc> {
     pub alloc: A
 }
 
-pub struct VMThread<'program, A: Alloc> {
+pub struct VMThread<A: Alloc> {
     #[cfg(feature = "async")]
     vm: Serializer<AL31F<A>>,
     #[cfg(not(feature = "async"))]
     vm: AL31F<A>,
 
-    program: &'program CompiledProgram,
-    stack: Stack<'program>,
+    program: NonNull<CompiledProgram>,
+    stack: Stack,
 }
 
 pub struct Combustor<A: Alloc> {
-    _phantom: PhantomData<A>
+    vm: NonNull<AL31F<A>>,
+    program: NonNull<CompiledProgram>,
+    stack: NonNull<Stack>
 }
 
 pub struct AsyncCombustor<A: Alloc> {
-    vm_thread: NonNull<VMThread<'static, A>>
+    vm_thread: NonNull<VMThread<A>>
 }
 
 unsafe impl<A: Alloc> Send for AsyncCombustor<A> {}

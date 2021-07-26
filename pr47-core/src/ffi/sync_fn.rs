@@ -2,7 +2,7 @@ use crate::data::Value;
 use crate::data::exception::Exception;
 use crate::ffi::Signature;
 
-pub trait VMContext: 'static + Sized + Send {
+pub trait VMContext: 'static + Sized {
     // TODO the design has not been determined
 }
 
