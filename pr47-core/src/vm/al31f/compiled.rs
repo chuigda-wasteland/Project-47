@@ -2,11 +2,13 @@ use std::ptr::NonNull;
 
 use crate::data::Value;
 use crate::data::tyck::TyckInfo;
-// use crate::ffi::sync_fn::Function as FFIFunction;
+use crate::ffi::sync_fn::Function as FFIFunction;
+use crate::vm::al31f::Combustor;
+use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::insc::Insc;
 
-// #[cfg(feature = "async")]
-// use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
+#[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
+#[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
 pub struct CompiledFunction {
     pub start_addr: usize,
@@ -35,14 +37,13 @@ impl CompiledFunction {
     }
 }
 
-pub struct CompiledProgram {
+pub struct CompiledProgram<A: Alloc> {
     pub code: Box<[Insc]>,
     pub const_pool: Box<[Value]>,
     pub init_proc: usize,
     pub functions: Box<[CompiledFunction]>,
 
-    // TODO define a VM context first
-    // ffi_functions: Box<[Box<dyn FFIFunction>]>,
-    // #[cfg(feature = "async")]
-    // async_ffi_funcs: Box<[Box<dyn FFIAsyncFunction>]>
+    pub ffi_functions: Box<[Box<dyn FFIFunction<Combustor<A>>>]>,
+    #[cfg(feature = "async")]
+    pub async_ffi_funcs: Box<[Box<dyn FFIAsyncFunction<AsyncCombustor<A>>>]>
 }

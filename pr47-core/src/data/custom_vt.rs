@@ -1,11 +1,11 @@
-#[cfg(debug_assertions)]
-use std::any::TypeId;
 use std::iter::Iterator;
 use std::ptr::NonNull;
 
 use crate::data::Value;
 use crate::data::tyck::ContainerTyckInfo;
 use crate::util::mem::FatPointer;
+
+#[cfg(debug_assertions)] use std::any::TypeId;
 
 pub const CONTAINER_MASK: u8 = 0b00000_010;
 

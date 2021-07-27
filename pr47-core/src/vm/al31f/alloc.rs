@@ -19,3 +19,4 @@ pub trait Alloc: 'static + Send + Sync {
 }
 
 pub mod default_alloc;
+pub mod no_gc_alloc;

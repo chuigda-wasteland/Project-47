@@ -63,6 +63,7 @@ impl Drop for DefaultAlloc {
         }
         */
 
+        // TODO should we extract this out? Or we use `Value` or so instead?
         for ptr /*: &FatPointer*/ in self.managed.iter() {
             let raw_ptr: usize = (ptr.ptr & PTR_BITS_MASK_USIZE) as _;
             let wrapper: *mut Wrapper<()> = raw_ptr as _;

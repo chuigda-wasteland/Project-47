@@ -1,28 +1,30 @@
 use crate::data::Value;
 use crate::data::exception::Exception;
 use crate::ffi::Signature;
+use crate::util::mem::FatPointer;
 
 pub trait VMContext: 'static + Sized {
-    // TODO the design has not been determined
+    fn allocate(&mut self, fat_ptr: FatPointer);
+    fn mark(&mut self, fat_ptr: FatPointer);
 }
 
 pub trait FunctionBase: 'static {
     fn signature() -> Signature;
 
     fn call_tyck<CTX: VMContext>(
-        context: &CTX,
+        context: &mut CTX,
         args: &[Value],
         rets: &mut [&mut Value]
     ) -> Option<Exception>;
 
     unsafe fn call_rtlc<CTX: VMContext>(
-        context: &CTX,
+        context: &mut CTX,
         args: &[Value],
         rets: &mut [&mut Value]
     ) -> Option<Exception>;
 
     unsafe fn call_unchecked<CTX: VMContext>(
-        context: &CTX,
+        context: &mut CTX,
         args: &[Value],
         rets: &mut [&mut Value]
     ) -> Option<Exception>;
@@ -33,21 +35,21 @@ pub trait Function<CTX: VMContext>: 'static {
 
     fn call_tyck(
         &self,
-        context: &CTX,
+        context: &mut CTX,
         args: &[Value],
         rets: &mut [&mut Value]
     ) -> Option<Exception>;
 
     unsafe fn call_rtlc(
         &self,
-        context: &CTX,
+        context: &mut CTX,
         args: &[Value],
         rets: &mut [&mut Value]
     ) -> Option<Exception>;
 
     unsafe fn call_unchecked(
         &self,
-        context: &CTX,
+        context: &mut CTX,
         args: &[Value],
         rets: &mut [&mut Value]
     ) -> Option<Exception>;
@@ -63,7 +65,7 @@ impl<FBase, CTX> Function<CTX> for FBase where
 
     #[inline] fn call_tyck(
         &self,
-        context: &CTX,
+        context: &mut CTX,
         args: &[Value],
         rets: &mut [&mut Value]
     ) -> Option<Exception> {
@@ -72,7 +74,7 @@ impl<FBase, CTX> Function<CTX> for FBase where
 
     #[inline] unsafe fn call_rtlc(
         &self,
-        context: &CTX,
+        context: &mut CTX,
         args: &[Value],
         rets: &mut [&mut Value]
     ) -> Option<Exception> {
@@ -81,7 +83,7 @@ impl<FBase, CTX> Function<CTX> for FBase where
 
     #[inline] unsafe fn call_unchecked(
         &self,
-        context: &CTX,
+        context: &mut CTX,
         args: &[Value],
         rets: &mut [&mut Value]
     ) -> Option<Exception> {

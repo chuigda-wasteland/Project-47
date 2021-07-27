@@ -8,7 +8,5 @@ pub mod unsafe_from;
 pub mod void;
 pub mod zvec;
 
-#[cfg(feature = "async")]
-pub mod async_utils;
-#[cfg(feature = "async")]
-pub mod serializer;
+#[cfg(feature = "async")] pub mod async_utils;
+#[cfg(feature = "async")] pub mod serializer;

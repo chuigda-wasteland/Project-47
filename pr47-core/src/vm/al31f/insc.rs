@@ -104,55 +104,30 @@ pub enum Insc {
     /// and put result to register `DEST`.
     ModAny(usize, usize, usize),
 
-    /// `EQ-INT [SRC1] [SRC2] [DEST]`
+    /// `EQ-VALUE [VALUE@SRC1] [VALUE@SRC2] [DEST]`
     ///
-    /// Check the equality of integers in registers `SRC1` and `SRC2`, put the boolean result to
-    /// `DEST`. **No type checking.**
-    EqInt(usize, usize, usize),
+    /// Assume that `SRC1` and `SRC2` are **values of same type**, check their equality.
+    EqValue(usize, usize, usize),
 
-    /// `EQ-FLOAT [SRC1] [SRC2] [DEST]`
+    /// `EQ-REF [REF@SRC1] [REF@SRC2] [DEST]`
     ///
-    /// Check the equality of floats in registers `SRC1` and `SRC2`, put the boolean result to
-    /// `DEST`. **No type checking.**
-    EqFloat(usize, usize, usize),
-
-    /// `EQ-CHAR [SRC1] [SRC2] [DEST]`
-    ///
-    /// Check the equality of chars in registers `SRC1` and `SRC2`, put the boolean result to
-    /// `DEST`. **No type checking.**
-    EqChar(usize, usize, usize),
-
-    /// `EQ-BOOL [SRC1] [SRC2] [DEST]`
-    ///
-    /// Check the equality of booleans in registers `SRC1` and `SRC2`, put the boolean result to
-    /// `DEST`. **No type checking.**
-    EqBool(usize, usize, usize),
+    /// Assume that `SRC1` and `SRC2` are both **references**, check their equality.
+    EqRef(usize, usize, usize),
 
     /// `EQ-ANY [SRC1] [SRC2] [DEST]`
     ///
-    /// Check the **type equality** of data stored in registers `SRC1` and `SRC2`, perform data
-    /// equality check accordingly, and save the boolean result to `DEST`.
+    /// Make no assumptions on `SRC1` and `SRC2`, check their equality.
     EqAny(usize, usize, usize),
 
-    /// `NE-INT [SRC1] [SRC2] [DEST]`
+    /// `NE-VALUE [VALUE@SRC1] [VALUE@SRC2] [DEST]`
     ///
-    /// Similar to `EQ-INT` but yields inverted result.
-    NeInt(usize, usize, usize),
+    /// Similar to `EQ-VALUE` but yields inverted result.
+    NeValue(usize, usize, usize),
 
-    /// `NE-FLOAT [SRC1] [SRC2] [DEST]`
+    /// `NE-REF [REF@SRC1] [REF@SRC2] [DEST]`
     ///
-    /// Similar to `EQ-FLOAT` but yields inverted result.
-    NeFloat(usize, usize, usize),
-
-    /// `NE-CHAR [SRC1] [SRC2] [DEST]`
-    ///
-    /// Similar to `EQ-CHAR` but yields inverted result.
-    NeChar(usize, usize, usize),
-
-    /// `NE-BOOL [SRC1] [SRC2] [DEST]`
-    ///
-    /// Similar to `EQ-BOOL` but yields inverted result.
-    NeBool(usize, usize, usize),
+    /// Similar to `EQ-REF` but yields inverted result.
+    NeRef(usize, usize, usize),
 
     /// `NE-ANY [SRC1] [SRC2] [DEST]`
     ///
@@ -224,17 +199,6 @@ pub enum Insc {
     ///
     /// Similar to `LE-ANY` but yields inverted result.
     GeAny(usize, usize, usize),
-
-    /// `EQ-EEF [SRC1] [SRC2] [DEST]`
-    ///
-    /// Check if the reference stored in `SRC1` is the same as `SRC2`, and put result to register
-    /// `DEST`.
-    EqRef(usize, usize, usize),
-
-    /// `NE-REF [SRC1] [SRC2] [DEST]`
-    ///
-    /// Similar to `EQ-REF` but yields inverted result.
-    NeRef(usize, usize, usize),
 
     /// `BITAND-INT [SRC1] [SRC2] [DEST]`
     ///

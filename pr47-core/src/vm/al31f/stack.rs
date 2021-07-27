@@ -2,8 +2,7 @@ use std::ptr::NonNull;
 
 use crate::data::Value;
 
-#[cfg(not(debug_assertions))]
-use unchecked_unwrap::UncheckedUnwrap;
+#[cfg(not(debug_assertions))] use unchecked_unwrap::UncheckedUnwrap;
 
 #[cfg(debug_assertions)]
 #[derive(Copy, Clone)]
