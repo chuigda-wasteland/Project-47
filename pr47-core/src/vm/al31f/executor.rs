@@ -8,7 +8,6 @@ use std::ptr::NonNull;
 
 use crate::data::Value;
 use crate::data::exception::{Exception, UncheckedException};
-use crate::data::value_typed::ValueTypeTag;
 use crate::util::serializer::Serializer;
 use crate::vm::al31f::{AL31F, VMThread};
 use crate::vm::al31f::alloc::Alloc;
@@ -16,7 +15,6 @@ use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
 use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{Stack, StackSlice};
 use crate::util::mem::FatPointer;
-use crate::util::unsafe_from::UnsafeFrom;
 
 #[cfg(feature = "async")]
 pub async fn create_vm_main_thread<A: Alloc>(

@@ -21,10 +21,13 @@ pub mod helper_traits {
     /// Trait used to assert that one type is a reference.
     pub unsafe trait AssertRef<T> {}
 
+    /// Trait used to assert that one type is an immutable reference
+    pub unsafe trait AssertConstRef<T> {}
+
     /// Trait used to assert that one type is a mutable reference.
     pub unsafe trait AssertMutRef<T> {}
 
-    /// Trait used to assert that one type is a exception-convertible `Result` type.
+    /// Trait used to assert that one type is an exception-convertible `Result` type.
     pub unsafe trait AssertResult<T> {}
 
     /// Trait used to assert that one type is a null-convertible `Option` type.
@@ -34,19 +37,16 @@ pub mod helper_traits {
 
     unsafe impl<T> AssertRef<&T> for Void {}
     unsafe impl<T> AssertRef<&mut T> for Void {}
+
+    unsafe impl<T> AssertConstRef<&T> for Void {}
+
     unsafe impl<T> AssertMutRef<&mut T> for Void {}
 
     unsafe impl<T, E: 'static> AssertResult<core::result::Result<T, E>> for Void {}
     unsafe impl<T> AssertOption<core::option::Option<T>> for Void {}
 }
 
-use crate::util::type_assert::helper_traits::{
-    AssertClone,
-    AssertMutRef,
-    AssertOption,
-    AssertRef,
-    AssertResult,
-};
+use crate::util::type_assert::helper_traits::{AssertClone, AssertMutRef, AssertOption, AssertRef, AssertResult, AssertConstRef};
 
 /// Assert that the type parameter `T` is cloneable.
 ///
@@ -63,7 +63,7 @@ use crate::util::type_assert::helper_traits::{
 /// pr47::util::type_assert::assert_clone::<std::thread::JoinHandle<()>>();
 /// # }
 /// ```
-pub const fn assert_clone<T>() where Void: AssertClone<T> {}
+#[inline(always)] pub const fn assert_clone<T>() where Void: AssertClone<T> {}
 
 /// Assert that the type parameter `T` is a reference.
 ///
@@ -82,7 +82,31 @@ pub const fn assert_clone<T>() where Void: AssertClone<T> {}
 /// pr47::util::type_assert::assert_ref::<String>();
 /// # }
 /// ```
-pub const fn assert_ref<T>() where Void: AssertRef<T> {}
+#[inline(always)] pub const fn assert_ref<T>() where Void: AssertRef<T> {}
+
+/// Assert that the type parameter `T` is an immutable reference.
+///
+/// ```
+/// # fn main() {
+/// // Succeeds because &T is an immutable reference type
+/// pr47::util::type_assert::assert_const_ref::<&i64>();
+/// # }
+/// ```
+///
+/// ```compile_fail(E0277)
+/// # fn main() {
+/// // Fails because std::string::String is not a reference type
+/// pr47::util::type_assert::assert_const_ref::<String>();
+/// # }
+/// ```
+///
+/// ```compile_fail(E0277)
+/// # fn main() {
+/// // Fails because &mut T is an mutable reference, not immmutable
+/// pr47::util::type_assert::assert_const_ref::<&mut i64>();
+/// # }
+/// ```
+#[inline(always)] pub const fn assert_const_ref<T>() where Void: AssertConstRef<T>{}
 
 /// Assert that the type parameter `T` is a mutable reference.
 ///
@@ -106,7 +130,7 @@ pub const fn assert_ref<T>() where Void: AssertRef<T> {}
 /// pr47::util::type_assert::assert_mut_ref::<String>();
 /// # }
 /// ```
-pub const fn assert_mut_ref<T>() where Void: AssertMutRef<T> {}
+#[inline(always)] pub const fn assert_mut_ref<T>() where Void: AssertMutRef<T> {}
 
 /// Assert that the type parameter `T` is an exception-convertible `Result` type.
 ///
@@ -138,7 +162,7 @@ pub const fn assert_mut_ref<T>() where Void: AssertMutRef<T> {}
 ///     pr47::util::type_assert::assert_result::<Result<(), &'a i64>>();
 /// }
 /// ```
-pub const fn assert_result<T>() where Void: AssertResult<T> {}
+#[inline(always)] pub const fn assert_result<T>() where Void: AssertResult<T> {}
 
 /// Assert that the type parameter `T` is an null-convertible `Option` type.
 ///
@@ -163,7 +187,7 @@ pub const fn assert_result<T>() where Void: AssertResult<T> {}
 /// pr47::util::type_assert::assert_option::<Option<Vec<u8>>>();
 /// # }
 /// ```
-pub const fn assert_option<T>() where Void: AssertOption<T> {}
+#[inline(always)] pub const fn assert_option<T>() where Void: AssertOption<T> {}
 
 /// Assert that the type parameter `T` satisfies `StaticBase` requirements.
 ///
@@ -180,4 +204,4 @@ pub const fn assert_option<T>() where Void: AssertOption<T> {}
 /// pr47::util::type_assert::assert_static_base::<i64>();
 /// # }
 /// ```
-pub const fn assert_static_base<T: 'static>() where Void: StaticBase<T> {}
+#[inline(always)] pub const fn assert_static_base<T: 'static>() where Void: StaticBase<T> {}
