@@ -382,7 +382,7 @@ pub enum Insc {
     ///
     /// Call the function denoted by `FUNC-ID` with given `ARGS`, store the return values to `RETS`.
     /// **No type checking**.
-    Call(usize, Vec<usize>, Vec<usize>),
+    Call(usize, Box<[usize]>, Box<[usize]>),
 
     /// `CALL-TYCK [FUNC-ID] [ARGS..] [RETS..]`
     ///
@@ -404,7 +404,7 @@ pub enum Insc {
     CallOverload(usize, Vec<usize>, Vec<usize>),
 
     /// `RETURN [RETURN-VALUE-LOCS...]`
-    Return(Vec<usize>),
+    Return(Box<[usize]>),
 
     /// `FFI-CALL-TYCK [FFI-FUNC-ID] [ARGS..] [RETS..]`
     FFICallTyck(usize, Vec<usize>, Vec<usize>),

@@ -1,4 +1,4 @@
-use crate::boxed_slice;
+use crate::boxed_slice as bslice;
 use crate::data::Value;
 use crate::data::exception::Exception;
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
@@ -8,22 +8,22 @@ use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
 use crate::vm::al31f::executor::{create_vm_main_thread, vm_thread_run_function};
 use crate::vm::al31f::insc::Insc;
-use crate::vm::al31f::alloc::Alloc;
+use crate::vm::test_program::fibonacci_program;
 
 async fn basic_program_eval() {
     let program: CompiledProgram<DefaultAlloc> = CompiledProgram {
-        code: boxed_slice![
+        code: bslice![
             Insc::AddInt(0, 1, 0),
-            Insc::Return(vec![0])
+            Insc::Return(bslice![0])
         ],
-        const_pool: boxed_slice![],
+        const_pool: bslice![],
         init_proc: 0,
-        functions: boxed_slice![
-            CompiledFunction::new(0, 2, 1, 2, boxed_slice![])
+        functions: bslice![
+            CompiledFunction::new(0, 2, 1, 2, bslice![])
         ],
-        ffi_functions: boxed_slice![],
+        ffi_functions: bslice![],
         #[cfg(feature = "async")]
-        async_ffi_funcs: boxed_slice![],
+        async_ffi_funcs: bslice![],
     };
     let alloc: DefaultAlloc = DefaultAlloc::new();
 
@@ -46,26 +46,26 @@ async fn basic_program_eval() {
 
 async fn basic_fn_call() {
     let program: CompiledProgram<DefaultAlloc> = CompiledProgram {
-        code: boxed_slice![
+        code: bslice![
                                                        // application_start() -> (int)
             /*00*/ Insc::MakeIntConst(1, 0),           // %0 = $1
             /*01*/ Insc::MakeIntConst(2, 1),           // %1 = $2
-            /*02*/ Insc::Call(1, vec![0, 1], vec![0]), // [ %0 ] = call sum(%0, %1)
-            /*03*/ Insc::Return(vec![0]),              // return [ %0 ]
+            /*02*/ Insc::Call(1, bslice![0, 1], bslice![0]), // [ %0 ] = call sum(%0, %1)
+            /*03*/ Insc::Return(bslice![0]),              // return [ %0 ]
 
                                                        // sum(%0, %1) -> (int)
             /*04*/ Insc::AddInt(0, 1, 0),              // [ %0 ] = add int %0, %1
-            /*05*/ Insc::Return(vec![0])               // return [ %0 ]
+            /*05*/ Insc::Return(bslice![0])               // return [ %0 ]
         ],
-        const_pool: boxed_slice![],
+        const_pool: bslice![],
         init_proc: 0,
-        functions: boxed_slice![
-            CompiledFunction::new(0, 0, 1, 2, boxed_slice![]), // application_start
-            CompiledFunction::new(4, 2, 1, 2, boxed_slice![]), // sum
+        functions: bslice![
+            CompiledFunction::new(0, 0, 1, 2, bslice![]), // application_start
+            CompiledFunction::new(4, 2, 1, 2, bslice![]), // sum
         ],
-        ffi_functions: boxed_slice![],
+        ffi_functions: bslice![],
         #[cfg(feature = "async")]
-        async_ffi_funcs: boxed_slice![],
+        async_ffi_funcs: bslice![],
     };
 
     let alloc: DefaultAlloc = DefaultAlloc::new();
@@ -84,35 +84,6 @@ async fn basic_fn_call() {
         }
     } else {
         panic!()
-    }
-}
-
-pub fn fibonacci_program<A: Alloc>() -> CompiledProgram<A> {
-    CompiledProgram {
-        code: boxed_slice![
-                                                    // fibonacci(%0) -> (int)
-            /*00*/ Insc::MakeIntConst(0, 1),        // %1 = $0
-            /*01*/ Insc::EqValue(0, 1, 2),          // %2 = eq int %0, %1
-            /*02*/ Insc::JumpIfTrue(2, 12),         // if %2 goto 12
-            /*03*/ Insc::MakeIntConst(1, 1),        // %1 = $1
-            /*04*/ Insc::EqValue(0, 1, 2),          // %2 = eq int %0, %1
-            /*05*/ Insc::JumpIfTrue(2, 12),         // if %2 goto 12
-            /*06*/ Insc::SubInt(0, 1, 2),           // %2 = sub int %0, %1
-            /*07*/ Insc::MakeIntConst(2, 1),        // %1 = $2
-            /*08*/ Insc::SubInt(0, 1, 3),           // %3 = sub int %0, %1
-            /*09*/ Insc::Call(0, vec![2], vec![2]), // [ %2 ] = call fibonacci(%2)
-            /*10*/ Insc::Call(0, vec![3], vec![3]), // [ %3 ] = call fibonacci(%3)
-            /*11*/ Insc::AddInt(2, 3, 1),           // %1 = add %2, %3
-            /*12*/ Insc::Return(vec![1])            // return [ %1 ]
-        ],
-        const_pool: boxed_slice![],
-        init_proc: 0,
-        functions: boxed_slice![
-            CompiledFunction::new(0, 1, 1, 4, boxed_slice![])
-        ],
-        ffi_functions: boxed_slice![],
-        #[cfg(feature = "async")]
-        async_ffi_funcs: boxed_slice![],
     }
 }
 

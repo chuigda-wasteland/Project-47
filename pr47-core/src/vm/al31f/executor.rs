@@ -8,16 +8,13 @@ use std::ptr::NonNull;
 
 use crate::data::Value;
 use crate::data::exception::{Exception, UncheckedException};
+use crate::util::mem::FatPointer;
 use crate::util::serializer::Serializer;
 use crate::vm::al31f::{AL31F, VMThread};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
 use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{Stack, StackSlice};
-use crate::util::mem::FatPointer;
-
-#[cfg(feature = "bench")]
-use crate::defer;
 
 #[must_use = "VM thread are effective iff a function gets run on it"]
 #[cfg(feature = "async")]
@@ -40,11 +37,6 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
     func_ptr: usize,
     args: &[Value]
 ) -> Result<Vec<Value>, Exception> {
-    #[cfg(feature = "bench")] let start_time: std::time::Instant = std::time::Instant::now();
-    #[cfg(feature = "bench")] defer!(move || {
-        let end_time: std::time::Instant = std::time::Instant::now();
-        eprintln!("Time consumed: {}ms", (end_time - start_time).as_millis());
-    });
 
     let program: &CompiledProgram<A> = thread.program.as_ref();
     let stack: &mut Stack = &mut thread.stack;
