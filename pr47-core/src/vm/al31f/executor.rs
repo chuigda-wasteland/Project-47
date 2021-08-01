@@ -16,6 +16,9 @@ use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{Stack, StackSlice};
 use crate::util::mem::FatPointer;
 
+#[cfg(feature = "bench")]
+use crate::defer;
+
 #[must_use = "VM thread are effective iff a function gets run on it"]
 #[cfg(feature = "async")]
 pub async fn create_vm_main_thread<A: Alloc>(
@@ -37,6 +40,12 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
     func_ptr: usize,
     args: &[Value]
 ) -> Result<Vec<Value>, Exception> {
+    #[cfg(feature = "bench")] let start_time: std::time::Instant = std::time::Instant::now();
+    #[cfg(feature = "bench")] defer!(move || {
+        let end_time: std::time::Instant = std::time::Instant::now();
+        eprintln!("Time consumed: {}ms", (end_time - start_time).as_millis());
+    });
+
     let program: &CompiledProgram<A> = thread.program.as_ref();
     let stack: &mut Stack = &mut thread.stack;
 

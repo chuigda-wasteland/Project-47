@@ -19,10 +19,3 @@ compile_error!("features `async-astd` and `async-tokio` are mutually exclusive")
 
 #[cfg(test)]
 #[macro_use] extern crate variant_count;
-
-#[cfg(test)]
-mod test {
-    #[test]
-    fn test() {
-    }
-}

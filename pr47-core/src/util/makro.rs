@@ -6,3 +6,10 @@
         vec![$($x),+].into_boxed_slice()
     };
 }
+
+#[macro_export] macro_rules! defer {
+    ($func:expr) => {
+        #[allow(unused_variables)]
+        let deferred: crate::util::defer::Defer<_> = crate::util::defer::Defer::new($func);
+    };
+}

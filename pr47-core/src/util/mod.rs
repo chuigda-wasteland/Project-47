@@ -1,3 +1,4 @@
+pub mod defer;
 pub mod location;
 pub mod makro;
 pub mod mem;

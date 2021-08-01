@@ -11,6 +11,9 @@ resolver = "2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[profile.bench]
+debug = true
+
 [dependencies]
 unchecked_unwrap = "3"
 
@@ -29,7 +32,14 @@ variant_count = "1"
 default = ["optimized-rtlc", "async-tokio"]
 no-rtlc = []
 optimized-rtlc = []
+bench = []
 
 async-tokio = ["async", "tokio"]
 async-astd = ["async", "async-std"]
 async = ["async-trait", "futures"]
+
+[[bench]]
+name = "bench_al31fm2"
+path = "benches/bench_al31fm2.rs"
+required-features = ["bench"]
+harness = false

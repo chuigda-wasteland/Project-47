@@ -12,7 +12,7 @@ use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
 use crate::data::traits::StaticBase;
-use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData, ValueTypeTag, VALUE_TYPE_TAG_MASK};
+use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
 use crate::data::wrapper::{DynBase, OwnershipInfo, Wrapper};
 use crate::util::mem::{FatPointer, move_to_heap};
 use crate::util::unsafe_from::UnsafeFrom;
@@ -20,8 +20,10 @@ use crate::util::void::Void;
 use crate::util::zvec::ZeroInit;
 use crate::util::std_ext::BoxedExt;
 
-#[cfg(debug_assertions)]
+#[cfg(test)]
 use std::fmt::{Debug, Formatter};
+#[cfg(test)]
+use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
 
 pub const TAG_BITS_MASK: u8 = 0b00000_111;
 pub const TAG_BITS_MASK_USIZE: usize = TAG_BITS_MASK as usize;
@@ -117,35 +119,35 @@ impl Value {
     }
 
     /// Create a new integer `Value`
-    pub fn new_int(int_value: i64) -> Self {
+    #[inline(always)] pub fn new_int(int_value: i64) -> Self {
         Self {
             vt_data: ValueTypedData::from(int_value)
         }
     }
 
     /// Create a new floating point number `Value`
-    pub fn new_float(float_value: f64) -> Self {
+    #[inline(always)] pub fn new_float(float_value: f64) -> Self {
         Self {
             vt_data: ValueTypedData::from(float_value)
         }
     }
 
     /// Create a new character `Value`
-    pub fn new_char(char_value: char) -> Self {
+    #[inline(always)] pub fn new_char(char_value: char) -> Self {
         Self {
             vt_data: ValueTypedData::from(char_value)
         }
     }
 
     /// Create a new boolean `Value`
-    pub fn new_bool(bool_value: bool) -> Self {
+    #[inline(always)] pub fn new_bool(bool_value: bool) -> Self {
         Self {
             vt_data: ValueTypedData::from(bool_value)
         }
     }
 
     /// Create a new `null` `Value`
-    pub fn new_null() -> Self {
+    #[inline(always)] pub fn new_null() -> Self {
         Self {
             ptr_repr: FatPointer::new(0, 0)
         }

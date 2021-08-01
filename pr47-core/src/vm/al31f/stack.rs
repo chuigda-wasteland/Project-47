@@ -25,12 +25,12 @@ pub struct StackSlice(*mut [Value]);
 
 #[cfg(not(debug_assertions))]
 impl StackSlice {
-    pub unsafe fn set_value(&mut self, idx: usize, value: Value) {
+    #[inline(always)] pub unsafe fn set_value(&mut self, idx: usize, value: Value) {
         let dest: &mut Value = (*self.0).get_unchecked_mut(idx);
         *dest = value;
     }
 
-    pub unsafe fn get_value(&mut self, idx: usize) -> Value {
+    #[inline(always)] pub unsafe fn get_value(&mut self, idx: usize) -> Value {
         let src: &Value = (*self.0).get_unchecked(idx);
         *src
     }

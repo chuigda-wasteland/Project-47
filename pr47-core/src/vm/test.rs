@@ -87,7 +87,7 @@ async fn basic_fn_call() {
     }
 }
 
-fn fibonacci_program<A: Alloc>() -> CompiledProgram<A> {
+pub fn fibonacci_program<A: Alloc>() -> CompiledProgram<A> {
     CompiledProgram {
         code: boxed_slice![
                                                     // fibonacci(%0) -> (int)

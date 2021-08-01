@@ -4,3 +4,6 @@ members = [
     "pr47-codegen"
 ]
 resolver = "2"
+
+[profile.bench]
+debug = true

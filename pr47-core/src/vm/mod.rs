@@ -1,4 +1,4 @@
 pub mod al31f;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 pub mod test;
