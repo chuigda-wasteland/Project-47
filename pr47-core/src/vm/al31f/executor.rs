@@ -130,6 +130,8 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
         #[cfg(not(debug_assertions))]
         let insc: &Insc = unsafe { program.code.get_unchecked(insc_ptr) };
 
+        dbg!(insc);
+
         insc_ptr += 1;
         match insc {
             Insc::AddInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, +],
@@ -155,6 +157,8 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::ModInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, %],
             Insc::ModAny(_, _, _) => {}
             Insc::EqValue(src1, src2, dst) => {
+                debug_assert_eq!(slice.get_value(*src1).ptr_repr.ptr,
+                                 slice.get_value(*src2).ptr_repr.ptr);
                 let src1: usize = slice.get_value(*src1).ptr_repr.trivia;
                 let src2: usize = slice.get_value(*src2).ptr_repr.trivia;
                 slice.set_value(*dst, Value::new_bool(src1 == src2));
@@ -265,7 +269,21 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 let _src: Value = slice.get_value(*src);
                 todo!();
             }
-            Insc::Call(_, _, _) => {}
+            Insc::Call(func_id, args, rets) => {
+                #[cfg(debug_assertions)]
+                let compiled: &CompiledFunction = &program.functions[*func_id];
+                #[cfg(not(debug_assertions))]
+                let compiled: &CompiledFunction = program.functions.get_unchecked(*func_id);
+
+                debug_assert_eq!(compiled.arg_count, args.len());
+                slice = stack.func_call_grow_stack(
+                    compiled.stack_size,
+                    args,
+                    NonNull::from(&rets[..]),
+                    insc_ptr + 1
+                );
+                insc_ptr = compiled.start_addr;
+            }
             Insc::CallTyck(_, _, _) => {}
             Insc::CallPtr(_, _, _) => {}
             Insc::CallPtrTyck(_, _, _) => {}
@@ -293,11 +311,23 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             #[cfg(feature = "no-rtlc")]
             Insc::FFICallAsyncUnchecked(_, _, _) => {}
             Insc::Await(_, _) => {}
-            Insc::JumpIfTrue(_, _) => {}
-            Insc::JumpIfFalse(_, _) => {}
-            Insc::Jump(_) => {}
-            Insc::CreateObject => {}
-            Insc::CreateContainer(_, _) => {}
+            Insc::JumpIfTrue(condition, dest) => {
+                let condition: bool = slice.get_value(*condition).vt_data.inner.bool_value;
+                if condition {
+                    insc_ptr = *dest;
+                }
+            }
+            Insc::JumpIfFalse(condition, dest) => {
+                let condition: bool = slice.get_value(*condition).vt_data.inner.bool_value;
+                if !condition {
+                    insc_ptr = *dest;
+                }
+            }
+            Insc::Jump(dest) => {
+                insc_ptr = *dest;
+            }
+            Insc::CreateObject(_) => {}
+            Insc::CreateContainer(_, _, _) => {}
             Insc::VecIndex(_, _, _) => {}
             Insc::VecIndexPut(_, _, _) => {}
             Insc::VecPush(_, _) => {}

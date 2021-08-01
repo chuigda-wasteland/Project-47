@@ -8,7 +8,7 @@ use crate::data::tyck::TyckInfo;
 /// An VM instruction
 ///
 /// This is a tri-address like instruction set for register machine.
-#[cfg_attr(test, derive(VariantCount))]
+#[cfg_attr(test, derive(Debug), derive(VariantCount))]
 pub enum Insc {
     /// `ADD-INT <INT@SRC1> <INT@SRC2> [DEST]`
     ///
@@ -447,8 +447,8 @@ pub enum Insc {
     JumpIfFalse(usize, usize),
     Jump(usize),
 
-    CreateObject,
-    CreateContainer(ContainerCtor, NonNull<TyckInfo>),
+    CreateObject(usize),
+    CreateContainer(ContainerCtor, NonNull<TyckInfo>, usize),
 
     VecIndex(usize, usize, usize),
     VecIndexPut(usize, usize, usize),

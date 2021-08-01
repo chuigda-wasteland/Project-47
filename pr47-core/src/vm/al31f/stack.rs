@@ -134,6 +134,7 @@ impl Stack {
             StackSlice(&mut self.values[this_frame.frame_start..this_frame.frame_end] as *mut _);
         let mut prev_slice =
             StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
+
         assert_eq!(ret_values.len(), this_frame.ret_value_locs.as_ref().len());
         if ret_values.len() != 0 {
             if ret_values.len() == 1 {
