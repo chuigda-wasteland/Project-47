@@ -31,14 +31,14 @@ use std::{
 
 #[cfg(all(test, feature = "async-tokio"))]
 pub fn block_on_future<F, R>(fut: F) -> R
-    where F: Future<Output=R> + Send + 'static
+    where F: Future<Output=R> + 'static
 {
     tokio::runtime::Runtime::new().unwrap().block_on(fut)
 }
 
 #[cfg(all(test, feature = "async-astd"))]
 pub fn block_on_future<F, R>(fut: F) -> R
-    where F: Future<Output=R> + Send + 'static
+    where F: Future<Output=R> + 'static
 {
     async_std::task::block_on(fut)
 }

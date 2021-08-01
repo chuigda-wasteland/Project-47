@@ -348,13 +348,19 @@ pub enum Insc {
     /// Load constant `CONST-ID` from constant pool, and put it to register `DEST`.
     LoadConst(usize, usize),
 
+    /// `SAVE-CONST [CONST] [CONST-ID]`
+    ///
+    /// Save the value in register `CONST` to constant pool location `CONST-ID`. Using this
+    /// instruction outside the initialization stage is a logical error. Compiler should
+    /// not generate codes in such a way.
+    SaveConst(usize, usize),
+
     CastFloatInt(usize, usize),
     CastCharInt(usize, usize),
     CastBoolInt(usize, usize),
     CastAnyInt(usize, usize),
     CastIntFloat(usize, usize),
     CastAnyFloat(usize, usize),
-    CastIntChar(usize, usize),
     CastAnyChar(usize, usize),
 
     /// `IS-NULL [SRC] [DEST]`
@@ -396,6 +402,9 @@ pub enum Insc {
 
     /// `CALL-OVERLOAD [OVERLOAD-TBL] [ARGS..] [RETS..]`
     CallOverload(usize, Vec<usize>, Vec<usize>),
+
+    /// `RETURN [RETURN-VALUE-LOCS...]`
+    Return(Vec<usize>),
 
     /// `FFI-CALL-TYCK [FFI-FUNC-ID] [ARGS..] [RETS..]`
     FFICallTyck(usize, Vec<usize>, Vec<usize>),

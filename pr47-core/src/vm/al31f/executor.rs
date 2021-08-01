@@ -16,9 +16,11 @@ use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{Stack, StackSlice};
 use crate::util::mem::FatPointer;
 
+#[must_use = "VM thread are effective iff a function gets run on it"]
 #[cfg(feature = "async")]
 pub async fn create_vm_main_thread<A: Alloc>(
-    alloc: A, program: &CompiledProgram<A>
+    alloc: A,
+    program: &CompiledProgram<A>
 ) -> VMThread<A> {
     let ret = VMThread {
         vm: Serializer::new(AL31F { alloc }).await,
@@ -65,6 +67,24 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             let src1: $type = $slice.get_value(*$src1).vt_data.inner.$value;
             let src2: $type = $slice.get_value(*$src2).vt_data.inner.$value;
             $slice.set_value(*$dst, Value::$value_ctor(src1 $op src2));
+        }
+    }
+
+    macro_rules! impl_cast_op {
+        (
+            $slice:ident,
+            $src:ident,
+            $dst:ident,
+            $src_type:ty,
+            $dst_type:ty,
+            $from_value:ident,
+            $value_ctor:ident
+        ) => {
+            {
+                let src: $src_type = $slice.get_value(*$src).vt_data.inner.$from_value;
+                let casted: $dst_type = src as _;
+                $slice.set_value(*$dst, Value::$value_ctor(casted));
+            }
         }
     }
 
@@ -203,32 +223,67 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::XorAny(_, _, _) => {}
             Insc::NotBool(_, _) => {}
             Insc::NotAny(_, _) => {}
-            Insc::ShlInt(_, _, _) => {}
+            Insc::ShlInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, <<],
             Insc::ShlAny(_, _, _) => {}
-            Insc::ShrInt(_, _, _) => {}
+            Insc::ShrInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, >>],
             Insc::ShrAny(_, _, _) => {}
-            Insc::MakeIntConst(_, _) => {}
-            Insc::MakeFloatConst(_, _) => {}
-            Insc::MakeCharConst(_, _) => {}
-            Insc::MakeBoolConst(_, _) => {}
-            Insc::MakeNull(_) => {}
-            Insc::LoadConst(_, _) => {}
-            Insc::CastFloatInt(_, _) => {}
-            Insc::CastCharInt(_, _) => {}
-            Insc::CastBoolInt(_, _) => {}
+            Insc::MakeIntConst(i64_const, dst) =>
+                slice.set_value(*dst, Value::new_int(*i64_const)),
+            Insc::MakeFloatConst(f64_const, dst) =>
+                slice.set_value(*dst, Value::new_float(*f64_const)),
+            Insc::MakeCharConst(char_const, dst) =>
+                slice.set_value(*dst, Value::new_char(*char_const)),
+            Insc::MakeBoolConst(bool_const, dst) =>
+                slice.set_value(*dst, Value::new_bool(*bool_const)),
+            Insc::MakeNull(dst) =>
+                slice.set_value(*dst, Value::new_null()),
+            Insc::LoadConst(const_id, dst) => {
+                let constant: Value = *thread.program.as_ref().const_pool.get_unchecked(*const_id);
+                slice.set_value(*dst, constant);
+            }
+            Insc::SaveConst(const_src, const_id) => {
+                let constant: Value = slice.get_value(*const_src);
+                *thread.program.as_mut().const_pool.get_unchecked_mut(*const_id) = constant;
+            }
+            Insc::CastFloatInt(src, dst) =>
+                impl_cast_op![slice, src, dst, f64, i64, float_value, new_int],
+            Insc::CastCharInt(src, dst) =>
+                impl_cast_op![slice, src, dst, char, i64, char_value, new_int],
+            Insc::CastBoolInt(src, dst) =>
+                impl_cast_op![slice, src, dst, bool, i64, bool_value, new_int],
             Insc::CastAnyInt(_, _) => {}
-            Insc::CastIntFloat(_, _) => {}
+            Insc::CastIntFloat(src, dst) =>
+                impl_cast_op![slice, src, dst, i64, f64, int_value, new_float],
             Insc::CastAnyFloat(_, _) => {}
-            Insc::CastIntChar(_, _) => {}
             Insc::CastAnyChar(_, _) => {}
-            Insc::IsNull(_, _) => {}
+            Insc::IsNull(src, dst) => {
+                let src: Value = slice.get_value(*src);
+                slice.set_value(*dst, Value::new_bool(src.is_null()));
+            }
             Insc::NullCheck(_) => {}
-            Insc::TypeCheck(_, _) => {}
+            Insc::TypeCheck(src, _tyck_info) => {
+                let _src: Value = slice.get_value(*src);
+                todo!();
+            }
             Insc::Call(_, _, _) => {}
             Insc::CallTyck(_, _, _) => {}
             Insc::CallPtr(_, _, _) => {}
             Insc::CallPtrTyck(_, _, _) => {}
             Insc::CallOverload(_, _, _) => {}
+            Insc::Return(ret_values) => {
+                if let Some((prev_stack_slice, ret_addr)) =
+                    stack.done_func_call_shrink_stack(&ret_values)
+                {
+                    insc_ptr = ret_addr;
+                    slice = prev_stack_slice;
+                } else {
+                    let mut ret_vec: Vec<Value> = Vec::with_capacity(ret_values.len());
+                    for ret_value_loc in ret_values.iter() {
+                        ret_vec.push(slice.get_value(*ret_value_loc));
+                    }
+                    return Ok(ret_vec);
+                }
+            }
             Insc::FFICallTyck(_, _, _) => {}
             Insc::FFICallRtlc(_, _, _) => {}
             Insc::FFICall(_, _, _) => {}
