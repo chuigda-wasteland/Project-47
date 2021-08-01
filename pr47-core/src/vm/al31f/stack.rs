@@ -159,20 +159,26 @@ impl Stack {
 #[cfg(all(debug_assertions, test))]
 impl Stack {
     pub fn trace(&self) {
+        eprintln!("[STACK-TRACE] Begin stack tracing");
         eprintln!("[STACK-TRACE] {{");
         for (i, frame) /*: (usize, &FrameInfo)*/ in self.frames.iter().enumerate() {
-            eprintln!("[STACK-TRACE]    {{frame {}}}", i);
-            eprintln!("[STACK-TRACE]    [");
+            eprintln!("[STACK-TRACE]     <frame {}: size = {}, ret_addr = {}, ret_val_locs = {:?}>",
+                      i,
+                      frame.frame_end - frame.frame_start,
+                      frame.ret_addr,
+                      unsafe { frame.ret_value_locs.as_ref() });
+            eprintln!("[STACK-TRACE]     [");
             for i /*: usize*/ in frame.frame_start..frame.frame_end {
                 if let Some(value /*: &Value*/) = &self.values[i] {
-                    eprintln!("[STACK-TRACE]        [{}] = {:?}", i - frame.frame_start, value);
+                    eprintln!("[STACK-TRACE]         [{}] = {:?}", i - frame.frame_start, value);
                 } else {
-                    eprintln!("[STACK-TRACE]        [{}] = UNINIT", i - frame.frame_start);
+                    eprintln!("[STACK-TRACE]         [{}] = UNINIT", i - frame.frame_start);
                 }
             }
-            eprintln!("[STACK-TRACE]    ]");
+            eprintln!("[STACK-TRACE]     ]");
         }
         eprintln!("[STACK-TRACE] }}");
+        eprintln!("[STACK-TRACE] End stack tracing");
     }
 }
 
