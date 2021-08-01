@@ -470,6 +470,62 @@ pub enum Insc {
     ObjectPutDyn(usize, usize, usize)
 }
 
+impl Insc {
+    pub unsafe fn unsafe_to_string(&self) -> String {
+        match self {
+            Insc::AddInt(src1, src2, dst) => format!("%{} = add int %{}, %{}", dst, src1, src2),
+            Insc::AddFloat(src1, src2, dst) => format!("%{} = add float %{}, %{}", dst, src1, src2),
+            Insc::AddAny(src1, src2, dst) =>format!("%{} = add ? %{}, %{}", dst, src1, src2),
+            Insc::SubInt(src1, src2, dst) => format!("%{} = sub int %{}, %{}", dst, src1, src2),
+            Insc::EqValue(src1, src2, dst) => format!("%{} = eq value %{}, %{}", dst, src1, src2),
+            Insc::EqRef(src1, src2, dst) => format!("%{} = eq ref %{}, %{}", dst, src1, src2),
+            Insc::EqAny(src1, src2, dst) => format!("%{} = eq ? %{}, %{}", dst, src1, src2),
+            Insc::MakeIntConst(int_const, dst) => format!("%{} = int ${}", dst, int_const),
+            Insc::LoadConst(const_id, dst) => format!("%{} = load {}", dst, const_id),
+            Insc::SaveConst(src, const_id) => format!("store {}, %{}", const_id, src),
+            Insc::Call(func_id, args, rets) => {
+                let mut result: String = String::from("[");
+                for (i, ret) /*: (usize, &usize)*/ in rets.iter().enumerate() {
+                    result.push('%');
+                    result.push_str(&ret.to_string());
+                    if i != rets.len() - 1 {
+                        result.push(',');
+                        result.push(' ');
+                    }
+                }
+                result.push_str("] = call F.");
+                result.push_str(&func_id.to_string());
+                result.push(' ');
+                for (i, arg) /*: (usize, &usize)*/ in args.iter().enumerate() {
+                    result.push('%');
+                    result.push_str(&arg.to_string());
+                    if i != args.len() - 1 {
+                        result.push(',');
+                        result.push(' ');
+                    }
+                }
+                result
+            },
+            Insc::Return(ret_value_locs) => {
+                let mut result: String = String::from("ret ");
+                for (i, ret_value_loc) /*: (usize, &usize)*/ in ret_value_locs.iter().enumerate() {
+                    result.push('%');
+                    result.push_str(&ret_value_loc.to_string());
+                    if i != ret_value_locs.len() - 1 {
+                        result.push(',');
+                        result.push(' ');
+                    }
+                }
+                result
+            },
+            Insc::JumpIfTrue(condition, dest) => format!("if %{} goto L.{}", condition, dest),
+            Insc::JumpIfFalse(condition, dest) => format!("if not %{} goto L.{}", condition, dest),
+            Insc::Jump(dest) => format!("goto L.{}", dest),
+            _ => todo!()
+        }
+    }
+}
+
 #[cfg(test)]
 #[cfg_attr(miri, ignore)]
 #[test] fn count_instructions() {

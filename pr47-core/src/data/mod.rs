@@ -12,13 +12,16 @@ use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
 use crate::data::traits::StaticBase;
-use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
+use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData, ValueTypeTag, VALUE_TYPE_TAG_MASK};
 use crate::data::wrapper::{DynBase, OwnershipInfo, Wrapper};
 use crate::util::mem::{FatPointer, move_to_heap};
 use crate::util::unsafe_from::UnsafeFrom;
 use crate::util::void::Void;
 use crate::util::zvec::ZeroInit;
 use crate::util::std_ext::BoxedExt;
+
+#[cfg(debug_assertions)]
+use std::fmt::{Debug, Formatter};
 
 pub const TAG_BITS_MASK: u8 = 0b00000_111;
 pub const TAG_BITS_MASK_USIZE: usize = TAG_BITS_MASK as usize;
@@ -390,6 +393,33 @@ impl Value {
             &mut maybe_uninit as *mut _ as *mut ()
         );
         maybe_uninit.assume_init()
+    }
+}
+
+#[cfg(test)]
+impl Debug for Value {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.is_value() {
+            unsafe {
+                match ValueTypeTag::unsafe_from((self.vt_data.tag as u8) & VALUE_TYPE_TAG_MASK) {
+                    ValueTypeTag::Int => write!(f, "IntV({})", self.vt_data.inner.int_value),
+                    ValueTypeTag::Float => write!(f, "FloatV({})", self.vt_data.inner.float_value),
+                    ValueTypeTag::Char => write!(f, "CharV('{}')", self.vt_data.inner.char_value),
+                    ValueTypeTag::Bool => write!(f, "BoolV({})", self.vt_data.inner.bool_value)
+                }
+            }
+        } else if self.is_container() {
+            unsafe {
+                write!(f, "CustomContainer(ptr = {:X}, vt = {:X})",
+                       self.ptr_repr.trivia, self.ptr_repr.ptr)
+            }
+        } else if self.is_null() {
+            write!(f, "Null")
+        } else {
+            unsafe {
+                write!(f, "Reference(ptr = {:X})", self.ptr_repr.ptr)
+            }
+        }
     }
 }
 

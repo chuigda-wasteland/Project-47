@@ -138,8 +138,8 @@ impl Stack {
         assert_eq!(ret_values.len(), this_frame.ret_value_locs.as_ref().len());
         if ret_values.len() != 0 {
             if ret_values.len() == 1 {
-                let from: usize = this_frame.ret_value_locs.as_ref()[0];
-                let dest: usize = ret_values[0];
+                let dest: usize = this_frame.ret_value_locs.as_ref()[0];
+                let from: usize = ret_values[0];
                 prev_slice.set_value(dest, this_slice.get_value(from));
             } else {
                 for (ret_value /*: &usize*/, ret_value_loc /*: &usize*/) in
@@ -153,6 +153,26 @@ impl Stack {
         self.values.truncate(prev_frame.frame_end);
         self.frames.pop().unwrap();
         Some((prev_slice, ret_addr))
+    }
+}
+
+#[cfg(all(debug_assertions, test))]
+impl Stack {
+    pub fn trace(&self) {
+        eprintln!("[STACK-TRACE] {{");
+        for (i, frame) /*: (usize, &FrameInfo)*/ in self.frames.iter().enumerate() {
+            eprintln!("[STACK-TRACE]    {{frame {}}}", i);
+            eprintln!("[STACK-TRACE]    [");
+            for i /*: usize*/ in frame.frame_start..frame.frame_end {
+                if let Some(value /*: &Value*/) = &self.values[i] {
+                    eprintln!("[STACK-TRACE]        [{}] = {:?}", i - frame.frame_start, value);
+                } else {
+                    eprintln!("[STACK-TRACE]        [{}] = UNINIT", i - frame.frame_start);
+                }
+            }
+            eprintln!("[STACK-TRACE]    ]");
+        }
+        eprintln!("[STACK-TRACE] }}");
     }
 }
 

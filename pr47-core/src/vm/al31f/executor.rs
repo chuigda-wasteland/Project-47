@@ -125,12 +125,10 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
     }
 
     loop {
-        #[cfg(debug_assertions)]
-        let insc: &Insc = &program.code[insc_ptr];
         #[cfg(not(debug_assertions))]
         let insc: &Insc = unsafe { program.code.get_unchecked(insc_ptr) };
-
-        dbg!(insc);
+        #[cfg(debug_assertions)]
+        let insc: &Insc = &program.code[insc_ptr];
 
         insc_ptr += 1;
         match insc {
@@ -280,7 +278,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                     compiled.stack_size,
                     args,
                     NonNull::from(&rets[..]),
-                    insc_ptr + 1
+                    insc_ptr
                 );
                 insc_ptr = compiled.start_addr;
             }

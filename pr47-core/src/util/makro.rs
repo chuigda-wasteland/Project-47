@@ -4,5 +4,5 @@
     };
     ($($x:expr),+ $(,)?) => {
         vec![$($x),+].into_boxed_slice()
-    }
+    };
 }
