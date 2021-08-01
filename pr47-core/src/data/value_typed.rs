@@ -35,7 +35,7 @@ pub struct ValueTypedData {
 }
 
 impl From<i64> for ValueTypedData {
-    fn from(int_value: i64) -> Self {
+    #[inline(always)] fn from(int_value: i64) -> Self {
         Self {
             tag: ValueTypeTag::Int as u64 | VALUE_TYPE_MASK as u64,
             inner: ValueTypedDataInner {
@@ -46,7 +46,7 @@ impl From<i64> for ValueTypedData {
 }
 
 impl From<f64> for ValueTypedData {
-    fn from(float_value: f64) -> Self {
+    #[inline(always)] fn from(float_value: f64) -> Self {
         Self {
             tag: ValueTypeTag::Float as u64 | VALUE_TYPE_MASK as u64,
             inner: ValueTypedDataInner {
@@ -57,7 +57,7 @@ impl From<f64> for ValueTypedData {
 }
 
 impl From<char> for ValueTypedData {
-    fn from(char_value: char) -> Self {
+    #[inline(always)] fn from(char_value: char) -> Self {
         Self {
             tag: ValueTypeTag::Char as u64 | VALUE_TYPE_MASK as u64,
             inner: ValueTypedDataInner {
@@ -68,7 +68,7 @@ impl From<char> for ValueTypedData {
 }
 
 impl From<bool> for ValueTypedData {
-    fn from(bool_value: bool) -> Self {
+    #[inline(always)] fn from(bool_value: bool) -> Self {
         Self {
             tag: ValueTypeTag::Bool as u64 | VALUE_TYPE_MASK as u64,
             inner: ValueTypedDataInner {

@@ -1,3 +1,7 @@
+.PHONY: flamegraph_bench_al31fm2
+flamegraph_bench_al31fm2:
+	@cargo flamegraph --bench bench_al31fm2 --features=bench -- --nocapture
+
 .PHONY: miri_test_pr47_core_data
 miri_test_pr47_core_data:
 	@echo testing pr47::core::data

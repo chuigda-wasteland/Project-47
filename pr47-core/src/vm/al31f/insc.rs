@@ -387,40 +387,40 @@ pub enum Insc {
     /// `CALL-TYCK [FUNC-ID] [ARGS..] [RETS..]`
     ///
     /// Similar to `CALL-TYCK`, but **performs type checking**.
-    CallTyck(usize, Vec<usize>, Vec<usize>),
+    CallTyck(usize, Box<[usize]>, Box<[usize]>),
 
     /// `CALL-PTR [SRC] [ARGS..] [RETS..]`
     ///
     /// Call the function stored in function pointer `SRC` with given `ARGS`, store the return
     /// values to `RETS`. **No type checking**.
-    CallPtr(usize, Vec<usize>, Vec<usize>),
+    CallPtr(usize, Box<[usize]>, Box<[usize]>),
 
     /// `CALL-PTR-TYCK [SRC] [ARGS..] [RETS..]`
     ///
     /// Similar to `CALL-PTR`, but **performs type checking**.
-    CallPtrTyck(usize, Vec<usize>, Vec<usize>),
+    CallPtrTyck(usize, Box<[usize]>, Box<[usize]>),
 
     /// `CALL-OVERLOAD [OVERLOAD-TBL] [ARGS..] [RETS..]`
-    CallOverload(usize, Vec<usize>, Vec<usize>),
+    CallOverload(usize, Box<[usize]>, Box<[usize]>),
 
     /// `RETURN [RETURN-VALUE-LOCS...]`
     Return(Box<[usize]>),
 
     /// `FFI-CALL-TYCK [FFI-FUNC-ID] [ARGS..] [RETS..]`
-    FFICallTyck(usize, Vec<usize>, Vec<usize>),
+    FFICallTyck(usize, Box<[usize]>, Box<[usize]>),
 
     /// `FFI-CALL-RTLC [FFI-FUNC-ID] [ARGS..] [RETS..]`
     #[cfg(feature = "optimized-rtlc")]
-    FFICallRtlc(usize, Vec<usize>, Vec<usize>),
+    FFICallRtlc(usize, Box<[usize]>, Box<[usize]>),
 
     /// `FFI-CALL [FFI-FUNC-ID] [ARGS..] [RETS..]`
-    FFICall(usize, Vec<usize>, Vec<usize>),
+    FFICall(usize, Box<[usize]>, Box<[usize]>),
 
     /// `FFI-CALL-ASYNC-TYCK [FUNC-ID] [ARGS..] [RET]`
     ///
     /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned promise
     /// to `RET`. *Performs type checking**.
-    FFICallAsyncTyck(usize, Vec<usize>, usize),
+    FFICallAsyncTyck(usize, Box<[usize]>, usize),
 
     /// `FFI-CALL-ASYNC [FUNC-ID] [ARGS..] [RET]`
     ///
@@ -428,20 +428,20 @@ pub enum Insc {
     /// promise to `RET`. **No type checking**. Please note that when feature `optimized-rtlc`
     /// is enabled, all async FFI calls have RTLC.
     #[cfg(all(feature = "async", feature = "optimized-rtlc"))]
-    FFICallAsync(usize, Vec<usize>, usize),
+    FFICallAsync(usize, Box<[usize]>, usize),
 
     /// `FFI-CALL-ASYNC-UNCHECKED [FUNC-ID] [ARGS..] [RET]`
     ///
     /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned promise
     /// to `RET`. *No type checking and no RTLC*.
     #[cfg(all(feature = "async", feature = "no-rtlc"))]
-    FFICallAsyncUnchecked(usize, Vec<usize>, usize),
+    FFICallAsyncUnchecked(usize, Box<[usize]>, usize),
 
     /// `AWAIT [FUT] [RETS..]`
     ///
     /// Await the given promise, store its results into given destinations.
     #[cfg(feature = "async")]
-    Await(usize, Vec<usize>),
+    Await(usize, Box<[usize]>),
 
     JumpIfTrue(usize, usize),
     JumpIfFalse(usize, usize),
