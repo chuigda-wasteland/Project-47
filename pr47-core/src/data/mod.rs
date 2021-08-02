@@ -15,10 +15,10 @@ use crate::data::traits::StaticBase;
 use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
 use crate::data::wrapper::{DynBase, OwnershipInfo, Wrapper};
 use crate::util::mem::{FatPointer, move_to_heap};
+use crate::util::std_ext::BoxedExt;
 use crate::util::unsafe_from::UnsafeFrom;
 use crate::util::void::Void;
 use crate::util::zvec::ZeroInit;
-use crate::util::std_ext::BoxedExt;
 
 #[cfg(any(test, feature = "bench"))]
 use std::fmt::{Debug, Formatter};

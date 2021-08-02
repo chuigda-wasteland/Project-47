@@ -8,25 +8,19 @@ use std::ptr::NonNull;
 
 use crate::ffi::sync_fn::VMContext;
 use crate::util::mem::FatPointer;
-use crate::util::serializer::Serializer;
 use crate::vm::al31f::alloc::Alloc;
-use crate::vm::al31f::compiled::CompiledProgram;
-use crate::vm::al31f::stack::Stack;
 
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncVMContext;
+#[cfg(feature = "async")] use crate::util::serializer::Serializer;
 
 pub struct AL31F<A: Alloc> {
     pub alloc: A
 }
 
-pub struct VMThread<A: Alloc> {
-    #[cfg(feature = "async")]
-    vm: Serializer<AL31F<A>>,
-    #[cfg(not(feature = "async"))]
-    vm: AL31F<A>,
-
-    program: NonNull<CompiledProgram<A>>,
-    stack: Stack
+impl<A: Alloc> AL31F<A> {
+    pub fn new(alloc: A) -> Self {
+        Self { alloc }
+    }
 }
 
 pub struct Combustor<A: Alloc> {

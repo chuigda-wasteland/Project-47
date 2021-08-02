@@ -1,6 +1,3 @@
-#[allow(unused_imports)]
-use crate::util::defer::Defer;
-
 #[macro_export] macro_rules! boxed_slice {
     () => {
         vec![].into_boxed_slice()

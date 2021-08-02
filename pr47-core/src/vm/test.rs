@@ -3,7 +3,7 @@ use crate::data::Value;
 use crate::data::exception::Exception;
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
 use crate::util::async_utils::block_on_future;
-use crate::vm::al31f::VMThread;
+use crate::vm::al31f::executor::VMThread;
 use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
 use crate::vm::al31f::executor::{create_vm_main_thread, vm_thread_run_function};
