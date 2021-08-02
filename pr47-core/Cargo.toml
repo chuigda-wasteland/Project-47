@@ -38,8 +38,9 @@ async = ["async-trait", "futures"]
 [[bin]]
 name = "bench_al31fm2_sync"
 path = "raw_benches/bench_al31fm2_sync.rs"
+required-features = ["bench"]
 
 [[bin]]
 name = "bench_al31fm2"
 path = "raw_benches/bench_al31fm2.rs"
-required-features = ["bench"]
+required-features = ["bench", "async"]
