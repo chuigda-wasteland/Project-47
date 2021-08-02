@@ -37,7 +37,6 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
     func_ptr: usize,
     args: &[Value]
 ) -> Result<Vec<Value>, Exception> {
-
     let program: &CompiledProgram<A> = thread.program.as_ref();
     let stack: &mut Stack = &mut thread.stack;
 
@@ -269,10 +268,10 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 todo!();
             }
             Insc::Call(func_id, args, rets) => {
-                #[cfg(debug_assertions)]
-                let compiled: &CompiledFunction = &program.functions[*func_id];
                 #[cfg(not(debug_assertions))]
                 let compiled: &CompiledFunction = program.functions.get_unchecked(*func_id);
+                #[cfg(debug_assertions)]
+                let compiled: &CompiledFunction = &program.functions[*func_id];
 
                 debug_assert_eq!(compiled.arg_count, args.len());
                 slice = stack.func_call_grow_stack(
