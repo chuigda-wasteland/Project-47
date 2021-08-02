@@ -104,7 +104,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                                  slice.get_value(*src2).ptr_repr.ptr);
                 let src1: usize = slice.get_value(*src1).ptr_repr.trivia;
                 let src2: usize = slice.get_value(*src2).ptr_repr.trivia;
-                slice.set_value(*dst, Value::new_bool(src1 == src2));
+                slice.set_value(*dst, Value::new_int((src1 == src2) as i64));
             },
             Insc::EqRef(src1, src2, dst) => {
                 let src1: usize = slice.get_value(*src1).ptr_repr.ptr;

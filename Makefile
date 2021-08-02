@@ -1,3 +1,7 @@
+.PHONY: all
+all:
+	@echo "Please, run something else"
+
 .PHONY: bench_al31fm2_fib35
 bench_al31fm2_fib35:
 	@BENCH_ITEM="fib35" cargo run --release --features=bench --bin bench_al31fm2
