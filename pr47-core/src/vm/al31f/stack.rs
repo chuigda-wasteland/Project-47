@@ -160,7 +160,7 @@ impl Stack {
     }
 }
 
-#[cfg(all(debug_assertions, test))]
+#[cfg(any(test, feature = "bench"))]
 impl Stack {
     pub fn trace(&self) {
         eprintln!("[STACK-TRACE] Begin stack tracing");
@@ -172,12 +172,18 @@ impl Stack {
                       frame.ret_addr,
                       unsafe { frame.ret_value_locs.as_ref() });
             eprintln!("[STACK-TRACE]     [");
+            #[cfg(debug_assertions)]
             for i /*: usize*/ in frame.frame_start..frame.frame_end {
                 if let Some(value /*: &Value*/) = &self.values[i] {
                     eprintln!("[STACK-TRACE]         [{}] = {:?}", i - frame.frame_start, value);
                 } else {
                     eprintln!("[STACK-TRACE]         [{}] = UNINIT", i - frame.frame_start);
                 }
+            }
+            #[cfg(not(debug_assertions))]
+            for i /*: usize*/ in frame.frame_start..frame.frame_end {
+                let value: &Value = &self.values[i];
+                eprintln!("[STACK-TRACE]         [{}] = {:?}", i - frame.frame_start, value);
             }
             eprintln!("[STACK-TRACE]     ]");
         }
@@ -228,6 +234,7 @@ impl Stack {
         let new_frame_end: usize = this_frame_end + frame_size;
         self.values.resize(new_frame_end, Value::new_null());
         self.frames.push(FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr));
+        dbg!(&self.frames);
         let mut old_slice: StackSlice =
             StackSlice(&mut self.values[this_frame_start..this_frame_end] as *mut _);
         let mut new_slice: StackSlice =

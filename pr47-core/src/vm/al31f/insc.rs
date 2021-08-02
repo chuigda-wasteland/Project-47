@@ -526,6 +526,7 @@ impl Insc {
                 }
                 result
             },
+            Insc::CreateObject(dest) => format!("%{} = new object", dest),
             Insc::JumpIfTrue(condition, dest) => format!("if %{} goto L.{}", condition, dest),
             Insc::JumpIfFalse(condition, dest) => format!("if not %{} goto L.{}", condition, dest),
             Insc::Jump(dest) => format!("goto L.{}", dest),

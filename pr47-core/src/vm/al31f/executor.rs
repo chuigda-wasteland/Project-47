@@ -8,6 +8,7 @@ use std::ptr::NonNull;
 
 use crate::data::Value;
 use crate::data::exception::{Exception, UncheckedException};
+use crate::ds::object::Object;
 use crate::util::mem::FatPointer;
 use crate::util::serializer::Serializer;
 use crate::vm::al31f::{AL31F, VMThread};
@@ -37,6 +38,8 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
     func_ptr: usize,
     args: &[Value]
 ) -> Result<Vec<Value>, Exception> {
+    thread.vm.get_shared_data_mut().alloc.set_gc_allowed(true);
+
     let program: &CompiledProgram<A> = thread.program.as_ref();
     let stack: &mut Stack = &mut thread.stack;
 
@@ -129,6 +132,10 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
         let insc: &Insc = unsafe { program.code.get_unchecked(insc_ptr) };
         #[cfg(debug_assertions)]
         let insc: &Insc = &program.code[insc_ptr];
+
+        // stack.trace();
+        // eprintln!("INSC[{}] = {}", insc_ptr, insc.unsafe_to_string());
+        // eprintln!(" -*- ======================== -*-");
 
         insc_ptr += 1;
         match insc {
@@ -342,7 +349,12 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::Jump(dest) => {
                 insc_ptr = *dest;
             }
-            Insc::CreateObject(_) => {}
+            Insc::CreateObject(dest) => {
+                let object: Object = Object::new();
+                let object: Value = Value::new_owned(object);
+                thread.vm.get_shared_data_mut().alloc.add_managed(object.ptr_repr);
+                slice.set_value(*dest, object);
+            }
             Insc::CreateContainer(_, _, _) => {}
             Insc::VecIndex(_, _, _) => {}
             Insc::VecIndexPut(_, _, _) => {}

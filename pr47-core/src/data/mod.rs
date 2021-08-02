@@ -20,9 +20,9 @@ use crate::util::void::Void;
 use crate::util::zvec::ZeroInit;
 use crate::util::std_ext::BoxedExt;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use std::fmt::{Debug, Formatter};
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
 
 pub const TAG_BITS_MASK: u8 = 0b00000_111;
@@ -398,7 +398,7 @@ impl Value {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "bench"))]
 impl Debug for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.is_value() {

@@ -90,11 +90,11 @@ unsafe impl Sync for DefaultAlloc {}
 
 impl Alloc for DefaultAlloc {
     unsafe fn add_stack(&mut self, stack: *const Stack) {
-        self.stacks.insert(transmute::<>(stack));
+        self.stacks.insert(stack);
     }
 
     unsafe fn remove_stack(&mut self, stack: *const Stack) {
-        let removed: bool = self.stacks.remove(&transmute::<>(stack));
+        let removed: bool = self.stacks.remove(&stack);
         debug_assert!(removed);
     }
 
@@ -103,6 +103,7 @@ impl Alloc for DefaultAlloc {
             self.collect();
         }
         self.managed.insert(data);
+        self.debt += 1;
     }
 
     unsafe fn mark_object(&mut self, _data: FatPointer) {
@@ -110,6 +111,7 @@ impl Alloc for DefaultAlloc {
     }
 
     unsafe fn collect(&mut self) {
+        self.debt = 0;
         for ptr /*: &FatPointer*/ in self.managed.iter() {
             let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
             (*wrapper).gc_info = DefaultGCStatus::Unmarked as u8;
