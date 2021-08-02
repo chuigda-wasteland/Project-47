@@ -17,7 +17,7 @@ fn bench_fibonacci_call() {
 
         for _ in 0..10 {
             let alloc: DefaultAlloc = DefaultAlloc::new();
-            let mut vm_thread: VMThread<DefaultAlloc> =
+            let mut vm_thread: Box<VMThread<DefaultAlloc>> =
                 create_vm_main_thread(alloc, &program).await;
             let start_time: std::time::Instant = std::time::Instant::now();
             defer!(move || {
@@ -42,7 +42,7 @@ fn bench_new_1m() {
         let program: CompiledProgram<DefaultAlloc> = alloc_1m_program();
         for _ in 0..10 {
             let alloc: DefaultAlloc = DefaultAlloc::new();
-            let mut vm_thread: VMThread<DefaultAlloc> =
+            let mut vm_thread: Box<VMThread<DefaultAlloc>> =
                 create_vm_main_thread(alloc, &program).await;
             let start_time: std::time::Instant = std::time::Instant::now();
             defer!(move || {

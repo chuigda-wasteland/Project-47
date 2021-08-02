@@ -27,7 +27,7 @@ async fn basic_program_eval() {
     };
     let alloc: DefaultAlloc = DefaultAlloc::new();
 
-    let mut vm_thread: VMThread<DefaultAlloc> = create_vm_main_thread(alloc, &program).await;
+    let mut vm_thread: Box<VMThread<DefaultAlloc>> = create_vm_main_thread(alloc, &program).await;
     let result: Result<Vec<Value>, Exception> = unsafe {
         vm_thread_run_function(&mut vm_thread, 0, &[Value::new_int(114), Value::new_int(514)]).await
     };
@@ -70,7 +70,7 @@ async fn basic_fn_call() {
 
     let alloc: DefaultAlloc = DefaultAlloc::new();
 
-    let mut vm_thread: VMThread<DefaultAlloc> = create_vm_main_thread(alloc, &program).await;
+    let mut vm_thread: Box<VMThread<DefaultAlloc>> = create_vm_main_thread(alloc, &program).await;
     let result: Result<Vec<Value>, Exception> = unsafe {
         vm_thread_run_function(&mut vm_thread, 0, &[]).await
     };
@@ -91,7 +91,8 @@ async fn fibonacci_call() {
     let fib_program: CompiledProgram<DefaultAlloc> = fibonacci_program();
     let alloc: DefaultAlloc = DefaultAlloc::new();
 
-    let mut vm_thread: VMThread<DefaultAlloc> = create_vm_main_thread(alloc, &fib_program).await;
+    let mut vm_thread: Box<VMThread<DefaultAlloc>> =
+        create_vm_main_thread(alloc, &fib_program).await;
     let result: Result<Vec<Value>, Exception> = unsafe {
         vm_thread_run_function(&mut vm_thread, 0, &[Value::new_int(7)]).await
     };

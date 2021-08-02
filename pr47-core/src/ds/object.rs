@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use crate::data::Value;
 use crate::data::traits::StaticBase;
-use crate::util::void::Void;
 use crate::util::mem::FatPointer;
+use crate::util::void::Void;
 
 pub struct Object {
     fields: HashMap<String, Value>

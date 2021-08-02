@@ -22,12 +22,12 @@ use crate::vm::al31f::stack::{Stack, StackSlice};
 pub async fn create_vm_main_thread<A: Alloc>(
     alloc: A,
     program: &CompiledProgram<A>
-) -> VMThread<A> {
-    let ret = VMThread {
+) -> Box<VMThread<A>> {
+    let ret = Box::new(VMThread {
         vm: Serializer::new(AL31F { alloc }).await,
         program: NonNull::from(program),
         stack: Stack::new()
-    };
+    });
     unsafe { ret.vm.get_shared_data_mut().alloc.add_stack(&ret.stack) };
     ret
 }
@@ -132,10 +132,6 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
         let insc: &Insc = unsafe { program.code.get_unchecked(insc_ptr) };
         #[cfg(debug_assertions)]
         let insc: &Insc = &program.code[insc_ptr];
-
-        // stack.trace();
-        // eprintln!("INSC[{}] = {}", insc_ptr, insc.unsafe_to_string());
-        // eprintln!(" -*- ======================== -*-");
 
         insc_ptr += 1;
         match insc {

@@ -23,7 +23,7 @@ pub enum DefaultGCStatus {
     Marked = 1
 }
 
-pub const DEFAULT_MAX_DEBT: usize = 512;
+pub const DEFAULT_MAX_DEBT: usize = 1024;
 
 impl DefaultAlloc {
     pub fn new() -> Self {
@@ -112,6 +112,7 @@ impl Alloc for DefaultAlloc {
 
     unsafe fn collect(&mut self) {
         self.debt = 0;
+
         for ptr /*: &FatPointer*/ in self.managed.iter() {
             let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
             (*wrapper).gc_info = DefaultGCStatus::Unmarked as u8;
@@ -121,7 +122,7 @@ impl Alloc for DefaultAlloc {
 
         for stack /*: &*const Stack*/ in self.stacks.iter() {
             #[cfg(debug_assertions)]
-            for stack_value /*: &Option<Value>*/ in &(**stack).values {
+            for stack_value /*: &Option<Value>*/ in (**stack).values.iter() {
                 if let Some(stack_value /*: &Value*/) = stack_value {
                     if !stack_value.is_null() && !stack_value.is_value() {
                         to_scan.push_back(stack_value.ptr_repr);
@@ -130,7 +131,7 @@ impl Alloc for DefaultAlloc {
             }
 
             #[cfg(not(debug_assertions))]
-            for stack_value /*: &Value*/ in &(**stack).values {
+            for stack_value /*: &Value*/ in (**stack).values.iter() {
                 if !stack_value.is_null() && !stack_value.is_value() {
                     to_scan.push_back(stack_value.ptr_repr);
                 }
