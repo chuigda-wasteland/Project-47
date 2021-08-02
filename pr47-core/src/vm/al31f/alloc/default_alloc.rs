@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::VecDeque;
 use std::mem::transmute;
 
 use crate::data::PTR_BITS_MASK_USIZE;
@@ -7,11 +7,12 @@ use crate::data::wrapper::{DynBase, OWN_INFO_COLLECT_MASK, Wrapper};
 use crate::util::mem::FatPointer;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::stack::Stack;
+use unchecked_unwrap::UncheckedUnwrap;
 
 /// Default allocator for `AL31F`, with STW GC.
 pub struct DefaultAlloc {
-    stacks: HashSet<*const Stack>,
-    managed: HashSet<FatPointer>,
+    stacks: Vec<*const Stack>,
+    managed: Vec<FatPointer>,
     debt: usize,
     max_debt: usize,
     gc_allowed: bool
@@ -32,8 +33,8 @@ impl DefaultAlloc {
 
     pub fn with_max_debt(max_debt: usize) -> Self {
         Self {
-            stacks: HashSet::new(),
-            managed: HashSet::new(),
+            stacks: Vec::new(),
+            managed: Vec::new(),
             debt: 0,
             max_debt,
             gc_allowed: false
@@ -54,15 +55,6 @@ impl Default for DefaultAlloc {
 
 impl Drop for DefaultAlloc {
     fn drop(&mut self) {
-        // TODO who will manage the stacks?
-        /*
-        for stack /*: *const Stack*/ in self.stacks.iter() {
-            let stack: *mut Stack = *stack as *mut _;
-            let boxed: Box<Stack> = unsafe { Box::from_raw(stack) };
-            drop(boxed);
-        }
-        */
-
         // TODO should we extract this out? Or we use `Value` or so instead?
         for ptr /*: &FatPointer*/ in self.managed.iter() {
             let raw_ptr: usize = (ptr.ptr & PTR_BITS_MASK_USIZE) as _;
@@ -77,7 +69,9 @@ impl Drop for DefaultAlloc {
                 let vt: *const ContainerVT = ptr.trivia as *const _;
                 unsafe { ((*vt).drop_fn)(container) };
             } else {
-                let dyn_base: *mut dyn DynBase = unsafe { transmute::<>(*ptr) };
+                let dyn_base: *mut dyn DynBase = unsafe {
+                    transmute::<FatPointer, *mut dyn DynBase>(*ptr)
+                };
                 let boxed: Box<dyn DynBase> = unsafe { Box::from_raw(dyn_base) };
                 drop(boxed);
             }
@@ -90,23 +84,23 @@ unsafe impl Sync for DefaultAlloc {}
 
 impl Alloc for DefaultAlloc {
     unsafe fn add_stack(&mut self, stack: *const Stack) {
-        self.stacks.insert(stack);
+        self.stacks.push(stack);
+        self.stacks.sort();
     }
 
     unsafe fn remove_stack(&mut self, stack: *const Stack) {
-        let removed: bool = self.stacks.remove(&stack);
-        debug_assert!(removed);
+        let _removed = self.stacks.remove(self.stacks.binary_search(&stack).unchecked_unwrap());
     }
 
     unsafe fn add_managed(&mut self, data: FatPointer) {
         if self.max_debt < self.debt && self.gc_allowed {
             self.collect();
         }
-        self.managed.insert(data);
+        self.managed.push(data);
         self.debt += 1;
     }
 
-    unsafe fn mark_object(&mut self, _data: FatPointer) {
+    #[inline(always)] unsafe fn mark_object(&mut self, _data: FatPointer) {
         // do nothing
     }
 
@@ -163,28 +157,26 @@ impl Alloc for DefaultAlloc {
             }
         }
 
-        let mut to_collect: Vec<FatPointer> = Vec::new();
-        for ptr /*: FatPointer*/ in self.managed.iter() {
+        self.managed.retain(|ptr: &FatPointer| {
             let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
             if (*wrapper).gc_info == DefaultGCStatus::Unmarked as u8
                 && (*wrapper).ownership_info & OWN_INFO_COLLECT_MASK != 0
             {
-                to_collect.push(*ptr);
-            }
-        }
-
-        for ptr /*: FatPointer*/ in to_collect {
-            if ptr.ptr & (CONTAINER_MASK as usize) != 0 {
-                let container: *mut () = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
-                let vt: *const ContainerVT = ptr.trivia as *const _;
-                ((*vt).drop_fn)(container);
+                if ptr.ptr & (CONTAINER_MASK as usize) != 0 {
+                    let container: *mut () = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
+                    let vt: *const ContainerVT = ptr.trivia as *const _;
+                    ((*vt).drop_fn)(container);
+                } else {
+                    let dyn_base: *mut dyn DynBase =
+                        transmute::<FatPointer, *mut dyn DynBase>(*ptr);
+                    let boxed: Box<dyn DynBase> = Box::from_raw(dyn_base);
+                    drop(boxed);
+                }
+                false
             } else {
-                let dyn_base: *mut dyn DynBase = transmute::<>(ptr);
-                let boxed: Box<dyn DynBase> = Box::from_raw(dyn_base);
-                drop(boxed);
+                true
             }
-            self.managed.remove(&ptr);
-        }
+        });
     }
 
     fn set_gc_allowed(&mut self, allowed: bool) {

@@ -1,11 +1,17 @@
-use std::collections::HashSet;
-
 use crate::util::mem::FatPointer;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::stack::Stack;
 
 pub struct NoGCAlloc {
-    managed: HashSet<FatPointer>
+    managed: Vec<FatPointer>
+}
+
+impl NoGCAlloc {
+    pub fn new() -> Self {
+        Self {
+            managed: vec![]
+        }
+    }
 }
 
 impl Drop for NoGCAlloc {
@@ -22,7 +28,7 @@ impl Alloc for NoGCAlloc {
     #[inline(always)] unsafe fn remove_stack(&mut self, _stack: *const Stack) {}
 
     unsafe fn add_managed(&mut self, data: FatPointer) {
-        self.managed.insert(data);
+        self.managed.push(data);
     }
 
     #[inline(always)] unsafe fn mark_object(&mut self, _data: FatPointer) {}
