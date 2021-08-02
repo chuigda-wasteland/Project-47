@@ -19,7 +19,7 @@ pub fn fibonacci_program<A: Alloc>() -> CompiledProgram<A> {
             /*09*/ Insc::Call(0, bslice![2], bslice![2]), // [ %2 ] = call fibonacci(%2)
             /*10*/ Insc::Call(0, bslice![3], bslice![3]), // [ %3 ] = call fibonacci(%3)
             /*11*/ Insc::AddInt(2, 3, 1),                 // %1 = add %2, %3
-            /*12*/ Insc::Return(bslice![1])               // return [ %1 ]
+            /*12*/ Insc::ReturnOne(bslice![1])            // return %1
         ],
         const_pool: bslice![],
         init_proc: 0,

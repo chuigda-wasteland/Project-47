@@ -118,6 +118,17 @@ impl Stack {
         new_slice
     }
 
+    pub unsafe fn done_func_call_shrink_stack0(&mut self) -> Option<(StackSlice, usize)> {
+        self.done_func_call_shrink_stack(&[])
+    }
+
+    pub unsafe fn done_func_call_shrink_stack1(
+        &mut self,
+        ret_value_src: usize
+    ) -> Option<(StackSlice, usize)> {
+        self.done_func_call_shrink_stack(&[ret_value_src])
+    }
+
     pub unsafe fn done_func_call_shrink_stack(
         &mut self,
         ret_values: &[usize]
@@ -230,6 +241,48 @@ impl Stack {
         new_slice
     }
 
+    pub unsafe fn done_func_call_shrink_stack0(&mut self) -> Option<(StackSlice, usize)> {
+        let frame_count = self.frames.len();
+        if frame_count == 1 {
+            return None;
+        }
+
+        let this_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 1);
+        let prev_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 2);
+        let prev_slice: StackSlice =
+            StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
+
+        let ret_addr: usize = this_frame.ret_addr;
+        self.values.truncate(prev_frame.frame_end);
+        self.frames.pop().unchecked_unwrap();
+        Some((prev_slice, ret_addr))
+    }
+
+    pub unsafe fn done_func_call_shrink_stack1(
+        &mut self,
+        ret_value_src: usize
+    ) -> Option<(StackSlice, usize)> {
+        let frame_count = self.frames.len();
+        if frame_count == 1 {
+            return None;
+        }
+
+        let this_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 1);
+        let prev_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 2);
+        let mut this_slice: StackSlice =
+            StackSlice(&mut self.values[this_frame.frame_start..this_frame.frame_end] as *mut _);
+        let mut prev_slice: StackSlice =
+            StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
+
+        let ret_value_loc: usize = *this_frame.ret_value_locs.as_ref().get_unchecked(0);
+        prev_slice.set_value(ret_value_loc, this_slice.get_value(ret_value_src));
+
+        let ret_addr: usize = this_frame.ret_addr;
+        self.values.truncate(prev_frame.frame_end);
+        self.frames.pop().unchecked_unwrap();
+        Some((prev_slice, ret_addr))
+    }
+
     pub unsafe fn done_func_call_shrink_stack(
         &mut self,
         ret_values: &[usize]
@@ -246,10 +299,11 @@ impl Stack {
         let mut prev_slice: StackSlice =
             StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
 
-        for i /*: usize*/ in 0..ret_values.len() {
+        let len: usize = ret_values.len();
+        for i /*: usize*/ in 0..len {
             let ret_value_loc: usize = *this_frame.ret_value_locs.as_ref().get_unchecked(i);
             let ret_value_src: usize = *ret_values.get_unchecked(i);
-            prev_slice.set_value(ret_value_loc, this_slice.get_value(ret_value_src))
+            prev_slice.set_value(ret_value_loc, this_slice.get_value(ret_value_src));
         }
 
         let ret_addr: usize = this_frame.ret_addr;

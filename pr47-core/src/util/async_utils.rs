@@ -33,7 +33,7 @@ use std::future::Future;
 pub fn block_on_future<F, R>(fut: F) -> R
     where F: Future<Output=R> + 'static
 {
-    tokio::runtime::Runtime::new().unwrap().block_on(fut)
+    tokio::runtime::Builder::new_current_thread().enable_time().build().unwrap().block_on(fut)
 }
 
 #[cfg(all(any(test, feature = "bench"), feature = "async-astd"))]

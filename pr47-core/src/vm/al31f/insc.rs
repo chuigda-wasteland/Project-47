@@ -403,6 +403,12 @@ pub enum Insc {
     /// `CALL-OVERLOAD [OVERLOAD-TBL] [ARGS..] [RETS..]`
     CallOverload(usize, Box<[usize]>, Box<[usize]>),
 
+    /// `RETURN-NOTHING`
+    ReturnNothing,
+
+    /// `RETURN-ONE [RETURN-VALUE-LOC]`
+    ReturnOne(usize),
+
     /// `RETURN [RETURN-VALUE-LOCS...]`
     Return(Box<[usize]>),
 
@@ -506,6 +512,8 @@ impl Insc {
                 }
                 result
             },
+            Insc::ReturnNothing => "ret".into(),
+            Insc::ReturnOne(ret_value_loc) => format!("ret %{}", ret_value_loc),
             Insc::Return(ret_value_locs) => {
                 let mut result: String = String::from("ret ");
                 for (i, ret_value_loc) /*: (usize, &usize)*/ in ret_value_locs.iter().enumerate() {

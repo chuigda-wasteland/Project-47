@@ -287,6 +287,24 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::CallPtr(_, _, _) => {}
             Insc::CallPtrTyck(_, _, _) => {}
             Insc::CallOverload(_, _, _) => {}
+            Insc::ReturnNothing => {
+                if let Some((prev_stack_slice, ret_addr)) = stack.done_func_call_shrink_stack0() {
+                    insc_ptr = ret_addr;
+                    slice = prev_stack_slice;
+                } else {
+                    return Ok(vec![]);
+                }
+            },
+            Insc::ReturnOne(ret_value) => {
+                if let Some((prev_stack_slice, ret_addr)) =
+                    stack.done_func_call_shrink_stack1(*ret_value)
+                {
+                    insc_ptr = ret_addr;
+                    slice = prev_stack_slice;
+                } else {
+                    return Ok(vec![slice.get_value(*ret_value)]);
+                }
+            },
             Insc::Return(ret_values) => {
                 if let Some((prev_stack_slice, ret_addr)) =
                     stack.done_func_call_shrink_stack(&ret_values)

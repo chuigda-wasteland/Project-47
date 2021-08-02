@@ -1,3 +1,5 @@
+use std::env;
+
 use pr47::data::Value;
 use pr47::data::exception::Exception;
 use pr47::defer;
@@ -34,5 +36,8 @@ fn bench_fibonacci_call() {
 }
 
 fn main() {
-    bench_fibonacci_call();
+    match env::args().collect::<Vec<_>>()[1].as_str() {
+        "fib35" => bench_fibonacci_call(),
+        _ => panic!("Do you really know how to use this benchmarking suite? Don't make me laugh.")
+    }
 }

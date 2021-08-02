@@ -17,12 +17,12 @@ unchecked_unwrap = "3"
 async-std = { optional = true, version = "1" }
 async-trait = { optional = true, version = "0.1" }
 futures = { optional = true, version = "0.3" }
-tokio = { optional = true, version = "1", features = ["rt", "rt-multi-thread", "sync", "time"] }
+tokio = { optional = true, version = "1", features = ["rt", "sync", "time"] }
 
 pr47-codegen = { path="../pr47-codegen" }
 
 [dev-dependencies]
-tokio = { version = "1", features = [] }
+tokio = { version = "1", features = ["rt-multi-thread"] }
 variant_count = "1"
 
 [features]
@@ -35,13 +35,7 @@ async-tokio = ["async", "tokio"]
 async-astd = ["async", "async-std"]
 async = ["async-trait", "futures"]
 
-[[bench]]
-name = "bench_al31fm2"
-path = "benches/bench_al31fm2.rs"
-required-features = ["bench"]
-harness = false
-
 [[bin]]
 name = "bench_al31fm2"
-path = "benches/bench_al31fm2.rs"
+path = "raw_benches/bench_al31fm2.rs"
 required-features = ["bench"]
