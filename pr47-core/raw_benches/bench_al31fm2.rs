@@ -50,10 +50,13 @@ fn bench_new_1m() {
     block_on_future(run_new_1m())
 }
 
+const SUCK_WORDS: &'static str =
+    "Do you really know how to use this benchmarking suite? Don't make me laugh.";
+
 fn main() {
-    match env::args().collect::<Vec<_>>()[1].as_str() {
+    match env::var("BENCH_ITEM").expect(SUCK_WORDS).to_lowercase().as_str() {
         "fib35" => bench_fibonacci_call(),
         "new1m" => bench_new_1m(),
-        _ => panic!("Do you really know how to use this benchmarking suite? Don't make me laugh.")
+        _ => panic!("{}", SUCK_WORDS)
     }
 }

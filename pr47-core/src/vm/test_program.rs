@@ -35,16 +35,16 @@ pub fn fibonacci_program<A: Alloc>() -> CompiledProgram<A> {
 pub fn alloc_1m_program<A: Alloc>() -> CompiledProgram<A> {
     CompiledProgram {
         code: bslice![
-                                                          // alloc_1m()
-            /*00*/ Insc::MakeIntConst(0, 0),              // %0 = $0
-            /*01*/ Insc::MakeIntConst(1, 1),              // %1 = $1
-            /*02*/ Insc::MakeIntConst(10_000_000, 2),     // %2 = $10_000_000
-            /*03*/ Insc::EqValue(0, 2, 3),                // %3 = eq value %0, %2
-            /*04*/ Insc::JumpIfTrue(3, 8),                // if %3 goto L.8
-            /*05*/ Insc::CreateObject(3),                 // %3 = new object
-            /*06*/ Insc::SubInt(2, 1, 2),                 // %2 = sub int %2, %1
-            /*07*/ Insc::Jump(3),                         // goto L.3
-            /*08*/ Insc::ReturnNothing                    // return
+                                                      // alloc_1m()
+            /*00*/ Insc::MakeIntConst(0, 0),          // %0 = $0
+            /*01*/ Insc::MakeIntConst(1, 1),          // %1 = $1
+            /*02*/ Insc::MakeIntConst(10_000_000, 2), // %2 = $10_000_000
+            /*03*/ Insc::EqValue(0, 2, 3),            // %3 = eq value %0, %2
+            /*04*/ Insc::JumpIfTrue(3, 8),            // if %3 goto L.8
+            /*05*/ Insc::CreateObject(3),             // %3 = new object
+            /*06*/ Insc::SubInt(2, 1, 2),             // %2 = sub int %2, %1
+            /*07*/ Insc::Jump(3),                     // goto L.3
+            /*08*/ Insc::ReturnNothing                // return
         ],
         const_pool: bslice![],
         init_proc: 0,

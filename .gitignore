@@ -7,3 +7,4 @@ Cargo.lock
 *.svg
 *.data
 *.data.old
+*.s
