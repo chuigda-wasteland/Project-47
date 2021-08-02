@@ -264,6 +264,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 }
             }
             Insc::FFICallTyck(_, _, _) => {}
+            #[cfg(feature = "optimized-rtlc")]
             Insc::FFICallRtlc(_, _, _) => {}
             Insc::FFICall(_, _, _) => {}
             Insc::FFICallAsyncTyck(_, _, _) => {}

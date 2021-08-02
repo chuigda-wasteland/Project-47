@@ -241,6 +241,7 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
                 }
             }
             Insc::FFICallTyck(_, _, _) => {}
+            #[cfg(feature = "optimized-rtlc")]
             Insc::FFICallRtlc(_, _, _) => {}
             Insc::FFICall(_, _, _) => {}
             Insc::JumpIfTrue(condition, dest) => {

@@ -6,13 +6,13 @@ bench_al31fm2_fib35:
 bench_al31fm2_new1m:
 	@BENCH_ITEM="new1m" cargo run --release --features=bench --bin bench_al31fm2
 
-.PHONY: flamegraph_bench_al31fm2_fib35
-flamegraph_bench_al31fm2_fib35:
-	@BENCH_ITEM="fib35" cargo flamegraph run --features=bench --bin bench_al31fm2
+.PHONY: bench_al31fm2_sync_fib35
+bench_al31fm2_sync_fib35:
+	@BENCH_ITEM="fib35" cargo run --release --no-default-features --features=bench --bin bench_al31fm2_sync
 
-.PHONY: flamegraph_bench_al31fm2_new1m
-flamegraph_bench_al31fm2_new1m:
-	@BENCH_ITEM="new1m" cargo flamegraph run --features=bench --bin bench_al31fm2
+.PHONY: bench_al31fm2_sync_new1m
+bench_al31fm2_sync_new1m:
+	@BENCH_ITEM="new1m" cargo run --release --no-default-features --features=bench --bin bench_al31fm2_sync
 
 .PHONY: miri_test_pr47_core_data
 miri_test_pr47_core_data:
