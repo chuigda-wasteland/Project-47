@@ -2,6 +2,10 @@
 all:
 	@echo "Please, run something else"
 
+.PHONY:
+clean:
+	@echo "Nothing to be done for clean operation"
+
 .PHONY: bench_al31fm2_fib35
 bench_al31fm2_fib35:
 	@BENCH_ITEM="fib35" cargo run --release --features=bench --bin bench_al31fm2
@@ -43,6 +47,10 @@ miri_test_pr47_core_data:
 miri_test_pr47_tyck_pool:
 	@echo testing pr47::core::data::tyck::TyckPool
 	@cargo +nightly miri test --package pr47 --lib data::tyck::test_tyck_info_pool::test_tyck_info_pool
+
+.PHONY: miri_test_pr47_core_util_serializer
+miri_test_pr47_core_util_serializer:
+	@MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --package pr47 --lib util::serializer
 
 .PHONY: miri_test_pr47_core_data_dyn_base_assoc
 miri_test_pr47_core_data_dyn_base_assoc:
