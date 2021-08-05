@@ -158,7 +158,6 @@ impl Value {
         unsafe {
             self.ptr_repr.ptr == 0 && self.ptr_repr.trivia == 0
         }
-
     }
 
     /// Check if a `Value` is value-typed

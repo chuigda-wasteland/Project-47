@@ -10,13 +10,13 @@ use crate::data::tyck::TyckInfo;
 /// This is a tri-address like instruction set for register machine.
 #[cfg_attr(test, derive(Debug), derive(VariantCount))]
 pub enum Insc {
-    /// `ADD-INT <INT@SRC1> <INT@SRC2> [DEST]`
+    /// `ADD-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Add integers in register `SRC1` and `SRC2`, put result to register `DEST`,
     /// **No type checking.**
     AddInt(usize, usize, usize),
 
-    /// `ADD-FLOAT <FLOAT@SRC1> [SRC2] [DEST]`
+    /// `ADD-FLOAT [FLOAT@SRC1] [FLOAT@SRC2] [DEST]`
     ///
     /// Add floats in register `SRC1` and `SRC2`, put result to register `DEST`,
     /// **No type checking.**
@@ -28,23 +28,23 @@ pub enum Insc {
     /// appropriate addition calculation accordingly, and put result to register `DEST`.
     AddAny(usize, usize, usize),
 
-    /// `INCR [POS]`
+    /// `INCR [INT@POS]`
     ///
     /// Increment the integer stored in register `POS`, in place. **No type checking.**
     IncrInt(usize),
 
-    /// `DECR [POS]`
+    /// `DECR [INT@POS]`
     ///
     /// Decrement the integer stored in register `POS`, in place. **No type checking.**
     DecrInt(usize),
 
-    /// `SUB-INT [SRC1] [SRC2] [DEST]`
+    /// `SUB-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Subtract integers in register `SRC1` and `SRC2`, put result to register `DEST`,
     /// **No type checking.**
     SubInt(usize, usize, usize),
 
-    /// `SUB-FLOAT [SRC1] [SRC2] [DEST]`
+    /// `SUB-FLOAT [FLOAT@SRC1] [FLOAT@SRC1] [DEST]`
     ///
     /// Subtract floats in register `SRC1` and `SRC2`, put result to register `DEST`,
     /// **No type checking.**
@@ -56,13 +56,13 @@ pub enum Insc {
     /// appropriate subtraction calculation accordingly, and put result to register `DEST`.
     SubAny(usize, usize, usize),
 
-    /// `MUL-INT [SRC1] [SRC2] [DEST]`
+    /// `MUL-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Multiply integers in register `SRC1` and `SRC2`, put result to register `DEST`,
     /// **No type checking.**
     MulInt(usize, usize, usize),
 
-    /// `MUL-FLOAT [SRC1] [SRC2] [DEST]`
+    /// `MUL-FLOAT [FLOAT@SRC1] [FLOAT@SRC2] [DEST]`
     ///
     /// Multiply floats in register `SRC1` and `SRC2`, put result to register `DEST`,
     /// **No type checking.**
@@ -74,31 +74,31 @@ pub enum Insc {
     /// appropriate multiplication calculation accordingly, and put result to register `DEST`.
     MulAny(usize, usize, usize),
 
-    /// `DIV-INT [SRC1] [SRC2] [DEST]`
+    /// `DIV-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Divide integer in register `SRC1` by integer in register `SRC2`, put result to register
     /// `DEST`, **No type checking.**
     DivInt(usize, usize, usize),
 
-    /// `DIV-FLOAT [SRC1] [SRC2] [DEST]`
+    /// `DIV-FLOAT [FLOAT@SRC1] [FLOAT@SRC2] [DEST]`
     ///
     /// Divide float in register `SRC1` by float in register `SRC2`, put result to register
     /// `DEST`, **No type checking.**
     DivFloat(usize, usize, usize),
 
     /// `DIV-ANY [SRC1] [SRC2] [DEST]`
-    ///
+    ///[SRC1] [SRC2] [DEST]`
     /// Load numbers in register `SRC1` and `SRC2`, **check types at run time** and perform
     /// appropriate division calculation accordingly, and put result to register `DEST`.
     DivAny(usize, usize, usize),
 
-    /// `MOD-INT [SRC1] [SRC2] [DEST]`
+    /// `MOD-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Take the remainder of dividing integer in register `SRC1` by integer in register `SRC2`,
     /// put result to register `DEST`, **No type checking.**.
     ModInt(usize, usize, usize),
 
-    /// `MOD-ANY [SRC1] [SRC2] [DEST]`
+    /// `MOD-ANY [FLOAT@SRC1] [FLOAT@SRC2] [DEST]`
     ///
     /// **Check data in both `SRC1` and `SRC2` to be integer**, perform integer remainder operation,
     /// and put result to register `DEST`.
@@ -134,7 +134,7 @@ pub enum Insc {
     /// Similar to `EQ-ANY` but yields inverted result.
     NeAny(usize, usize, usize),
 
-    /// `LT-INT [SRC1] [SRC2] [DEST]`
+    /// `LT-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Check if integer in register `SRC1` is less than integer in register `SRC2`, put the boolean
     /// result to `DEST`. **No type checking.**
@@ -152,7 +152,7 @@ pub enum Insc {
     /// appropriate less-than comparison accordingly, and put result to register `DEST`.
     LtAny(usize, usize, usize),
 
-    /// `GT-INT [SRC1] [SRC2] [DEST]`
+    /// `GT-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Similar to `LT-INT` but yields inverted result.
     GtInt(usize, usize, usize),
@@ -167,13 +167,13 @@ pub enum Insc {
     /// Similar to `LT-ANY` but yields inverted result.
     GtAny(usize, usize, usize),
 
-    /// `LE-INT [SRC1] [SRC2] [DEST]`
+    /// `LE-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Check if integer in register `SRC1` is less than or equal to integer in register `SRC2`,
     /// put the boolean result to `DEST`. **No type checking.**
     LeInt(usize, usize, usize),
 
-    /// `LE-INT [SRC1] [SRC2] [DEST]`
+    /// `LE-FLOAT [SRC1] [SRC2] [DEST]`
     ///
     /// Check if float in register `SRC1` is less than or equal to float in register `SRC2`,
     /// put the boolean result to `DEST`. **No type checking.**
@@ -185,7 +185,7 @@ pub enum Insc {
     /// appropriate less-than-or-equal-to comparison accordingly, and put result to register `DEST`.
     LeAny(usize, usize, usize),
 
-    /// `GE-INT [SRC1] [SRC2] [DEST]`
+    /// `GE-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Similar to `LE-INT` but yields inverted result.
     GeInt(usize, usize, usize),
@@ -200,7 +200,7 @@ pub enum Insc {
     /// Similar to `LE-ANY` but yields inverted result.
     GeAny(usize, usize, usize),
 
-    /// `BITAND-INT [SRC1] [SRC2] [DEST]`
+    /// `BITAND-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Bit-and integers in register `SRC1` and `SRC2`, put result to register `DEST`.
     /// **No type checking.**
@@ -212,7 +212,7 @@ pub enum Insc {
     /// and put result to register `DEST`.
     BAndAny(usize, usize, usize),
 
-    /// `BITOR-INT [SRC1] [SRC2] [DEST]`
+    /// `BITOR-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Bit-or integers in register `SRC1` and `SRC2`, put result to register `DEST`.
     /// **No type checking.**
@@ -224,7 +224,7 @@ pub enum Insc {
     /// and put result to register `DEST`.
     BOrAny(usize, usize, usize),
 
-    /// `BITXOR-INT [SRC1] [SRC2] [DEST]`
+    /// `BITXOR-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Bit-xor integers in register `SRC1` and `SRC2`, put result to register `DEST`.
     /// **No type checking.**
@@ -313,27 +313,47 @@ pub enum Insc {
     /// **Check data in `SRC` to be boolean**, perform boolean logic negate operation, and put
     /// result to register `DEST`.
     NotAny(usize, usize),
+
+    /// `SHL-INT [INT@SRC1] [INT@SRC2] [DEST]`
+    ///
+    /// Left shift the integer in register `SRC1` with the integer in register `SRC2`, put result to
+    /// register `DEST`, **No type checking.**
     ShlInt(usize, usize, usize),
+
+    /// `SHL-ANY [SRC1] [SRC2] [DEST]`
+    ///
+    /// **Check data in both `SRC1` and `SRC2` to be integer**, perform the left-shift operation,
+    /// and put result to register `DEST`.
     ShlAny(usize, usize, usize),
+
+    /// `SHR-INT [INT@SRC1] [INT@SRC2] [DEST]`
+    ///
+    /// Right shift the integer in register `SRC1` with the integer in register `SRC2`, put result
+    /// to register `DEST`, **No type checking.**
     ShrInt(usize, usize, usize),
+
+    /// `SHR-ANY [SRC1] [SRC2] [DEST]`
+    ///
+    /// **Check data in both `SRC1` and `SRC2` to be integer**, perform the right-shift operation,
+    /// and put result to register `DEST`.
     ShrAny(usize, usize, usize),
 
-    /// `MAKE-INT-CONST [LIT] [DEST]`
+    /// `MAKE-INT-CONST [INT-LIT] [DEST]`
     ///
     /// Put the integer literal `LIT` to register `DEST`.
     MakeIntConst(i64, usize),
 
-    /// `MAKE-FLOAT-CONST [LIT] [DEST]`
+    /// `MAKE-FLOAT-CONST [FLOAT-LIT] [DEST]`
     ///
     /// Put the float literal `LIT` to register `DEST`.
     MakeFloatConst(f64, usize),
 
-    /// `MAKE-CHAR-CONST [LIT] [DEST]`
+    /// `MAKE-CHAR-CONST [CHAR-LIT] [DEST]`
     ///
     /// Put the char literal `LIT` to register `DEST`.
     MakeCharConst(char, usize),
 
-    /// `MAKE-BOOL-CONST [LIT] [DEST]`
+    /// `MAKE-BOOL-CONST [BOOL-LIT] [DEST]`
     ///
     /// Put the boolean literal `LIT` to register `DEST`.
     MakeBoolConst(bool, usize),
@@ -355,10 +375,24 @@ pub enum Insc {
     /// not generate codes in such a way.
     SaveConst(usize, usize),
 
+    /// `CAST-FLOAT-INT [FLOAT@SRC] [DEST]`
+    ///
+    /// Convert the float in `SRC` to integer, put the result to register `DEST`.
+    /// **No type checking.**
     CastFloatInt(usize, usize),
-    CastCharInt(usize, usize),
+
+    // TODO: Rust forbids case from `char` to `i64`. Should we use this?
+    // CastCharInt(usize, usize),
+
+    /// `CAST-BOOL-INT [BOOL@SRC] [DEST]`
+    ///
+    /// Convert the boolean value in `SRC` to integer, put the result into register `DEST`.
+    /// **No type checking.**
     CastBoolInt(usize, usize),
+
+    /// `CAST-ANY-INT [SRC] [DEST]`
     CastAnyInt(usize, usize),
+
     CastIntFloat(usize, usize),
     CastAnyFloat(usize, usize),
     CastAnyChar(usize, usize),
