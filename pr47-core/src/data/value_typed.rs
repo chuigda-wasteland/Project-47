@@ -24,7 +24,9 @@ pub union ValueTypedDataInner {
     pub int_value: i64,
     pub float_value: f64,
     pub char_value: char,
-    pub bool_value: bool
+    pub bool_value: bool,
+
+    pub repr: u64
 }
 
 #[repr(C)]

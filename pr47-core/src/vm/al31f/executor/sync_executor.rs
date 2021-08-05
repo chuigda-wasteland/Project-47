@@ -77,11 +77,11 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
             Insc::ModInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, %],
             Insc::ModAny(_, _, _) => {}
             Insc::EqValue(src1, src2, dst) => {
-                debug_assert_eq!(slice.get_value(*src1).ptr_repr.ptr,
-                                 slice.get_value(*src2).ptr_repr.ptr);
-                let src1: usize = slice.get_value(*src1).ptr_repr.trivia;
-                let src2: usize = slice.get_value(*src2).ptr_repr.trivia;
-                slice.set_value(*dst, Value::new_int((src1 == src2) as i64));
+                debug_assert_eq!(slice.get_value(*src1).vt_data.tag,
+                                 slice.get_value(*src2).vt_data.tag);
+                let src1: u64 = slice.get_value(*src1).vt_data.inner.repr;
+                let src2: u64 = slice.get_value(*src2).vt_data.inner.repr;
+                slice.set_value(*dst, Value::new_bool(src1 == src2));
             },
             Insc::EqRef(src1, src2, dst) => {
                 let src1: usize = slice.get_value(*src1).ptr_repr.ptr;
@@ -94,8 +94,10 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
                 slice.set_value(*dst, Value::new_bool(src1 == src2));
             },
             Insc::NeValue(src1, src2, dst) => {
-                let src1: usize = slice.get_value(*src1).ptr_repr.trivia;
-                let src2: usize = slice.get_value(*src2).ptr_repr.trivia;
+                debug_assert_eq!(slice.get_value(*src1).vt_data.tag,
+                                 slice.get_value(*src2).vt_data.tag);
+                let src1: u64 = slice.get_value(*src1).vt_data.inner.repr;
+                let src2: u64 = slice.get_value(*src2).vt_data.inner.repr;
                 slice.set_value(*dst, Value::new_bool(src1 != src2));
             },
             Insc::NeRef(src1, src2, dst) => {
