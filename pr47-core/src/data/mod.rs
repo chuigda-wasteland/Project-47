@@ -155,9 +155,7 @@ impl Value {
 
     /// Check if a `Value` is `null`.
     pub fn is_null(&self) -> bool {
-        unsafe {
-            self.ptr_repr.ptr == 0 && self.ptr_repr.trivia == 0
-        }
+        unsafe { self.ptr_repr.ptr == 0 }
     }
 
     /// Check if a `Value` is value-typed
