@@ -27,6 +27,14 @@ pub struct Combustor<A: Alloc> {
     vm: NonNull<AL31F<A>>
 }
 
+impl<A: Alloc> Combustor<A> {
+    pub fn new(vm: NonNull<AL31F<A>>) -> Self {
+        Self {
+            vm
+        }
+    }
+}
+
 impl<A: Alloc> VMContext for Combustor<A> {
     fn allocate(&mut self, fat_ptr: FatPointer) {
         unsafe { self.vm.as_mut().alloc.add_managed(fat_ptr); }

@@ -14,19 +14,19 @@ pub trait FunctionBase: 'static {
     fn call_tyck<CTX: VMContext>(
         context: &mut CTX,
         args: &[Value],
-        rets: &mut [&mut Value]
+        rets: &[*mut Value]
     ) -> Option<Exception>;
 
     unsafe fn call_rtlc<CTX: VMContext>(
         context: &mut CTX,
         args: &[Value],
-        rets: &mut [&mut Value]
+        rets: &[*mut Value]
     ) -> Option<Exception>;
 
     unsafe fn call_unchecked<CTX: VMContext>(
         context: &mut CTX,
         args: &[Value],
-        rets: &mut [&mut Value]
+        rets: &[*mut Value]
     ) -> Option<Exception>;
 }
 
@@ -37,21 +37,21 @@ pub trait Function<CTX: VMContext>: 'static {
         &self,
         context: &mut CTX,
         args: &[Value],
-        rets: &mut [&mut Value]
+        rets: &[*mut Value]
     ) -> Option<Exception>;
 
     unsafe fn call_rtlc(
         &self,
         context: &mut CTX,
         args: &[Value],
-        rets: &mut [&mut Value]
+        rets: &[*mut Value]
     ) -> Option<Exception>;
 
     unsafe fn call_unchecked(
         &self,
         context: &mut CTX,
         args: &[Value],
-        rets: &mut [&mut Value]
+        rets: &[*mut Value]
     ) -> Option<Exception>;
 }
 
@@ -67,7 +67,7 @@ impl<FBase, CTX> Function<CTX> for FBase where
         &self,
         context: &mut CTX,
         args: &[Value],
-        rets: &mut [&mut Value]
+        rets: &[*mut Value]
     ) -> Option<Exception> {
         <FBase as FunctionBase>::call_tyck(context, args, rets)
     }
@@ -76,7 +76,7 @@ impl<FBase, CTX> Function<CTX> for FBase where
         &self,
         context: &mut CTX,
         args: &[Value],
-        rets: &mut [&mut Value]
+        rets: &[*mut Value]
     ) -> Option<Exception> {
         <FBase as FunctionBase>::call_rtlc(context, args, rets)
     }
@@ -85,7 +85,7 @@ impl<FBase, CTX> Function<CTX> for FBase where
         &self,
         context: &mut CTX,
         args: &[Value],
-        rets: &mut [&mut Value]
+        rets: &[*mut Value]
     ) -> Option<Exception> {
         <FBase as FunctionBase>::call_unchecked(context, args, rets)
     }

@@ -5,9 +5,10 @@ use unchecked_unwrap::UncheckedUnwrap;
 use crate::data::Value;
 use crate::data::exception::{Exception, UncheckedException, CheckedException};
 use crate::ds::object::Object;
+use crate::ffi::sync_fn::Function as FFIFunction;
 use crate::util::mem::FatPointer;
 use crate::util::serializer::Serializer;
-use crate::vm::al31f::AL31F;
+use crate::vm::al31f::{AL31F, Combustor};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
 use crate::vm::al31f::insc::Insc;
@@ -44,6 +45,7 @@ pub async fn create_vm_main_thread<A: Alloc>(
 
 #[allow(unused)]
 unsafe fn exception_unwind_stack<A: Alloc>(
+    vm: &mut AL31F<A>,
     program: &CompiledProgram<A>,
     exception: Exception,
     stack: &mut Stack,
@@ -73,7 +75,9 @@ unsafe fn exception_unwind_stack<A: Alloc>(
                     insc_ptr <= end_insc &&
                     checked_exception.dyn_type_id() == exc_handler.exception_id
                 {
+                    let frame_size: usize = frame.frame_end - frame.frame_start;
                     let stack_slice: StackSlice = stack.last_frame_slice();
+
                     return Ok((stack_slice, exc_handler.handler_addr));
                 }
             }
@@ -102,7 +106,6 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
     thread.vm.get_shared_data_mut().alloc.set_gc_allowed(true);
 
     let program: &CompiledProgram<A> = thread.program.as_ref();
-    let stack: &mut Stack = &mut thread.stack;
 
     let compiled_function: &CompiledFunction = &thread.program.as_ref().functions[func_ptr];
 
@@ -114,8 +117,11 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
     }
 
     let mut slice: StackSlice =
-        stack.ext_func_call_grow_stack(func_ptr, compiled_function.stack_size, args);
+        thread.stack.ext_func_call_grow_stack(func_ptr, compiled_function.stack_size, args);
     let mut insc_ptr: usize = compiled_function.start_addr;
+
+    let mut ffi_args: Vec<Value> = Vec::with_capacity(8);
+    let mut ffi_rets: Vec<*mut Value> = Vec::with_capacity(3);
 
     loop {
         #[cfg(not(debug_assertions))]
@@ -267,7 +273,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                     let compiled: &CompiledFunction = &program.functions[*func_id];
 
                 debug_assert_eq!(compiled.arg_count, args.len());
-                slice = stack.func_call_grow_stack(
+                slice = thread.stack.func_call_grow_stack(
                     func_ptr,
                     compiled.stack_size,
                     args,
@@ -281,7 +287,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::CallPtrTyck(_, _, _) => {}
             Insc::CallOverload(_, _, _) => {}
             Insc::ReturnNothing => {
-                if let Some((prev_stack_slice, ret_addr)) = stack.done_func_call_shrink_stack0() {
+                if let Some((prev_stack_slice, ret_addr)) = thread.stack.done_func_call_shrink_stack0() {
                     insc_ptr = ret_addr;
                     slice = prev_stack_slice;
                 } else {
@@ -290,7 +296,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             },
             Insc::ReturnOne(ret_value) => {
                 if let Some((prev_stack_slice, ret_addr)) =
-                stack.done_func_call_shrink_stack1(*ret_value)
+                    thread.stack.done_func_call_shrink_stack1(*ret_value)
                 {
                     insc_ptr = ret_addr;
                     slice = prev_stack_slice;
@@ -300,7 +306,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             },
             Insc::Return(ret_values) => {
                 if let Some((prev_stack_slice, ret_addr)) =
-                stack.done_func_call_shrink_stack(&ret_values)
+                    thread.stack.done_func_call_shrink_stack(&ret_values)
                 {
                     insc_ptr = ret_addr;
                     slice = prev_stack_slice;
@@ -312,7 +318,37 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                     return Ok(ret_vec);
                 }
             }
-            Insc::FFICallTyck(_, _, _) => {}
+            Insc::FFICallTyck(ffi_func_id, args, ret_value_locs) => {
+                let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
+                    = &program.ffi_functions[*ffi_func_id];
+
+                for arg /*: &usize*/ in args.iter() {
+                    ffi_args.push(slice.get_value(*arg));
+                }
+                for ret_value_loc /*: &usize*/ in ret_value_locs.iter() {
+                    ffi_rets.push(slice.get_value_mut_ref(*ret_value_loc));
+                }
+                let mut combustor: Combustor<A> =
+                    Combustor::new(NonNull::from(thread.vm.get_shared_data_mut()));
+
+                if let Some(exception /*: Exception*/) =
+                    ffi_function.call_tyck(&mut combustor, &ffi_args, &mut ffi_rets)
+                {
+                    let (new_slice, insc_ptr_next): (StackSlice, usize) = exception_unwind_stack(
+                        thread.vm.get_shared_data_mut(),
+                        &program,
+                        exception,
+                        &mut thread.stack,
+                        insc_ptr
+                    )?;
+                    slice = new_slice;
+                    insc_ptr = insc_ptr_next;
+                    continue;
+                }
+
+                ffi_args.clear();
+                ffi_rets.clear();
+            },
             #[cfg(feature = "optimized-rtlc")]
             Insc::FFICallRtlc(_, _, _) => {}
             Insc::FFICall(_, _, _) => {}
