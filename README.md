@@ -1,6 +1,7 @@
 # Project-47
 
 ![https://rust-reportcard.xuri.me/badge/github.com/Pr47/Pr47](https://rust-reportcard.xuri.me/badge/github.com/Pr47/Pr47)
+[![Rust CI](https://github.com/Pr47/Pr47/actions/workflows/rust.yml/badge.svg)](https://github.com/Pr47/Pr47/actions/workflows/rust.yml)
 
 ------
 
