@@ -3,7 +3,7 @@ use std::ptr::NonNull;
 use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::data::Value;
-use crate::data::exception::{Exception, UncheckedException};
+use crate::data::exception::{Exception, UncheckedException, CheckedException};
 use crate::ds::object::Object;
 use crate::util::mem::FatPointer;
 use crate::util::serializer::Serializer;
@@ -43,15 +43,37 @@ pub async fn create_vm_main_thread<A: Alloc>(
 }
 
 #[allow(unused)]
-unsafe fn unwind_stack<A: Alloc>(
-    _program: &mut CompiledProgram<A>,
-    _exception: &Exception,
+unsafe fn exception_unwind_stack<A: Alloc>(
+    program: &CompiledProgram<A>,
+    exception: &Exception,
     stack: &mut Stack,
     insc_ptr: usize
 ) -> Option<(StackSlice, usize)> {
-    let mut _insc_ptr: usize = insc_ptr;
-    let _stack_frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
-    unimplemented!()
+    let checked_exception: &CheckedException =
+        if let Exception::CheckedException(ce /*: &CheckedException*/) = exception {
+            ce
+        } else {
+            return None;
+        };
+
+    let mut insc_ptr: usize = insc_ptr;
+    let stack_frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
+    let func_id: usize = stack_frame.func_id;
+    let compiled_function: &CompiledFunction = &program.functions[func_id];
+    if let Some(exc_handlers /*: &Box<[ExceptionHandlingBlock]>*/)
+        = &compiled_function.exc_handlers
+    {
+        for exc_handler /*: &ExceptionHandlingBlock*/ in exc_handlers.as_ref().iter() {
+            let (start_insc, end_insc): (usize, usize) = exc_handler.insc_ptr_range;
+            if insc_ptr >= start_insc
+                && insc_ptr <= end_insc
+                && /* exc_handler.exception_id == checked_exception.type_id() */ false {
+
+            }
+        }
+    }
+
+    None
 }
 
 pub async unsafe fn vm_thread_run_function<A: Alloc>(

@@ -7,7 +7,9 @@ pub enum UncheckedException {
     InvalidBinaryOp { bin_op: char, lhs: Value, rhs: Value, reason: String }
 }
 
+pub type CheckedException = Box<dyn 'static + Error + Send>;
+
 pub enum Exception {
     UncheckedException(UncheckedException),
-    CheckedException(Box<dyn 'static + Error + Send>)
+    CheckedException(CheckedException)
 }
