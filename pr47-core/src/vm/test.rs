@@ -35,8 +35,8 @@ async fn basic_program_eval() {
         assert_eq!(result.len(), 1);
         assert!(result[0].is_value());
         unsafe {
-            assert_eq!(result[0].vt_data.tag & (VALUE_TYPE_TAG_MASK as u64),
-                       ValueTypeTag::Int as u64);
+            assert_eq!(result[0].vt_data.tag & (VALUE_TYPE_TAG_MASK as usize),
+                       ValueTypeTag::Int as usize);
             assert_eq!(result[0].vt_data.inner.int_value, 114 + 514);
         }
     } else {
@@ -47,15 +47,15 @@ async fn basic_program_eval() {
 async fn basic_fn_call() {
     let program: CompiledProgram<DefaultAlloc> = CompiledProgram {
         code: bslice![
-                                                       // application_start() -> (int)
-            /*00*/ Insc::MakeIntConst(1, 0),           // %0 = $1
-            /*01*/ Insc::MakeIntConst(2, 1),           // %1 = $2
+                                                             // application_start() -> (int)
+            /*00*/ Insc::MakeIntConst(1, 0),                 // %0 = $1
+            /*01*/ Insc::MakeIntConst(2, 1),                 // %1 = $2
             /*02*/ Insc::Call(1, bslice![0, 1], bslice![0]), // [ %0 ] = call sum(%0, %1)
-            /*03*/ Insc::Return(bslice![0]),              // return [ %0 ]
+            /*03*/ Insc::Return(bslice![0]),                 // return [ %0 ]
 
-                                                       // sum(%0, %1) -> (int)
-            /*04*/ Insc::AddInt(0, 1, 0),              // [ %0 ] = add int %0, %1
-            /*05*/ Insc::Return(bslice![0])               // return [ %0 ]
+                                                             // sum(%0, %1) -> (int)
+            /*04*/ Insc::AddInt(0, 1, 0),                    // [ %0 ] = add int %0, %1
+            /*05*/ Insc::Return(bslice![0])                  // return [ %0 ]
         ],
         const_pool: bslice![],
         init_proc: 0,
@@ -78,8 +78,8 @@ async fn basic_fn_call() {
         assert_eq!(result.len(), 1);
         assert!(result[0].is_value());
         unsafe {
-            assert_eq!(result[0].vt_data.tag & (VALUE_TYPE_TAG_MASK as u64),
-                       ValueTypeTag::Int as u64);
+            assert_eq!(result[0].vt_data.tag & (VALUE_TYPE_TAG_MASK as usize),
+                       ValueTypeTag::Int as usize);
             assert_eq!(result[0].vt_data.inner.int_value, 3);
         }
     } else {
@@ -100,8 +100,8 @@ async fn fibonacci_call() {
         assert_eq!(result.len(), 1);
         assert!(result[0].is_value());
         unsafe {
-            assert_eq!(result[0].vt_data.tag & (VALUE_TYPE_TAG_MASK as u64),
-                       ValueTypeTag::Int as u64);
+            assert_eq!(result[0].vt_data.tag & (VALUE_TYPE_TAG_MASK as usize),
+                       ValueTypeTag::Int as usize);
             assert_eq!(result[0].vt_data.inner.int_value, 13);
         }
     } else {

@@ -41,7 +41,9 @@ pub struct FrameInfo {
     pub frame_start: usize,
     pub frame_end: usize,
     pub ret_value_locs: NonNull<[usize]>,
-    pub ret_addr: usize
+    pub ret_addr: usize,
+
+    pub func_id: usize
 }
 
 impl FrameInfo {
@@ -49,13 +51,15 @@ impl FrameInfo {
         frame_start: usize,
         frame_end: usize,
         ret_value_locs: NonNull<[usize]>,
-        ret_addr: usize
+        ret_addr: usize,
+        func_id: usize
     ) -> Self {
         Self {
             frame_start,
             frame_end,
             ret_value_locs,
-            ret_addr
+            ret_addr,
+            func_id
         }
     }
 }
@@ -79,6 +83,7 @@ impl Stack {
 
     pub unsafe fn ext_func_call_grow_stack(
         &mut self,
+        func_id: usize,
         frame_size: usize,
         args: &[Value]
     ) -> StackSlice {
@@ -89,12 +94,15 @@ impl Stack {
         for (i /*: usize*/, arg /*: &Value*/) in args.iter().enumerate() {
             self.values[i].replace(*arg);
         }
-        self.frames.push(FrameInfo::new(0, frame_size, NonNull::from(EMPTY_RET_LOCS_SLICE), 0));
+        self.frames.push(FrameInfo::new(
+            0, frame_size, NonNull::from(EMPTY_RET_LOCS_SLICE), 0, func_id
+        ));
         StackSlice(&mut self.values[..] as *mut [Option<Value>])
     }
 
     pub unsafe fn func_call_grow_stack(
         &mut self,
+        func_id: usize,
         frame_size: usize,
         arg_locs: &[usize],
         ret_value_locs: NonNull<[usize]>,
@@ -107,7 +115,9 @@ impl Stack {
         assert_eq!(this_frame_end, self.values.len());
         let new_frame_end: usize = this_frame_end + frame_size;
         self.values.resize(new_frame_end, None);
-        self.frames.push(FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr));
+        self.frames.push(
+            FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr, func_id)
+        );
         let old_slice: StackSlice =
             StackSlice(&mut self.values[this_frame_start..this_frame_end] as *mut _);
         let mut new_slice: StackSlice =
@@ -209,6 +219,7 @@ impl Stack {
 
     pub unsafe fn ext_func_call_grow_stack(
         &mut self,
+        func_id: usize,
         frame_size: usize,
         args: &[Value]
     ) -> StackSlice {
@@ -217,12 +228,15 @@ impl Stack {
             let dest: &mut Value = self.values.get_unchecked_mut(i);
             *dest = *arg;
         }
-        self.frames.push(FrameInfo::new(0, frame_size, NonNull::from(EMPTY_RET_LOCS_SLICE), 0));
+        self.frames.push(FrameInfo::new(
+            0, frame_size, NonNull::from(EMPTY_RET_LOCS_SLICE), 0, func_id)
+        );
         StackSlice(&mut self.values[..] as *mut _)
     }
 
     pub unsafe fn func_call_grow_stack(
         &mut self,
+        func_id: usize,
         frame_size: usize,
         arg_locs: &[usize],
         ret_value_locs: NonNull<[usize]>,
@@ -233,7 +247,9 @@ impl Stack {
             = (this_frame.frame_start, this_frame.frame_end);
         let new_frame_end: usize = this_frame_end + frame_size;
         self.values.resize(new_frame_end, Value::new_null());
-        self.frames.push(FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr));
+        self.frames.push(
+            FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr, func_id)
+        );
         let mut old_slice: StackSlice =
             StackSlice(&mut self.values[this_frame_start..this_frame_end] as *mut _);
         let mut new_slice: StackSlice =

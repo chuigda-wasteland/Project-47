@@ -1,5 +1,7 @@
 use std::ptr::NonNull;
 
+use unchecked_unwrap::UncheckedUnwrap;
+
 use crate::data::Value;
 use crate::data::exception::{Exception, UncheckedException};
 use crate::ds::object::Object;
@@ -9,7 +11,7 @@ use crate::vm::al31f::AL31F;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
 use crate::vm::al31f::insc::Insc;
-use crate::vm::al31f::stack::{Stack, StackSlice};
+use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 
 #[cfg(feature = "bench")] use crate::defer;
 #[cfg(feature = "bench")] use crate::util::defer::Defer;
@@ -40,6 +42,18 @@ pub async fn create_vm_main_thread<A: Alloc>(
     ret
 }
 
+#[allow(unused)]
+unsafe fn unwind_stack<A: Alloc>(
+    _program: &mut CompiledProgram<A>,
+    _exception: &Exception,
+    stack: &mut Stack,
+    insc_ptr: usize
+) -> Option<(StackSlice, usize)> {
+    let mut _insc_ptr: usize = insc_ptr;
+    let _stack_frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
+    unimplemented!()
+}
+
 pub async unsafe fn vm_thread_run_function<A: Alloc>(
     thread: &mut VMThread<A>,
     func_ptr: usize,
@@ -66,7 +80,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
     }
 
     let mut slice: StackSlice =
-        stack.ext_func_call_grow_stack(compiled_function.stack_size, args);
+        stack.ext_func_call_grow_stack(func_ptr, compiled_function.stack_size, args);
     let mut insc_ptr: usize = compiled_function.start_addr;
 
     loop {
@@ -196,8 +210,6 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             }
             Insc::CastFloatInt(src, dst) =>
                 impl_cast_op![slice, src, dst, f64, i64, float_value, new_int],
-            Insc::CastCharInt(src, dst) =>
-                impl_cast_op![slice, src, dst, char, i64, char_value, new_int],
             Insc::CastBoolInt(src, dst) =>
                 impl_cast_op![slice, src, dst, bool, i64, bool_value, new_int],
             Insc::CastAnyInt(_, _) => {}
@@ -222,6 +234,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
 
                 debug_assert_eq!(compiled.arg_count, args.len());
                 slice = stack.func_call_grow_stack(
+                    func_ptr,
                     compiled.stack_size,
                     args,
                     NonNull::from(&rets[..]),

@@ -43,7 +43,7 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
     }
 
     let mut slice: StackSlice =
-        stack.ext_func_call_grow_stack(compiled_function.stack_size, args);
+        stack.ext_func_call_grow_stack(compiled_function.stack_size, func_ptr, args);
     let mut insc_ptr: usize = compiled_function.start_addr;
 
     loop {
@@ -173,8 +173,6 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
             }
             Insc::CastFloatInt(src, dst) =>
                 impl_cast_op![slice, src, dst, f64, i64, float_value, new_int],
-            Insc::CastCharInt(src, dst) =>
-                impl_cast_op![slice, src, dst, char, i64, char_value, new_int],
             Insc::CastBoolInt(src, dst) =>
                 impl_cast_op![slice, src, dst, bool, i64, bool_value, new_int],
             Insc::CastAnyInt(_, _) => {}
@@ -200,6 +198,7 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
                 debug_assert_eq!(compiled.arg_count, args.len());
                 slice = stack.func_call_grow_stack(
                     compiled.stack_size,
+                    func_ptr,
                     args,
                     NonNull::from(&rets[..]),
                     insc_ptr

@@ -33,9 +33,5 @@ const SUCK_WORDS: &'static str =
     "Do you really know how to use this benchmarking suite? Don't make me laugh.";
 
 fn main() {
-    match env::var("BENCH_ITEM").expect(SUCK_WORDS).to_lowercase().as_str() {
-        "fib35" => bench_fibonacci_call(),
-        "new1m" => bench_new1m(),
-        _ => panic!("{}", SUCK_WORDS)
-    }
+    panic!("Currently not maintaining this. Use the asynchronous `bench_al31fm2` instead.");
 }

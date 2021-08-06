@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::ptr::NonNull;
 
 use crate::data::Value;
@@ -10,13 +11,35 @@ use crate::vm::al31f::insc::Insc;
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
+pub struct ExceptionHandlingBlock {
+    pub insc_ptr_range: (usize, usize),
+    pub exception_id: TypeId,
+    pub handler_addr: usize
+}
+
+impl ExceptionHandlingBlock {
+    pub fn new(
+        insc_ptr_start: usize,
+        insc_ptr_end: usize,
+        exception_id: TypeId,
+        handler_addr: usize
+    ) -> Self {
+        Self {
+            insc_ptr_range: (insc_ptr_start, insc_ptr_end),
+            exception_id,
+            handler_addr
+        }
+    }
+}
+
 pub struct CompiledFunction {
     pub start_addr: usize,
     pub arg_count: usize,
     pub ret_count: usize,
     pub stack_size: usize,
 
-    pub param_tyck_info: Box<[Option<NonNull<TyckInfo>>]>
+    pub param_tyck_info: Box<[Option<NonNull<TyckInfo>>]>,
+    pub exc_handlers: Option<Box<[ExceptionHandlingBlock]>>
 }
 
 impl CompiledFunction {
@@ -32,7 +55,26 @@ impl CompiledFunction {
             arg_count,
             ret_count,
             stack_size,
-            param_tyck_info
+            param_tyck_info,
+            exc_handlers: None
+        }
+    }
+
+    pub fn new_with_exc(
+        start_addr: usize,
+        arg_count: usize,
+        ret_count: usize,
+        stack_size: usize,
+        param_tyck_info: Box<[Option<NonNull<TyckInfo>>]>,
+        exc_handlers: Box<[ExceptionHandlingBlock]>
+    ) -> Self {
+        Self {
+            start_addr,
+            arg_count,
+            ret_count,
+            stack_size,
+            param_tyck_info,
+            exc_handlers: Some(exc_handlers)
         }
     }
 }
