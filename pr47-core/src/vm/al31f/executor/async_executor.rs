@@ -45,35 +45,47 @@ pub async fn create_vm_main_thread<A: Alloc>(
 #[allow(unused)]
 unsafe fn exception_unwind_stack<A: Alloc>(
     program: &CompiledProgram<A>,
-    exception: &Exception,
+    exception: Exception,
     stack: &mut Stack,
     insc_ptr: usize
-) -> Option<(StackSlice, usize)> {
+) -> Result<(StackSlice, usize), Exception> {
     let checked_exception: &CheckedException =
-        if let Exception::CheckedException(ce /*: &CheckedException*/) = exception {
+        if let Exception::CheckedException(ce /*: &CheckedException*/) = &exception {
             ce
         } else {
-            return None;
+            // Unchecked exceptions are hard errors, they are not recoverable by design.
+            return Err(exception);
         };
 
     let mut insc_ptr: usize = insc_ptr;
-    let stack_frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
-    let func_id: usize = stack_frame.func_id;
-    let compiled_function: &CompiledFunction = &program.functions[func_id];
-    if let Some(exc_handlers /*: &Box<[ExceptionHandlingBlock]>*/)
-        = &compiled_function.exc_handlers
-    {
-        for exc_handler /*: &ExceptionHandlingBlock*/ in exc_handlers.as_ref().iter() {
-            let (start_insc, end_insc): (usize, usize) = exc_handler.insc_ptr_range;
-            if insc_ptr >= start_insc
-                && insc_ptr <= end_insc
-                && /* exc_handler.exception_id == checked_exception.type_id() */ false {
 
+    while stack.frames.len() != 0 {
+        let frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
+        let func_id: usize = frame.func_id;
+        let compiled_function: &CompiledFunction = &program.functions[func_id];
+
+        if let Some(exc_handlers /*: &Box<[ExceptionHandlingBlock]>*/)
+            = &compiled_function.exc_handlers
+        {
+            for exc_handler /*: &ExceptionHandlingBlock*/ in exc_handlers.as_ref().iter() {
+                let (start_insc, end_insc): (usize, usize) = exc_handler.insc_ptr_range;
+                if insc_ptr >= start_insc &&
+                    insc_ptr <= end_insc &&
+                    checked_exception.dyn_type_id() == exc_handler.exception_id
+                {
+                    let stack_slice: StackSlice = stack.last_frame_slice();
+                    return Ok((stack_slice, exc_handler.handler_addr));
+                }
             }
         }
+
+        let frame_ret_addr: usize = frame.ret_addr;
+        insc_ptr = frame_ret_addr.saturating_sub(1);
+
+        stack.unwind_shrink_slice();
     }
 
-    None
+    Err(exception)
 }
 
 pub async unsafe fn vm_thread_run_function<A: Alloc>(
