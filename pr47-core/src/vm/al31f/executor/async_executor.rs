@@ -358,6 +358,20 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             #[cfg(feature = "no-rtlc")]
             Insc::FFICallAsyncUnchecked(_, _, _) => {}
             Insc::Await(_, _) => {}
+            Insc::Raise(exception_ptr) => {
+                let exception: Value = slice.get_value(*exception_ptr);
+                let exception: Exception = Exception::CheckedException(exception);
+                let (new_slice, insc_ptr_next): (StackSlice, usize) = exception_unwind_stack(
+                    thread.vm.get_shared_data_mut(),
+                    &program,
+                    exception,
+                    &mut thread.stack,
+                    insc_ptr
+                )?;
+                slice = new_slice;
+                insc_ptr = insc_ptr_next;
+                continue;
+            }
             Insc::JumpIfTrue(condition, dest) => {
                 let condition: bool = slice.get_value(*condition).vt_data.inner.bool_value;
                 if condition {
