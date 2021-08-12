@@ -3,7 +3,7 @@ use std::ptr::NonNull;
 use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::data::Value;
-use crate::data::exception::{Exception, UncheckedException, CheckedException};
+use crate::data::exception::{CheckedException, Exception, UncheckedException};
 use crate::ds::object::Object;
 use crate::ffi::sync_fn::Function as FFIFunction;
 use crate::util::mem::FatPointer;
@@ -73,7 +73,7 @@ unsafe fn exception_unwind_stack<A: Alloc>(
                 let (start_insc, end_insc): (usize, usize) = exc_handler.insc_ptr_range;
                 if insc_ptr >= start_insc &&
                     insc_ptr <= end_insc &&
-                    checked_exception.dyn_type_id() == exc_handler.exception_id
+                    (*checked_exception.get_as_dyn_base()).dyn_type_id() == exc_handler.exception_id
                 {
                     let frame_size: usize = frame.frame_end - frame.frame_start;
                     let stack_slice: StackSlice = stack.last_frame_slice();
