@@ -274,7 +274,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
 
                 debug_assert_eq!(compiled.arg_count, args.len());
                 slice = thread.stack.func_call_grow_stack(
-                    func_ptr,
+                    *func_id,
                     compiled.stack_size,
                     args,
                     NonNull::from(&rets[..]),
@@ -303,7 +303,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 } else {
                     return Ok(vec![slice.get_value(*ret_value)]);
                 }
-            },
+            }
             Insc::Return(ret_values) => {
                 if let Some((prev_stack_slice, ret_addr)) =
                     thread.stack.done_func_call_shrink_stack(&ret_values)
@@ -348,7 +348,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
 
                 ffi_args.clear();
                 ffi_rets.clear();
-            },
+            }
             #[cfg(feature = "optimized-rtlc")]
             Insc::FFICallRtlc(_, _, _) => {}
             Insc::FFICall(_, _, _) => {}

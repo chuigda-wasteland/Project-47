@@ -1,30 +1,19 @@
-use crate::boxed_slice as bslice;
 use crate::data::Value;
 use crate::data::exception::Exception;
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
 use crate::util::async_utils::block_on_future;
-use crate::vm::al31f::executor::VMThread;
 use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
-use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
-use crate::vm::al31f::executor::{create_vm_main_thread, vm_thread_run_function};
-use crate::vm::al31f::insc::Insc;
-use crate::vm::test_program::fibonacci_program;
+use crate::vm::al31f::compiled::CompiledProgram;
+use crate::vm::al31f::executor::{VMThread, create_vm_main_thread, vm_thread_run_function};
+use crate::vm::al31f::test_program::{
+    basic_fn_call_program,
+    basic_program,
+    exception_program,
+    fibonacci_program
+};
 
 async fn basic_program_eval() {
-    let program: CompiledProgram<DefaultAlloc> = CompiledProgram {
-        code: bslice![
-            Insc::AddInt(0, 1, 0),
-            Insc::Return(bslice![0])
-        ],
-        const_pool: bslice![],
-        init_proc: 0,
-        functions: bslice![
-            CompiledFunction::new(0, 2, 1, 2, bslice![])
-        ],
-        ffi_functions: bslice![],
-        #[cfg(feature = "async")]
-        async_ffi_funcs: bslice![],
-    };
+    let program: CompiledProgram<DefaultAlloc> = basic_program::<>();
     let alloc: DefaultAlloc = DefaultAlloc::new();
 
     let mut vm_thread: Box<VMThread<DefaultAlloc>> = create_vm_main_thread(alloc, &program).await;
@@ -45,28 +34,7 @@ async fn basic_program_eval() {
 }
 
 async fn basic_fn_call() {
-    let program: CompiledProgram<DefaultAlloc> = CompiledProgram {
-        code: bslice![
-                                                             // application_start() -> (int)
-            /*00*/ Insc::MakeIntConst(1, 0),                 // %0 = $1
-            /*01*/ Insc::MakeIntConst(2, 1),                 // %1 = $2
-            /*02*/ Insc::Call(1, bslice![0, 1], bslice![0]), // [ %0 ] = call sum(%0, %1)
-            /*03*/ Insc::Return(bslice![0]),                 // return [ %0 ]
-
-                                                             // sum(%0, %1) -> (int)
-            /*04*/ Insc::AddInt(0, 1, 0),                    // [ %0 ] = add int %0, %1
-            /*05*/ Insc::Return(bslice![0])                  // return [ %0 ]
-        ],
-        const_pool: bslice![],
-        init_proc: 0,
-        functions: bslice![
-            CompiledFunction::new(0, 0, 1, 2, bslice![]), // application_start
-            CompiledFunction::new(4, 2, 1, 2, bslice![]), // sum
-        ],
-        ffi_functions: bslice![],
-        #[cfg(feature = "async")]
-        async_ffi_funcs: bslice![],
-    };
+    let program: CompiledProgram<DefaultAlloc> = basic_fn_call_program::<>();
 
     let alloc: DefaultAlloc = DefaultAlloc::new();
 
@@ -109,6 +77,28 @@ async fn fibonacci_call() {
     }
 }
 
+async fn exception_call() {
+    let exception_program: CompiledProgram<DefaultAlloc> = exception_program();
+    let alloc: DefaultAlloc = DefaultAlloc::new();
+
+    let mut vm_thread: Box<VMThread<DefaultAlloc>> =
+        create_vm_main_thread(alloc, &exception_program).await;
+    let result: Result<Vec<Value>, Exception> = unsafe {
+        vm_thread_run_function(&mut vm_thread, 0, &[]).await
+    };
+    if let Ok(result /*: Vec<Value>*/) = result {
+        assert_eq!(result.len(), 1);
+        assert!(result[0].is_value());
+        unsafe {
+            assert_eq!(result[0].vt_data.tag & (VALUE_TYPE_TAG_MASK as usize),
+                       ValueTypeTag::Int as usize);
+            assert_eq!(result[0].vt_data.inner.int_value, 114514);
+        }
+    } else {
+        panic!()
+    }
+}
+
 #[test] fn test_basic_program_eval() {
     block_on_future(basic_program_eval());
 }
@@ -119,4 +109,8 @@ async fn fibonacci_call() {
 
 #[test] fn test_fibonacci_call() {
     block_on_future(fibonacci_call());
+}
+
+#[test] fn test_exception() {
+    block_on_future(exception_call());
 }

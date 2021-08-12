@@ -183,7 +183,7 @@ impl Stack {
     }
 
     pub unsafe fn unwind_shrink_slice(&mut self) {
-        let frame: &FrameInfo = self.frames.last().unchecked_unwrap();
+        let frame: FrameInfo = self.frames.pop().unchecked_unwrap();
         self.values.truncate(frame.frame_start);
     }
 }
@@ -350,5 +350,15 @@ impl Stack {
         self.values.truncate(prev_frame.frame_end);
         self.frames.pop().unchecked_unwrap();
         Some((prev_slice, ret_addr))
+    }
+
+    pub unsafe fn last_frame_slice(&mut self) -> StackSlice {
+        let frame: &FrameInfo = self.frames.last().unchecked_unwrap();
+        StackSlice(&mut self.values[frame.frame_start..frame.frame_end] as *mut _)
+    }
+
+    pub unsafe fn unwind_shrink_slice(&mut self) {
+        let frame: FrameInfo = self.frames.pop().unchecked_unwrap();
+        self.values.truncate(frame.frame_start);
     }
 }

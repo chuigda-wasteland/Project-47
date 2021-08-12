@@ -5,7 +5,7 @@ use pr47::data::exception::Exception;
 use pr47::vm::al31f::alloc::default_alloc::DefaultAlloc;
 use pr47::vm::al31f::compiled::CompiledProgram;
 use pr47::vm::al31f::executor::vm_run_function_sync;
-use pr47::vm::test_program::{alloc_1m_program, fibonacci_program};
+use pr47::vm::al31f::test_program::{alloc_1m_program, fibonacci_program};
 
 fn run_program(mut program: CompiledProgram<DefaultAlloc>, args: Vec<Value>) {
     for _ in 0..10 {
