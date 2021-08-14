@@ -121,7 +121,7 @@ pub fn exception_program<A: Alloc>() -> CompiledProgram<A> {
             /*05*/ Insc::Call(2, boxed_slice![], boxed_slice![]), // call baz()
             /*06*/ Insc::ReturnNothing,                           // return
 
-                                                                  // baz() -> ()
+                                                                  // baz() -> !
             /*07*/ Insc::CreateObject(0),                         // %0 = create-object
             /*08*/ Insc::Raise(0)                                 // raise %0
         ],
@@ -136,6 +136,28 @@ pub fn exception_program<A: Alloc>() -> CompiledProgram<A> {
         ],
         ffi_functions: boxed_slice![],
         #[cfg(feature = "async")]
+        async_ffi_funcs: boxed_slice![]
+    }
+}
+
+pub fn exception_no_eh_program<A: Alloc>() -> CompiledProgram<A> {
+    CompiledProgram {
+        code: boxed_slice![
+                                                                   // foo() -> (int)
+            /*00*/ Insc::Call(1, boxed_slice![], boxed_slice![0]), // %0 = call bar
+            /*01*/ Insc::ReturnOne(0),
+
+                                                                   // bar() -> !
+            /*02*/ Insc::CreateObject(0),                          // %0 = create-object
+            /*03*/ Insc::Raise(0),                                 // raise %0
+        ],
+        const_pool: boxed_slice![],
+        init_proc: 0,
+        functions: boxed_slice![
+            CompiledFunction::new(0, 0, 1, 1, boxed_slice![]),
+            CompiledFunction::new(2, 0, 1, 1, boxed_slice![])
+        ],
+        ffi_functions: boxed_slice![],
         async_ffi_funcs: boxed_slice![]
     }
 }
