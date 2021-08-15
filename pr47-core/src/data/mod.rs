@@ -6,7 +6,7 @@ pub mod value_typed;
 pub mod wrapper;
 
 use std::marker::PhantomData;
-use std::mem::MaybeUninit;
+use std::mem::{MaybeUninit, transmute};
 
 use unchecked_unwrap::UncheckedUnwrap;
 
@@ -300,6 +300,12 @@ impl Value {
         debug_assert!(self.is_ref());
         debug_assert!(!self.is_container());
         *((self.ptr_repr.ptr + 5usize) as *mut u8) = gc_info;
+    }
+
+    pub unsafe fn get_as_dyn_base(&self) -> *mut dyn DynBase {
+        debug_assert!(self.is_ref());
+        let ret: FatPointer = FatPointer::new(self.untagged_ptr_field(), self.ptr_repr.trivia);
+        transmute::<FatPointer, &mut dyn DynBase>(ret)
     }
 
     /// Given that `self` **MUST** be a reference, assuming that `self` may be a custom pointer,

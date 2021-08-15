@@ -483,6 +483,9 @@ pub enum Insc {
     #[cfg(feature = "async")]
     Await(usize, Box<[usize]>),
 
+    /// `RAISE [EXCEPTION]`
+    Raise(usize),
+
     JumpIfTrue(usize, usize),
     JumpIfFalse(usize, usize),
     Jump(usize),

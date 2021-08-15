@@ -71,3 +71,11 @@ miri_test_pr47_core_al31f_default_alloc_simple:
 .PHONY: miri_test_pr47_core_al31f_default_alloc_custom_vt
 miri_test_pr47_core_al31f_default_alloc_custom_vt:
 	@cargo +nightly miri test --package pr47 --lib vm::al31f::alloc::default_alloc::test::test_default_collector_custom_vt
+
+.PHONY: miri_test_pr47_vm_al31f
+miri_test_pr47_vm_al31f:
+	@MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --package pr47 --lib vm::al31f::test
+
+.PHONY: miri_test_pr47_vm_al31f_release
+miri_test_pr47_vm_al31f_release:
+	@MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --release --package pr47 --lib vm::al31f::test

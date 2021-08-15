@@ -32,14 +32,14 @@ pub union ValueTypedDataInner {
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct ValueTypedData {
-    pub tag: u64,
+    pub tag: usize,
     pub inner: ValueTypedDataInner
 }
 
 impl From<i64> for ValueTypedData {
     #[inline(always)] fn from(int_value: i64) -> Self {
         Self {
-            tag: ValueTypeTag::Int as u64 | VALUE_TYPE_MASK as u64,
+            tag: ValueTypeTag::Int as usize | VALUE_TYPE_MASK as usize,
             inner: ValueTypedDataInner {
                 int_value
             }
@@ -50,7 +50,7 @@ impl From<i64> for ValueTypedData {
 impl From<f64> for ValueTypedData {
     #[inline(always)] fn from(float_value: f64) -> Self {
         Self {
-            tag: ValueTypeTag::Float as u64 | VALUE_TYPE_MASK as u64,
+            tag: ValueTypeTag::Float as usize | VALUE_TYPE_MASK as usize,
             inner: ValueTypedDataInner {
                 float_value
             }
@@ -61,7 +61,7 @@ impl From<f64> for ValueTypedData {
 impl From<char> for ValueTypedData {
     #[inline(always)] fn from(char_value: char) -> Self {
         Self {
-            tag: ValueTypeTag::Char as u64 | VALUE_TYPE_MASK as u64,
+            tag: ValueTypeTag::Char as usize | VALUE_TYPE_MASK as usize,
             inner: ValueTypedDataInner {
                 char_value
             }
@@ -72,7 +72,7 @@ impl From<char> for ValueTypedData {
 impl From<bool> for ValueTypedData {
     #[inline(always)] fn from(bool_value: bool) -> Self {
         Self {
-            tag: ValueTypeTag::Bool as u64 | VALUE_TYPE_MASK as u64,
+            tag: ValueTypeTag::Bool as usize | VALUE_TYPE_MASK as usize,
             inner: ValueTypedDataInner {
                 bool_value
             }

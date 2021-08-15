@@ -1,17 +1,20 @@
+use std::ptr::NonNull;
+
+#[cfg(feature = "async")] use crate::ffi::async_fn::AsyncVMContext;
+use crate::ffi::sync_fn::VMContext;
+use crate::util::mem::FatPointer;
+#[cfg(feature = "async")] use crate::util::serializer::Serializer;
+use crate::vm::al31f::alloc::Alloc;
+
 pub mod alloc;
 pub mod compiled;
 pub mod executor;
 pub mod insc;
 pub mod stack;
-
-use std::ptr::NonNull;
-
-use crate::ffi::sync_fn::VMContext;
-use crate::util::mem::FatPointer;
-use crate::vm::al31f::alloc::Alloc;
-
-#[cfg(feature = "async")] use crate::ffi::async_fn::AsyncVMContext;
-#[cfg(feature = "async")] use crate::util::serializer::Serializer;
+#[cfg(test)]
+pub mod test;
+#[cfg(any(test, feature = "bench"))]
+pub mod test_program;
 
 pub struct AL31F<A: Alloc> {
     pub alloc: A
@@ -25,6 +28,14 @@ impl<A: Alloc> AL31F<A> {
 
 pub struct Combustor<A: Alloc> {
     vm: NonNull<AL31F<A>>
+}
+
+impl<A: Alloc> Combustor<A> {
+    pub fn new(vm: NonNull<AL31F<A>>) -> Self {
+        Self {
+            vm
+        }
+    }
 }
 
 impl<A: Alloc> VMContext for Combustor<A> {

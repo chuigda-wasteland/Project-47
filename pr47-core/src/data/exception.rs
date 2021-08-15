@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use crate::data::Value;
 
 pub enum UncheckedException {
@@ -7,7 +5,9 @@ pub enum UncheckedException {
     InvalidBinaryOp { bin_op: char, lhs: Value, rhs: Value, reason: String }
 }
 
+pub type CheckedException = Value;
+
 pub enum Exception {
     UncheckedException(UncheckedException),
-    CheckedException(Box<dyn 'static + Error + Send>)
+    CheckedException(CheckedException)
 }
