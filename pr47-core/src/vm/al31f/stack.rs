@@ -1,4 +1,4 @@
-use std::ptr::NonNull;
+use std::ptr::{NonNull, slice_from_raw_parts_mut};
 
 use unchecked_unwrap::UncheckedUnwrap;
 
@@ -309,18 +309,22 @@ impl Stack {
 
         let this_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 1);
         let prev_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 2);
-        let mut this_slice: StackSlice =
-            StackSlice(&mut self.values[this_frame.frame_start..this_frame.frame_end] as *mut _);
-        let mut prev_slice: StackSlice =
-            StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
+
+        let this_slice_ptr = self.values.as_ptr().offset(this_frame.frame_start as isize);
+        let prev_slice_ptr = self.values.as_mut_ptr().offset(prev_frame.frame_start as isize);
+        let prev_slice = slice_from_raw_parts_mut(
+            prev_slice_ptr,
+            prev_frame.frame_end - prev_frame.frame_start
+        );
 
         let ret_value_loc: usize = *this_frame.ret_value_locs.as_ref().get_unchecked(0);
-        prev_slice.set_value(ret_value_loc, this_slice.get_value(ret_value_src));
+        *prev_slice_ptr.offset(ret_value_loc as isize)
+            = *this_slice_ptr.offset(ret_value_src as isize);
 
         let ret_addr: usize = this_frame.ret_addr;
         self.values.truncate(prev_frame.frame_end);
         self.frames.pop().unchecked_unwrap();
-        Some((prev_slice, ret_addr))
+        Some((StackSlice(prev_slice), ret_addr))
     }
 
     pub unsafe fn done_func_call_shrink_stack(

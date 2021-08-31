@@ -16,6 +16,9 @@ use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 
 #[cfg(feature = "bench")] use crate::defer;
 #[cfg(feature = "bench")] use crate::util::defer::Defer;
+use crate::data::value_typed::{INT_TYPE_TAG, FLOAT_TYPE_TAG};
+use crate::data::wrapper::DynBase;
+use std::any::TypeId;
 
 include!("impl_makro.rs");
 
@@ -133,7 +136,47 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
         match insc {
             Insc::AddInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, +],
             Insc::AddFloat(src1, src2, dst) => impl_float_binop![slice, src1, src2, dst, +],
-            Insc::AddAny(_, _, _) => { todo!() },
+            Insc::AddAny(src1, src2, dst) => {
+                let src1: Value = slice.get_value(*src1);
+                let src2: Value = slice.get_value(*src2);
+                if !src1.is_value() || !src2.is_value() {
+                    if !src1.is_container() && !src2.is_container() {
+                        let src1: *mut dyn DynBase = src1.get_as_dyn_base();
+                        let src2: *mut dyn DynBase = src2.get_as_dyn_base();
+                        if (*src1).dyn_type_id() == TypeId::of::<String>()
+                            && (*src2).dyn_type_id() == TypeId::of::<String>() {
+                            let src1: *const String = src1 as *mut String as *const _;
+                            let src2: *const String = src2 as *mut String as *const _;
+                            let result: String = format!("{}{}", *src1, *src2);
+                            let result: Value = Value::new_owned(result);
+                            thread.vm.get_shared_data_mut().alloc.add_managed(result.ptr_repr);
+                            slice.set_value(*dst, result);
+                            continue;
+                        }
+                    }
+
+                    // TODO resolve overloaded call
+                    return Err(Exception::UncheckedException(UncheckedException::InvalidBinaryOp {
+                        bin_op: '+', lhs: src1, rhs: src2
+                    }))
+                }
+
+                if src1.vt_data.tag & INT_TYPE_TAG != 0 && src2.vt_data.tag & INT_TYPE_TAG != 0 {
+                    slice.set_value(*dst, Value::new_int(
+                        src1.vt_data.inner.int_value + src2.vt_data.inner.int_value
+                    ))
+                } else if src1.vt_data.tag & FLOAT_TYPE_TAG != 0
+                    && src2.vt_data.tag & FLOAT_TYPE_TAG != 0
+                {
+                    slice.set_value(*dst, Value::new_float(
+                        src1.vt_data.inner.float_value + src2.vt_data.inner.float_value
+                    ))
+                } else {
+                    return Err(Exception::UncheckedException(UncheckedException::InvalidBinaryOp {
+                        bin_op: '+', lhs: src1, rhs: src2
+                    }))
+                }
+            },
             Insc::IncrInt(pos) => {
                 let v: Value = Value::new_int(slice.get_value(*pos).vt_data.inner.int_value + 1);
                 slice.set_value(*pos, v);

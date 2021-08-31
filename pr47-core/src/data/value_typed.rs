@@ -12,6 +12,11 @@ pub enum ValueTypeTag {
     Bool  = 0b00_100_000
 }
 
+pub const INT_TYPE_TAG: usize   = ValueTypeTag::Int as usize;
+pub const FLOAT_TYPE_TAG: usize = ValueTypeTag::Float as usize;
+pub const CHAR_TYPE_TAG: usize  = ValueTypeTag::Char as usize;
+pub const BOOL_TYPE_TAG: usize  = ValueTypeTag::Bool as usize;
+
 impl UnsafeFrom<u8> for ValueTypeTag {
     #[inline(always)] unsafe fn unsafe_from(data: u8) -> Self {
         std::mem::transmute::<u8, Self>(data)
