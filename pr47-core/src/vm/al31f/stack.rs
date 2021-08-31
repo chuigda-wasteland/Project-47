@@ -281,7 +281,7 @@ impl Stack {
         new_slice
     }
 
-    pub unsafe fn done_func_call_shrink_stack0(&mut self) -> Option<(StackSlice, usize)> {
+    #[inline] pub unsafe fn done_func_call_shrink_stack0(&mut self) -> Option<(StackSlice, usize)> {
         let frame_count = self.frames.len();
         if frame_count == 1 {
             return None;
@@ -298,7 +298,7 @@ impl Stack {
         Some((prev_slice, ret_addr))
     }
 
-    pub unsafe fn done_func_call_shrink_stack1(
+    #[inline] pub unsafe fn done_func_call_shrink_stack1(
         &mut self,
         ret_value_src: usize
     ) -> Option<(StackSlice, usize)> {
