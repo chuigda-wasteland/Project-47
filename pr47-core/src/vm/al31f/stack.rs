@@ -1,4 +1,4 @@
-use std::ptr::{NonNull, slice_from_raw_parts_mut};
+use std::ptr::NonNull;
 
 use unchecked_unwrap::UncheckedUnwrap;
 
@@ -25,22 +25,21 @@ impl StackSlice {
 
 #[cfg(not(debug_assertions))]
 #[derive(Copy, Clone)]
-pub struct StackSlice(*mut [Value]);
+pub struct StackSlice(*mut Value);
 
 #[cfg(not(debug_assertions))]
 impl StackSlice {
     #[inline(always)] pub unsafe fn set_value(&mut self, idx: usize, value: Value) {
-        let dest: &mut Value = (*self.0).get_unchecked_mut(idx);
+        let dest: &mut Value = &mut *self.0.offset(idx as isize);
         *dest = value;
     }
 
     #[inline(always)] pub unsafe fn get_value(&mut self, idx: usize) -> Value {
-        let src: &Value = (*self.0).get_unchecked(idx);
-        *src
+        *self.0.offset(idx as isize)
     }
 
     #[inline(always)] pub unsafe fn get_value_mut_ref(&self, idx: usize) -> *mut Value {
-        (*self.0).get_unchecked_mut(idx)
+        self.0.offset(idx as isize)
     }
 }
 
@@ -249,7 +248,7 @@ impl Stack {
         self.frames.push(FrameInfo::new(
             0, frame_size, NonNull::from(EMPTY_RET_LOCS_SLICE), 0, func_id)
         );
-        StackSlice(&mut self.values[..] as *mut _)
+        StackSlice(self.values.as_mut_ptr())
     }
 
     pub unsafe fn func_call_grow_stack(
@@ -270,14 +269,12 @@ impl Stack {
         );
         let old_slice_ptr: *mut Value = self.values.as_mut_ptr().offset(this_frame_start as isize);
         let new_slice_ptr: *mut Value = self.values.as_mut_ptr().offset(this_frame_end as isize);
-        let new_slice: StackSlice =
-            StackSlice(&mut self.values[this_frame_end..new_frame_end] as *mut _);
 
         for i /*: usize*/ in 0..arg_locs.len() {
             let arg_loc: usize = *arg_locs.get_unchecked(i);
             *new_slice_ptr.offset(i as isize) = *old_slice_ptr.offset(arg_loc as isize);
         }
-        new_slice
+        StackSlice(new_slice_ptr)
     }
 
     #[inline] pub unsafe fn done_func_call_shrink_stack0(&mut self) -> Option<(StackSlice, usize)> {
@@ -288,13 +285,13 @@ impl Stack {
 
         let this_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 1);
         let prev_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 2);
-        let prev_slice: StackSlice =
-            StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
+        let prev_slice_ptr: *mut Value =
+            self.values.as_mut_ptr().offset(prev_frame.frame_start as isize);
 
         let ret_addr: usize = this_frame.ret_addr;
         self.values.truncate(prev_frame.frame_end);
         self.frames.pop().unchecked_unwrap();
-        Some((prev_slice, ret_addr))
+        Some((StackSlice(prev_slice_ptr), ret_addr))
     }
 
     #[inline] pub unsafe fn done_func_call_shrink_stack1(
@@ -311,10 +308,6 @@ impl Stack {
 
         let this_slice_ptr = self.values.as_ptr().offset(this_frame.frame_start as isize);
         let prev_slice_ptr = self.values.as_mut_ptr().offset(prev_frame.frame_start as isize);
-        let prev_slice = slice_from_raw_parts_mut(
-            prev_slice_ptr,
-            prev_frame.frame_end - prev_frame.frame_start
-        );
 
         let ret_value_loc: usize = *this_frame.ret_value_locs.as_ref().get_unchecked(0);
         *prev_slice_ptr.offset(ret_value_loc as isize)
@@ -323,7 +316,7 @@ impl Stack {
         let ret_addr: usize = this_frame.ret_addr;
         self.values.truncate(prev_frame.frame_end);
         self.frames.pop().unchecked_unwrap();
-        Some((StackSlice(prev_slice), ret_addr))
+        Some((StackSlice(prev_slice_ptr), ret_addr))
     }
 
     pub unsafe fn done_func_call_shrink_stack(
@@ -337,27 +330,28 @@ impl Stack {
 
         let this_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 1);
         let prev_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 2);
-        let mut this_slice: StackSlice =
-            StackSlice(&mut self.values[this_frame.frame_start..this_frame.frame_end] as *mut _);
-        let mut prev_slice: StackSlice =
-            StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
+        let this_slice_ptr: *mut Value =
+            self.values.as_mut_ptr().offset(this_frame.frame_start as isize);
+        let prev_slice_ptr: *mut Value =
+            self.values.as_mut_ptr().offset(prev_frame.frame_start as isize);
 
         let len: usize = ret_values.len();
         for i /*: usize*/ in 0..len {
             let ret_value_loc: usize = *this_frame.ret_value_locs.as_ref().get_unchecked(i);
             let ret_value_src: usize = *ret_values.get_unchecked(i);
-            prev_slice.set_value(ret_value_loc, this_slice.get_value(ret_value_src));
+            *prev_slice_ptr.offset(ret_value_loc as isize) =
+                *this_slice_ptr.offset(ret_value_src as isize);
         }
 
         let ret_addr: usize = this_frame.ret_addr;
         self.values.truncate(prev_frame.frame_end);
         self.frames.pop().unchecked_unwrap();
-        Some((prev_slice, ret_addr))
+        Some((StackSlice(prev_slice_ptr), ret_addr))
     }
 
     #[inline] pub unsafe fn last_frame_slice(&mut self) -> StackSlice {
         let frame: &FrameInfo = self.frames.last().unchecked_unwrap();
-        StackSlice(&mut self.values[frame.frame_start..frame.frame_end] as *mut _)
+        StackSlice(self.values.as_mut_ptr().offset(frame.frame_start as isize))
     }
 
     #[inline] pub unsafe fn unwind_shrink_slice(&mut self) {
