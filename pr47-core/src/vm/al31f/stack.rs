@@ -268,16 +268,15 @@ impl Stack {
         self.frames.push(
             FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr, func_id)
         );
-        let mut old_slice: StackSlice =
-            StackSlice(&mut self.values[this_frame_start..this_frame_end] as *mut _);
-        let mut new_slice: StackSlice =
+        let old_slice_ptr: *mut Value = self.values.as_mut_ptr().offset(this_frame_start as isize);
+        let new_slice_ptr: *mut Value = self.values.as_mut_ptr().offset(this_frame_end as isize);
+        let new_slice: StackSlice =
             StackSlice(&mut self.values[this_frame_end..new_frame_end] as *mut _);
 
         for i /*: usize*/ in 0..arg_locs.len() {
             let arg_loc: usize = *arg_locs.get_unchecked(i);
-            new_slice.set_value(i, old_slice.get_value(arg_loc));
+            *new_slice_ptr.offset(i as isize) = *old_slice_ptr.offset(arg_loc as isize);
         }
-
         new_slice
     }
 
