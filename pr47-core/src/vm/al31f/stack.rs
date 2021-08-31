@@ -352,12 +352,12 @@ impl Stack {
         Some((prev_slice, ret_addr))
     }
 
-    pub unsafe fn last_frame_slice(&mut self) -> StackSlice {
+    #[inline] pub unsafe fn last_frame_slice(&mut self) -> StackSlice {
         let frame: &FrameInfo = self.frames.last().unchecked_unwrap();
         StackSlice(&mut self.values[frame.frame_start..frame.frame_end] as *mut _)
     }
 
-    pub unsafe fn unwind_shrink_slice(&mut self) {
+    #[inline] pub unsafe fn unwind_shrink_slice(&mut self) {
         let frame: FrameInfo = self.frames.pop().unchecked_unwrap();
         self.values.truncate(frame.frame_start);
     }

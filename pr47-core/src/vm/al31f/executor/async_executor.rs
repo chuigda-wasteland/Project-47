@@ -287,7 +287,9 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::CallPtrTyck(_, _, _) => {}
             Insc::CallOverload(_, _, _) => {}
             Insc::ReturnNothing => {
-                if let Some((prev_stack_slice, ret_addr)) = thread.stack.done_func_call_shrink_stack0() {
+                if let Some((prev_stack_slice, ret_addr)) =
+                    thread.stack.done_func_call_shrink_stack0()
+                {
                     insc_ptr = ret_addr;
                     slice = prev_stack_slice;
                 } else {
@@ -320,7 +322,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             }
             Insc::FFICallTyck(ffi_func_id, args, ret_value_locs) => {
                 let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
-                    = &program.ffi_functions[*ffi_func_id];
+                    = &program.ffi_funcs[*ffi_func_id];
 
                 for arg /*: &usize*/ in args.iter() {
                     ffi_args.push(slice.get_value(*arg));

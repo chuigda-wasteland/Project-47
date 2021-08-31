@@ -4,6 +4,8 @@ version = "0.0.1"
 authors = ["ICEY <icey@icey.tech>"]
 edition = "2018"
 resolver = "2"
+description = "procedural macro crate for Pr47. not ready yet."
+license = "MIT"
 
 [lib]
 proc-macro = true

@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["ICEY <icey@icey.tech>"]
 edition = "2018"
 description = "A semi-experimental programming language. Still working in progress."
-readme = "README.md"
+readme = "../README.md"
 repository = "https://github.com/Pr47/Pr47"
 license = "MIT"
 resolver = "2"
@@ -19,7 +19,7 @@ async-trait = { optional = true, version = "0.1" }
 futures = { optional = true, version = "0.3" }
 tokio = { optional = true, version = "1", features = ["rt", "sync", "time"] }
 
-pr47-codegen = { path="../pr47-codegen" }
+pr47-codegen = "0.0.1"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread"] }

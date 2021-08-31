@@ -17,7 +17,7 @@ pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
         functions: boxed_slice![
             CompiledFunction::new(0, 2, 1, 2, boxed_slice![])
         ],
-        ffi_functions: boxed_slice![],
+        ffi_funcs: boxed_slice![],
         #[cfg(feature = "async")]
         async_ffi_funcs: boxed_slice![],
     }
@@ -44,7 +44,7 @@ pub fn basic_fn_call_program<A: Alloc>() -> CompiledProgram<A> {
             CompiledFunction::new(0, 0, 1, 2, boxed_slice![]), // application_start
             CompiledFunction::new(4, 2, 1, 2, boxed_slice![]), // sum
         ],
-        ffi_functions: boxed_slice![],
+        ffi_funcs: boxed_slice![],
         #[cfg(feature = "async")]
         async_ffi_funcs: boxed_slice![],
     }
@@ -73,7 +73,7 @@ pub fn fibonacci_program<A: Alloc>() -> CompiledProgram<A> {
         functions: boxed_slice![
             CompiledFunction::new(0, 1, 1, 4, boxed_slice![])
         ],
-        ffi_functions: boxed_slice![],
+        ffi_funcs: boxed_slice![],
         #[cfg(feature = "async")]
         async_ffi_funcs: boxed_slice![],
     }
@@ -98,7 +98,7 @@ pub fn alloc_1m_program<A: Alloc>() -> CompiledProgram<A> {
         functions: boxed_slice![
             CompiledFunction::new(0, 0, 0, 4, boxed_slice![])
         ],
-        ffi_functions: boxed_slice![],
+        ffi_funcs: boxed_slice![],
         #[cfg(feature = "async")]
         async_ffi_funcs: boxed_slice![],
     }
@@ -134,7 +134,7 @@ pub fn exception_program<A: Alloc>() -> CompiledProgram<A> {
             CompiledFunction::new(5, 0, 0, 0, boxed_slice![]),
             CompiledFunction::new(7, 0, 0, 1, boxed_slice![])
         ],
-        ffi_functions: boxed_slice![],
+        ffi_funcs: boxed_slice![],
         #[cfg(feature = "async")]
         async_ffi_funcs: boxed_slice![]
     }
@@ -157,7 +157,7 @@ pub fn exception_no_eh_program<A: Alloc>() -> CompiledProgram<A> {
             CompiledFunction::new(0, 0, 1, 1, boxed_slice![]),
             CompiledFunction::new(2, 0, 1, 1, boxed_slice![])
         ],
-        ffi_functions: boxed_slice![],
+        ffi_funcs: boxed_slice![],
         async_ffi_funcs: boxed_slice![]
     }
 }
