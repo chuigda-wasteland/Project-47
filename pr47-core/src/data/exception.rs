@@ -146,7 +146,7 @@ pub fn create_exception_vt(
     }
 
     let tyck_info: NonNull<TyckInfo> = tyck_info_pool.create_container_type(
-        TypeId::of::<ExceptionContainer<()>>(),
+        <Void as StaticBase<Exception>>::type_id(),
         &[elem_tyck_info]
     );
     let container_tyck_info: NonNull<ContainerTyckInfo> =
