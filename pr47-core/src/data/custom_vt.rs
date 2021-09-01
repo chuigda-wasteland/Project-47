@@ -1,9 +1,8 @@
-use std::iter::Iterator;
 use std::ptr::NonNull;
 
 use crate::data::Value;
+use crate::data::traits::ChildrenType;
 use crate::data::tyck::ContainerTyckInfo;
-use crate::util::mem::FatPointer;
 
 #[cfg(debug_assertions)] use std::any::TypeId;
 
@@ -14,7 +13,7 @@ pub type MoveOutCkFn = unsafe fn(this: *mut (), out: *mut (), type_id: TypeId);
 #[cfg(not(debug_assertions))]
 pub type MoveOutFn = unsafe fn(this: *mut (), out: *mut ());
 
-pub type ChildrenFn = unsafe fn(this: *const ()) -> Box<dyn Iterator<Item=FatPointer>>;
+pub type ChildrenFn = unsafe fn(this: *const ()) -> ChildrenType;
 
 pub type DropFn = unsafe fn(this: *mut());
 
@@ -71,4 +70,61 @@ impl ContainerVT {
 pub struct ContainerPtr {
     pub data_ptr: *mut u8,
     pub vt: *mut ContainerVT
+}
+
+pub mod gen_impls {
+    use std::mem::{MaybeUninit, ManuallyDrop};
+
+    use crate::data::traits::{ChildrenType, StaticBase};
+    use crate::data::wrapper::{OwnershipInfo, Wrapper};
+    use crate::util::void::Void;
+
+    #[cfg(debug_assertions)] use std::any::TypeId;
+
+    #[cfg(debug_assertions)]
+    #[inline(always)]
+    pub unsafe fn generic_move_out_ck<T>(this: *mut (), out: *mut (), type_id: TypeId)
+        where T: 'static,
+              Void: StaticBase<T>
+    {
+        assert_eq!(type_id, TypeId::of::<T>());
+        let this: &mut Wrapper<T> = &mut *(this as *mut Wrapper<_>);
+        let out: &mut MaybeUninit<T> = &mut *(out as *mut MaybeUninit<_>);
+
+        assert_eq!(this.ownership_info, OwnershipInfo::VMOwned as u8);
+        let data: T = ManuallyDrop::take(&mut this.data.owned).assume_init();
+        std::ptr::write(out.as_mut_ptr(), data);
+        this.ownership_info = OwnershipInfo::MovedToRust as u8;
+    }
+
+    #[cfg(not(debug_assertions))]
+    #[inline(always)]
+    pub unsafe fn generic_move_out<T>(this: *mut (), out: *mut ())
+        where T: 'static,
+              Void: StaticBase<T>
+    {
+        let this: &mut Wrapper<T> = &mut *(this as *mut Wrapper<_>);
+        let out: &mut MaybeUninit<T> = &mut *(out as *mut MaybeUninit<_>);
+
+        let data: T = ManuallyDrop::take(&mut this.data.owned).assume_init();
+        std::ptr::write(out.as_mut_ptr(), data);
+        this.ownership_info = OwnershipInfo::MovedToRust as u8;
+    }
+
+    #[inline(always)]
+    pub unsafe fn generic_children<T>(this: *const ()) -> ChildrenType
+        where T: 'static,
+              Void: StaticBase<T>
+    {
+        <Void as StaticBase<T>>::children(this as *const _)
+    }
+
+    #[inline(always)]
+    pub unsafe fn generic_drop<T>(this: *mut ())
+        where T: 'static,
+              Void: StaticBase<T>
+    {
+        let boxed: Box<Wrapper<T>> = Box::from_raw(this as *mut _);
+        drop(boxed);
+    }
 }

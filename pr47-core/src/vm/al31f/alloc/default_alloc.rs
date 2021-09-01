@@ -1,13 +1,14 @@
 use std::collections::VecDeque;
 use std::mem::transmute;
 
+use unchecked_unwrap::UncheckedUnwrap;
+
 use crate::data::PTR_BITS_MASK_USIZE;
 use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
 use crate::data::wrapper::{DynBase, OWN_INFO_COLLECT_MASK, Wrapper};
 use crate::util::mem::FatPointer;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::stack::Stack;
-use unchecked_unwrap::UncheckedUnwrap;
 
 /// Default allocator for `AL31F`, with STW GC.
 pub struct DefaultAlloc {
@@ -151,8 +152,12 @@ impl Alloc for DefaultAlloc {
             } else {
                 let container_vt: *const ContainerVT = ptr.trivia as *const _;
                 let ptr: *const () = (ptr.ptr & PTR_BITS_MASK_USIZE) as *const _;
-                for child /*: FatPointer*/ in ((*container_vt).children_fn)(ptr) {
-                    to_scan.push_back(child);
+                if let Some(children /*: Box<dyn Iterator> */)
+                    = ((*container_vt).children_fn)(ptr)
+                {
+                    for child /*: FatPointer*/ in children {
+                        to_scan.push_back(child);
+                    }
                 }
             }
         }

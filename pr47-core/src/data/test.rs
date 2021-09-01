@@ -3,13 +3,13 @@ use std::mem::MaybeUninit;
 use std::ptr::{NonNull, addr_of, null_mut};
 
 use crate::data::Value;
-use crate::data::traits::StaticBase;
+use crate::data::custom_vt::ContainerVT;
+use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::data::wrapper::{Wrapper, WrapperData, DynBase, OwnershipInfo};
 use crate::ds::test_container::{TestContainer, create_test_container_vt};
 use crate::util::mem::FatPointer;
 use crate::util::void::Void;
-use crate::data::custom_vt::ContainerVT;
 
 #[allow(dead_code)]
 struct TestStruct {
@@ -102,7 +102,7 @@ impl StaticBase<TestStruct2> for Void {
         <Void as StaticBase<TestStruct>>::tyck_info(&mut tyck_info_pool);
     assert!(dyn_base.dyn_tyck(unsafe { tyck_info.as_ref() }));
 
-    let children: Option<Box<dyn Iterator<Item=FatPointer>>> = dyn_base.children();
+    let children: ChildrenType = dyn_base.children();
     assert!(children.is_none());
 
     let mut out: MaybeUninit<TestStruct> = MaybeUninit::uninit();
@@ -140,7 +140,7 @@ impl StaticBase<TestStruct2> for Void {
             let tyck_info: NonNull<TyckInfo> =
                 <Void as StaticBase<TestStruct>>::tyck_info(tyck_info_pool);
             assert!(dyn_base.dyn_tyck(tyck_info.as_ref()));
-            let children: Option<Box<dyn Iterator<Item=FatPointer>>> = dyn_base.children();
+            let children: ChildrenType = dyn_base.children();
             assert!(children.is_none());
 
             drop(dyn_base);

@@ -1,13 +1,11 @@
 use std::any::TypeId;
-use std::iter::Iterator;
 use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::addr_of;
 
 use unchecked_unwrap::UncheckedUnwrap;
 
-use crate::data::traits::StaticBase;
+use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::TyckInfo;
-use crate::util::mem::FatPointer;
 use crate::util::unsafe_from::UnsafeFrom;
 use crate::util::void::Void;
 
@@ -153,7 +151,7 @@ pub trait DynBase {
     #[cfg(not(debug_assertions))]
     unsafe fn move_out(&mut self, out: *mut ());
 
-    fn children(&self) -> Option<Box<dyn Iterator<Item=FatPointer> + 'static>>;
+    fn children(&self) -> ChildrenType;
 }
 
 impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
@@ -187,7 +185,7 @@ impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
     }
 
     #[inline]
-    fn children(&self) -> Option<Box<dyn Iterator<Item=FatPointer> + 'static>> {
+    fn children(&self) -> ChildrenType {
         let vself: *const T = if (self.ownership_info & OWN_INFO_OWNED_MASK) != 0 {
             unsafe { self.data.owned.as_ptr() }
         } else {

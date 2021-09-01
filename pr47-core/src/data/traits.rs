@@ -6,6 +6,8 @@ use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::util::mem::FatPointer;
 use crate::util::void::Void;
 
+pub type ChildrenType = Option<Box<dyn Iterator<Item=FatPointer> + 'static>>;
+
 pub trait StaticBase<T: 'static> {
     fn type_id() -> TypeId {
         TypeId::of::<T>()
@@ -28,9 +30,7 @@ pub trait StaticBase<T: 'static> {
     }
 
     // TODO: should we mark this as unsafe?
-    #[inline] fn children(_vself: *const T) 
-        -> Option<Box<dyn Iterator<Item=FatPointer> + 'static>> 
-    {
+    #[inline] fn children(_vself: *const T) -> ChildrenType {
         None
     }
 }

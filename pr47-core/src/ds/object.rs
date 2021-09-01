@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::data::Value;
-use crate::data::traits::StaticBase;
-use crate::util::mem::FatPointer;
+use crate::data::traits::{ChildrenType, StaticBase};
 use crate::util::void::Void;
 
 pub struct Object {
@@ -20,9 +19,7 @@ impl Object {
 impl StaticBase<Object> for Void {
     fn type_name() -> String { "object".into() }
 
-    #[inline] fn children(
-        vself: *const Object
-    ) -> Option<Box<dyn Iterator<Item=FatPointer> + 'static>> {
+    #[inline] fn children(vself: *const Object) -> ChildrenType {
         unsafe {
             let iter = Box::new((*vself).fields.iter().map(|x| x.1.ptr_repr.clone()));
             Some(iter)
