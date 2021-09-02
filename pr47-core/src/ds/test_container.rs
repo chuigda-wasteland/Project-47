@@ -1,17 +1,57 @@
 use std::any::TypeId;
 use std::marker::PhantomData;
-use std::mem::{ManuallyDrop, MaybeUninit, transmute};
+use std::mem::transmute;
 use std::ptr::NonNull;
 
 use crate::data::custom_vt::ContainerVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{ContainerTyckInfo, TyckInfo, TyckInfoPool};
-use crate::data::wrapper::{OwnershipInfo, Wrapper, DynBase};
 use crate::util::mem::FatPointer;
 use crate::util::void::Void;
 
-pub struct TestContainer<T: 'static> {
+pub struct GenericTestContainer {
     pub elements: Vec<FatPointer>,
+}
+
+impl GenericTestContainer {
+    pub fn new() -> Self {
+        Self { elements: vec![] }
+    }
+}
+
+impl StaticBase<GenericTestContainer> for Void {
+    fn type_id() -> TypeId {
+        TypeId::of::<GenericTestContainer>()
+    }
+
+    fn tyck_info(tyck_info_pool: &mut TyckInfoPool) -> NonNull<TyckInfo> {
+        tyck_info_pool.create_container_type(TypeId::of::<GenericTestContainer>(), &[])
+    }
+
+    fn tyck(tyck_info: &TyckInfo) -> bool {
+        if let TyckInfo::Container(ContainerTyckInfo { type_id, params: _ }) = tyck_info {
+            TypeId::of::<TestContainer<()>>() == *type_id
+        } else {
+            false
+        }
+    }
+
+    fn type_name() -> String {
+        "TestContainer".into()
+    }
+
+    fn children(vself: *const GenericTestContainer) -> ChildrenType {
+        let vself: &GenericTestContainer = unsafe { &*vself };
+        let iter: Box<dyn Iterator<Item=FatPointer> + '_> =
+            Box::new(vself.elements.iter().map(|x: &FatPointer| *x));
+        let iter: Box<dyn Iterator<Item=FatPointer> + 'static> = unsafe { transmute::<>(iter) };
+        Some(iter)
+    }
+}
+
+#[repr(transparent)]
+pub struct TestContainer<T: 'static> {
+    pub inner: GenericTestContainer,
     _phantom: PhantomData<T>
 }
 
@@ -20,7 +60,7 @@ impl<T: 'static> TestContainer<T>
 {
     pub fn new() -> Self {
         Self {
-            elements: Vec::new(),
+            inner: GenericTestContainer::new(),
             _phantom: PhantomData::default()
         }
     }
@@ -30,13 +70,13 @@ impl<T: 'static> StaticBase<TestContainer<T>> for Void
     where Void: StaticBase<T>
 {
     fn type_id() -> TypeId {
-        TypeId::of::<TestContainer<()>>()
+        <Void as StaticBase<GenericTestContainer>>::type_id()
     }
 
     fn tyck_info(tyck_info_pool: &mut TyckInfoPool) -> NonNull<TyckInfo> {
         let elem_tyck_info: NonNull<TyckInfo> = <Void as StaticBase<T>>::tyck_info(tyck_info_pool);
         tyck_info_pool.create_container_type(
-            TypeId::of::<TestContainer<()>>(),
+            <Void as StaticBase<GenericTestContainer>>::type_id(),
             &[elem_tyck_info]
         )
     }
@@ -44,9 +84,9 @@ impl<T: 'static> StaticBase<TestContainer<T>> for Void
     fn tyck(tyck_info: &TyckInfo) -> bool {
         if let TyckInfo::Container(ContainerTyckInfo { type_id, params }) = tyck_info {
             let params: &[NonNull<TyckInfo>] = unsafe { params.as_ref() };
-            TypeId::of::<TestContainer<()>>() == *type_id
-            && params.len() == 1
-            && <Void as StaticBase<T>>::tyck(unsafe { params.get_unchecked(0).as_ref() })
+            <Void as StaticBase<GenericTestContainer>>::type_id() == *type_id
+                && params.len() == 1
+                && <Void as StaticBase<T>>::tyck(unsafe { params.get_unchecked(0).as_ref() })
             // TODO: take `any` type into consideration
         } else {
             false
@@ -58,11 +98,7 @@ impl<T: 'static> StaticBase<TestContainer<T>> for Void
     }
 
     fn children(vself: *const TestContainer<T>) -> ChildrenType {
-        let vself: &TestContainer<T> = unsafe { &*vself };
-        let iter: Box<dyn Iterator<Item=FatPointer> + '_> =
-            Box::new(vself.elements.iter().map(|x: &FatPointer| *x));
-        let iter: Box<dyn Iterator<Item=FatPointer> + 'static> = unsafe { transmute::<>(iter) };
-        Some(iter)
+        <Void as StaticBase<GenericTestContainer>>::children(vself as *const GenericTestContainer)
     }
 }
 
@@ -73,7 +109,7 @@ pub fn create_test_container_vt<T: 'static>(tyck_info_pool: &mut TyckInfoPool) -
 
     #[cfg(debug_assertions)]
     unsafe fn move_out_ck(this: *mut (), out: *mut (), type_id: TypeId) {
-        gen_impls::generic_move_out_ck::<TestContainer<()>>(this, out, type_id)
+        gen_impls::generic_move_out_ck::<GenericTestContainer>(this, out, type_id)
     }
 
     #[cfg(not(debug_assertions))]
@@ -82,7 +118,11 @@ pub fn create_test_container_vt<T: 'static>(tyck_info_pool: &mut TyckInfoPool) -
     }
 
     unsafe fn children(this: *const ()) -> ChildrenType {
-        gen_impls::generic_children::<TestContainer<()>>(this)
+        gen_impls::generic_children::<GenericTestContainer>(this)
+    }
+
+    unsafe fn test_container_drop(this: *mut ()) {
+        gen_impls::generic_drop::<GenericTestContainer>(this);
     }
 
     let elem_tyck_info: NonNull<TyckInfo> = <Void as StaticBase<T>>::tyck_info(tyck_info_pool);
@@ -98,7 +138,7 @@ pub fn create_test_container_vt<T: 'static>(tyck_info_pool: &mut TyckInfoPool) -
         move_out_fn: move_out_ck,
         #[cfg(not(debug_assertions))]
         move_out_fn: move_out,
-        children_fn: test_container_children,
+        children_fn: children,
         drop_fn: test_container_drop
     }
 }

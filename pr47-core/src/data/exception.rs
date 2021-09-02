@@ -9,7 +9,7 @@ use crate::data::tyck::{TyckInfo, TyckInfoPool, ContainerTyckInfo};
 use crate::util::void::Void;
 
 pub enum UncheckedException {
-    ArgCountMismatch { func_ptr: usize, expected: usize, got: usize },
+    ArgCountMismatch { func_id: usize, expected: usize, got: usize },
     InvalidBinaryOp { bin_op: char, lhs: Value, rhs: Value }
 }
 
@@ -55,6 +55,14 @@ impl Exception {
     pub fn push_stack_trace(&mut self, func_id: usize, insc_ptr: usize) {
         self.trace.push(StackTrace::new(func_id, insc_ptr))
     }
+
+    #[cfg(test)]
+    pub fn assert_checked(&self) -> CheckedException {
+        match &self.inner {
+            ExceptionInner::CheckedException(e) => e.clone(),
+            ExceptionInner::UncheckedException(_) => panic!()
+        }
+    }
 }
 
 impl StaticBase<Exception> for Void {
@@ -64,7 +72,7 @@ impl StaticBase<Exception> for Void {
         match unsafe { &(*vself).inner } {
             ExceptionInner::UncheckedException(_) => None,
             ExceptionInner::CheckedException(checked) => {
-                Some(Box::new(std::iter::once(checked.ptr_repr)))
+                Some(Box::new(std::iter::once(unsafe { checked.ptr_repr })))
             }
         }
     }
@@ -98,7 +106,7 @@ impl<E> StaticBase<ExceptionContainer<E>> for Void
             if unsafe { params.as_ref().len() } != 1 {
                 return false;
             }
-            let param0: NonNull<TyckInfo> = unsafe { *params.as_ref().get_unchecked_mut(0) };
+            let param0: NonNull<TyckInfo> = unsafe { *params.as_ref().get_unchecked(0) };
             <Void as StaticBase<E>>::tyck(unsafe { param0.as_ref() })
         } else {
             false
@@ -114,7 +122,7 @@ impl<E> StaticBase<ExceptionContainer<E>> for Void
         match r.exception.inner {
             ExceptionInner::UncheckedException(_) => None,
             ExceptionInner::CheckedException(checked) => {
-                Some(Box::new(std::iter::once(checked.ptr_repr)))
+                Some(Box::new(std::iter::once(unsafe { checked.ptr_repr })))
             }
         }
     }

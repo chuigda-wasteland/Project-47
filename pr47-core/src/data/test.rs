@@ -7,7 +7,7 @@ use crate::data::custom_vt::ContainerVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::data::wrapper::{Wrapper, WrapperData, DynBase, OwnershipInfo};
-use crate::ds::test_container::{TestContainer, create_test_container_vt};
+use crate::ds::test_container::{TestContainer, create_test_container_vt, GenericTestContainer};
 use crate::util::mem::FatPointer;
 use crate::util::void::Void;
 
@@ -239,8 +239,8 @@ impl StaticBase<TestStruct2> for Void {
 
     let mut test_container: TestContainer<TestStruct2> = TestContainer::new();
     unsafe {
-        test_container.elements.push(value1.ptr_repr);
-        test_container.elements.push(value2.ptr_repr);
+        test_container.inner.elements.push(value1.ptr_repr);
+        test_container.inner.elements.push(value2.ptr_repr);
     }
 
     let v: Value = Value::new_owned(test_container);
@@ -254,7 +254,7 @@ impl StaticBase<TestStruct2> for Void {
         let dyn_base: *mut dyn DynBase = v.ptr;
         let dyn_base: &dyn DynBase = dyn_base.as_ref().unwrap();
         assert_eq!(dyn_base.dyn_type_name(), "TestContainer");
-        assert_eq!(dyn_base.dyn_type_id(), TypeId::of::<TestContainer<()>>());
+        assert_eq!(dyn_base.dyn_type_id(), TypeId::of::<GenericTestContainer>());
 
         // Note: this piece of code definitely produces a memory leak. This is one of the predicted
         // behaviors, and won't affect library correctness.
@@ -291,8 +291,8 @@ impl StaticBase<TestStruct2> for Void {
 
     let mut test_container: TestContainer<TestStruct2> = TestContainer::new();
     unsafe {
-        test_container.elements.push(value1.ptr_repr);
-        test_container.elements.push(value2.ptr_repr);
+        test_container.inner.elements.push(value1.ptr_repr);
+        test_container.inner.elements.push(value2.ptr_repr);
     }
 
     let test_container_vt: ContainerVT =

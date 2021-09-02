@@ -92,9 +92,10 @@ async fn exception_no_eh_call() {
         vm_thread_run_function(&mut vm_thread, 0, &[]).await
     };
 
-    if let Err(Exception::CheckedException(e /*: Value*/)) = result {
+    if let Err(e /*: Exception*/) = result {
         unsafe {
-            let dyn_base: *mut dyn DynBase = e.get_as_dyn_base();
+            let checked: Value = e.assert_checked();
+            let dyn_base: *mut dyn DynBase = checked.get_as_dyn_base();
             assert_eq!(
                 dyn_base.as_ref().unwrap().dyn_type_id(),
                 TypeId::of::<Object>()

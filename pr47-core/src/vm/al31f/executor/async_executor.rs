@@ -46,27 +46,43 @@ pub async fn create_vm_main_thread<A: Alloc>(
     ret
 }
 
-#[allow(unused)]
-unsafe fn exception_unwind_stack<A: Alloc>(
+#[inline(never)]
+unsafe fn unchecked_exception_unwind_stack(
+    unchecked_exception: UncheckedException,
+    stack: &mut Stack,
+    insc_ptr: usize
+) -> Exception {
+    let mut exception: Exception = Exception::unchecked_exc(unchecked_exception);
+
+    let mut insc_ptr: usize = insc_ptr;
+    while stack.frames.len() != 0 {
+        let last_frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
+        exception.push_stack_trace(last_frame.func_id, insc_ptr);
+        insc_ptr = last_frame.ret_addr - 1;
+
+        stack.unwind_shrink_slice();
+    }
+    exception
+}
+
+#[inline(never)]
+unsafe fn checked_exception_unwind_stack<A: Alloc>(
     vm: &mut AL31F<A>,
     program: &CompiledProgram<A>,
-    exception: Exception,
+    checked_exception: CheckedException,
     stack: &mut Stack,
     insc_ptr: usize
 ) -> Result<(StackSlice, usize), Exception> {
-    let checked_exception: &CheckedException =
-        if let Exception::CheckedException(ce /*: &CheckedException*/) = &exception {
-            ce
-        } else {
-            // Unchecked exceptions are hard errors, they are not recoverable by design.
-            return Err(exception);
-        };
+    let exception_type_id: TypeId = (*checked_exception.get_as_dyn_base()).dyn_type_id();
 
+    let mut exception: Exception = Exception::checked_exc(checked_exception);
     let mut insc_ptr: usize = insc_ptr;
 
     while stack.frames.len() != 0 {
         let frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
         let func_id: usize = frame.func_id;
+        exception.push_stack_trace(func_id, insc_ptr);
+
         let compiled_function: &CompiledFunction = &program.functions[func_id];
 
         if let Some(exc_handlers /*: &Box<[ExceptionHandlingBlock]>*/)
@@ -76,10 +92,13 @@ unsafe fn exception_unwind_stack<A: Alloc>(
                 let (start_insc, end_insc): (usize, usize) = exc_handler.insc_ptr_range;
                 if insc_ptr >= start_insc &&
                     insc_ptr <= end_insc &&
-                    (*checked_exception.get_as_dyn_base()).dyn_type_id() == exc_handler.exception_id
+                    exception_type_id == exc_handler.exception_id
                 {
                     let frame_size: usize = frame.frame_end - frame.frame_start;
-                    let stack_slice: StackSlice = stack.last_frame_slice();
+                    let exception_value: Value = Value::new_owned(exception);
+                    vm.alloc.add_managed(exception_value.ptr_repr);
+                    let mut stack_slice: StackSlice = stack.last_frame_slice();
+                    stack_slice.set_value(frame_size - 1, exception_value);
 
                     return Ok((stack_slice, exc_handler.handler_addr));
                 }
@@ -97,7 +116,7 @@ unsafe fn exception_unwind_stack<A: Alloc>(
 
 pub async unsafe fn vm_thread_run_function<A: Alloc>(
     thread: &mut VMThread<A>,
-    func_ptr: usize,
+    func_id: usize,
     args: &[Value]
 ) -> Result<Vec<Value>, Exception> {
     #[cfg(feature = "bench")] let start_time: std::time::Instant = std::time::Instant::now();
@@ -110,17 +129,17 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
 
     let program: &CompiledProgram<A> = thread.program.as_ref();
 
-    let compiled_function: &CompiledFunction = &thread.program.as_ref().functions[func_ptr];
+    let compiled_function: &CompiledFunction = &thread.program.as_ref().functions[func_id];
 
     if compiled_function.arg_count != args.len() {
         let exception: UncheckedException = UncheckedException::ArgCountMismatch {
-            func_ptr, expected: compiled_function.arg_count, got: args.len()
+            func_id, expected: compiled_function.arg_count, got: args.len()
         };
-        return Err(Exception::UncheckedException(exception))
+        return Err(Exception::unchecked_exc(exception));
     }
 
     let mut slice: StackSlice =
-        thread.stack.ext_func_call_grow_stack(func_ptr, compiled_function.stack_size, args);
+        thread.stack.ext_func_call_grow_stack(func_id, compiled_function.stack_size, args);
     let mut insc_ptr: usize = compiled_function.start_addr;
 
     let mut ffi_args: Vec<Value> = Vec::with_capacity(8);
@@ -156,9 +175,12 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                     }
 
                     // TODO resolve overloaded call
-                    return Err(Exception::UncheckedException(UncheckedException::InvalidBinaryOp {
+                    let exception: UncheckedException = UncheckedException::InvalidBinaryOp {
                         bin_op: '+', lhs: src1, rhs: src2
-                    }))
+                    };
+                    return Err(unchecked_exception_unwind_stack(
+                        exception, &mut thread.stack, insc_ptr
+                    ));
                 }
 
                 if src1.vt_data.tag & INT_TYPE_TAG != 0 && src2.vt_data.tag & INT_TYPE_TAG != 0 {
@@ -172,9 +194,12 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                         src1.vt_data.inner.float_value + src2.vt_data.inner.float_value
                     ))
                 } else {
-                    return Err(Exception::UncheckedException(UncheckedException::InvalidBinaryOp {
+                    let exception: UncheckedException = UncheckedException::InvalidBinaryOp {
                         bin_op: '+', lhs: src1, rhs: src2
-                    }))
+                    };
+                    return Err(unchecked_exception_unwind_stack(
+                        exception, &mut thread.stack, insc_ptr
+                    ));
                 }
             },
             Insc::IncrInt(pos) => {
@@ -376,19 +401,23 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 let mut combustor: Combustor<A> =
                     Combustor::new(NonNull::from(thread.vm.get_shared_data_mut()));
 
-                if let Some(exception /*: Exception*/) =
+                if let Some(_ /*: Exception*/) =
                     ffi_function.call_tyck(&mut combustor, &ffi_args, &mut ffi_rets)
                 {
-                    let (new_slice, insc_ptr_next): (StackSlice, usize) = exception_unwind_stack(
-                        thread.vm.get_shared_data_mut(),
-                        &program,
-                        exception,
-                        &mut thread.stack,
-                        insc_ptr
-                    )?;
-                    slice = new_slice;
-                    insc_ptr = insc_ptr_next;
-                    continue;
+                    // is this checked exception or unchecked exception?
+                    // or we handle them altogether?
+                    todo!();
+                    // let (new_slice, insc_ptr_next): (StackSlice, usize) =
+                    //     checked_exception_unwind_stack(
+                    //         thread.vm.get_shared_data_mut(),
+                    //         &program,
+                    //         exception,
+                    //         &mut thread.stack,
+                    //         insc_ptr
+                    //     )?;
+                    // slice = new_slice;
+                    // insc_ptr = insc_ptr_next;
+                    // continue;
                 }
 
                 ffi_args.clear();
@@ -405,14 +434,14 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::Await(_, _) => {}
             Insc::Raise(exception_ptr) => {
                 let exception: Value = slice.get_value(*exception_ptr);
-                let exception: Exception = Exception::CheckedException(exception);
-                let (new_slice, insc_ptr_next): (StackSlice, usize) = exception_unwind_stack(
-                    thread.vm.get_shared_data_mut(),
-                    &program,
-                    exception,
-                    &mut thread.stack,
-                    insc_ptr
-                )?;
+                let (new_slice, insc_ptr_next): (StackSlice, usize) =
+                    checked_exception_unwind_stack(
+                        thread.vm.get_shared_data_mut(),
+                        &program,
+                        exception,
+                        &mut thread.stack,
+                        insc_ptr
+                    )?;
                 slice = new_slice;
                 insc_ptr = insc_ptr_next;
                 continue;

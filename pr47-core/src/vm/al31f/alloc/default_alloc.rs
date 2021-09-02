@@ -151,9 +151,8 @@ impl Alloc for DefaultAlloc {
                 }
             } else {
                 let container_vt: *const ContainerVT = ptr.trivia as *const _;
-                let ptr: *const () = (ptr.ptr & PTR_BITS_MASK_USIZE) as *const _;
                 if let Some(children /*: Box<dyn Iterator> */)
-                    = ((*container_vt).children_fn)(ptr)
+                    = ((*container_vt).children_fn)(&(*wrapper).data as *const _ as *const ())
                 {
                     for child /*: FatPointer*/ in children {
                         to_scan.push_back(child);
@@ -211,9 +210,9 @@ mod test {
 
         let mut container: TestContainer<String> = TestContainer::new();
         unsafe {
-            container.elements.push(str1.ptr_repr);
-            container.elements.push(str2.ptr_repr);
-            container.elements.push(str3.ptr_repr);
+            container.inner.elements.push(str1.ptr_repr);
+            container.inner.elements.push(str2.ptr_repr);
+            container.inner.elements.push(str3.ptr_repr);
         }
 
         let container: Value = Value::new_owned::<TestContainer<String>>(container);
@@ -262,9 +261,9 @@ mod test {
         let str3: Value = Value::new_owned::<String>("1919810".into());
         let mut container: TestContainer<String> = TestContainer::new();
         unsafe {
-            container.elements.push(str1.ptr_repr);
-            container.elements.push(str2.ptr_repr);
-            container.elements.push(str3.ptr_repr);
+            container.inner.elements.push(str1.ptr_repr);
+            container.inner.elements.push(str2.ptr_repr);
+            container.inner.elements.push(str3.ptr_repr);
         }
         let vt: ContainerVT = create_test_container_vt::<String>(&mut tyck_info_pool);
 
