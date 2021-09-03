@@ -1,38 +1,39 @@
+use std::any::TypeId;
 use std::ptr::NonNull;
 
 use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::data::Value;
 use crate::data::exception::{CheckedException, Exception, UncheckedException};
+use crate::data::value_typed::{INT_TYPE_TAG, FLOAT_TYPE_TAG};
+use crate::data::wrapper::DynBase;
 use crate::ds::object::Object;
 use crate::ffi::sync_fn::Function as FFIFunction;
 use crate::util::mem::FatPointer;
-use crate::util::serializer::Serializer;
 use crate::vm::al31f::{AL31F, Combustor};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
 use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 
+#[cfg(feature = "async")] use crate::util::serializer::Serializer;
 #[cfg(feature = "bench")] use crate::defer;
 #[cfg(feature = "bench")] use crate::util::defer::Defer;
-use crate::data::value_typed::{INT_TYPE_TAG, FLOAT_TYPE_TAG};
-use crate::data::wrapper::DynBase;
-use std::any::TypeId;
 
 include!("impl_makro.rs");
 
 pub struct VMThread<A: Alloc> {
     #[cfg(feature = "async")]
-    vm: Serializer<AL31F<A>>,
+    pub vm: Serializer<AL31F<A>>,
     #[cfg(not(feature = "async"))]
-    vm: AL31F<A>,
+    pub vm: AL31F<A>,
 
-    program: NonNull<CompiledProgram<A>>,
-    stack: Stack
+    pub program: NonNull<CompiledProgram<A>>,
+    pub stack: Stack
 }
 
 #[must_use = "VM thread are effective iff a function gets run on it"]
+#[cfg(feature = "async")]
 pub async fn create_vm_main_thread<A: Alloc>(
     alloc: A,
     program: &CompiledProgram<A>
@@ -46,7 +47,6 @@ pub async fn create_vm_main_thread<A: Alloc>(
     ret
 }
 
-#[inline(never)]
 unsafe fn unchecked_exception_unwind_stack(
     unchecked_exception: UncheckedException,
     stack: &mut Stack,
@@ -65,7 +65,6 @@ unsafe fn unchecked_exception_unwind_stack(
     exception
 }
 
-#[inline(never)]
 unsafe fn checked_exception_unwind_stack<A: Alloc>(
     vm: &mut AL31F<A>,
     program: &CompiledProgram<A>,
@@ -125,7 +124,10 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
         eprintln!("Time consumed: {}ms", (end_time - start_time).as_millis());
     });
 
+    #[cfg(feature = "async")]
     thread.vm.get_shared_data_mut().alloc.set_gc_allowed(true);
+    #[cfg(not(feature = "async"))]
+    thread.vm.alloc.set_gc_allowed(true);
 
     let program: &CompiledProgram<A> = thread.program.as_ref();
 
@@ -168,7 +170,10 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                             let src2: *const String = src2 as *mut String as *const _;
                             let result: String = format!("{}{}", *src1, *src2);
                             let result: Value = Value::new_owned(result);
+                            #[cfg(feature = "async")]
                             thread.vm.get_shared_data_mut().alloc.add_managed(result.ptr_repr);
+                            #[cfg(not(feature = "async"))]
+                            thread.vm.alloc.add_managed(result.ptr_repr);
                             slice.set_value(*dst, result);
                             continue;
                         }
@@ -398,8 +403,11 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 for ret_value_loc /*: &usize*/ in ret_value_locs.iter() {
                     ffi_rets.push(slice.get_value_mut_ref(*ret_value_loc));
                 }
+                #[cfg(feature = "async")]
                 let mut combustor: Combustor<A> =
                     Combustor::new(NonNull::from(thread.vm.get_shared_data_mut()));
+                #[cfg(not(feature = "async"))]
+                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(&mut thread.vm));
 
                 if let Some(_ /*: Exception*/) =
                     ffi_function.call_tyck(&mut combustor, &ffi_args, &mut ffi_rets)
@@ -431,12 +439,14 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::FFICallAsync(_, _, _) => {}
             #[cfg(feature = "no-rtlc")]
             Insc::FFICallAsyncUnchecked(_, _, _) => {}
+            #[cfg(feature = "async")]
             Insc::Await(_, _) => {}
             Insc::Raise(exception_ptr) => {
                 let exception: Value = slice.get_value(*exception_ptr);
                 let (new_slice, insc_ptr_next): (StackSlice, usize) =
                     checked_exception_unwind_stack(
-                        thread.vm.get_shared_data_mut(),
+                        #[cfg(feature = "async")] thread.vm.get_shared_data_mut(),
+                        #[cfg(not(feature = "async"))] &mut thread.vm,
                         &program,
                         exception,
                         &mut thread.stack,
@@ -464,7 +474,9 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::CreateObject(dest) => {
                 let object: Object = Object::new();
                 let object: Value = Value::new_owned(object);
+                #[cfg(feature = "async")]
                 thread.vm.get_shared_data_mut().alloc.add_managed(object.ptr_repr);
+                #[cfg(not(feature = "async"))]
                 slice.set_value(*dest, object);
             }
             Insc::CreateContainer(_, _, _) => {}

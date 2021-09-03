@@ -24,7 +24,7 @@ fn bench_fibonacci_call() {
     run_program(program, vec![Value::new_int(35)]);
 }
 
-fn bench_new1m() {
+fn bench_new_1m() {
     let program: CompiledProgram<DefaultAlloc> = alloc_1m_program();
     run_program(program, vec![]);
 }
@@ -33,5 +33,9 @@ const SUCK_WORDS: &'static str =
     "Do you really know how to use this benchmarking suite? Don't make me laugh.";
 
 fn main() {
-    panic!("Currently not maintaining this. Use the asynchronous `bench_al31fm2` instead.");
+    match env::var("BENCH_ITEM").expect(SUCK_WORDS).to_lowercase().as_str() {
+        "fib35" => bench_fibonacci_call(),
+        "new1m" => bench_new_1m(),
+        _ => panic!("{}", SUCK_WORDS)
+    }
 }

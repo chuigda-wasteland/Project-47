@@ -158,6 +158,7 @@ pub fn exception_no_eh_program<A: Alloc>() -> CompiledProgram<A> {
             CompiledFunction::new(2, 0, 1, 1, boxed_slice![])
         ],
         ffi_funcs: boxed_slice![],
+        #[cfg(feature = "async")]
         async_ffi_funcs: boxed_slice![]
     }
 }
