@@ -1,3 +1,13 @@
+#[cfg(feature = "async")]
+macro_rules! get_vm {
+    ($thread:expr) => { $thread.vm.get_shared_data_mut() }
+}
+
+#[cfg(not(feature = "async"))]
+macro_rules! get_vm {
+    ($thread:expr) => { &mut $thread.vm }
+}
+
 macro_rules! impl_value_typed_binop {
     (
         $slice:ident,

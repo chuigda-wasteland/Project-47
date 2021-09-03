@@ -16,9 +16,9 @@ use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
 use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 
-#[cfg(feature = "async")] use crate::util::serializer::Serializer;
 #[cfg(feature = "bench")] use crate::defer;
 #[cfg(feature = "bench")] use crate::util::defer::Defer;
+#[cfg(feature = "async")] use crate::util::serializer::Serializer;
 
 include!("impl_makro.rs");
 
@@ -124,10 +124,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
         eprintln!("Time consumed: {}ms", (end_time - start_time).as_millis());
     });
 
-    #[cfg(feature = "async")]
-    thread.vm.get_shared_data_mut().alloc.set_gc_allowed(true);
-    #[cfg(not(feature = "async"))]
-    thread.vm.alloc.set_gc_allowed(true);
+    get_vm!(thread).alloc.set_gc_allowed(true);
 
     let program: &CompiledProgram<A> = thread.program.as_ref();
 
@@ -170,10 +167,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                             let src2: *const String = src2 as *mut String as *const _;
                             let result: String = format!("{}{}", *src1, *src2);
                             let result: Value = Value::new_owned(result);
-                            #[cfg(feature = "async")]
-                            thread.vm.get_shared_data_mut().alloc.add_managed(result.ptr_repr);
-                            #[cfg(not(feature = "async"))]
-                            thread.vm.alloc.add_managed(result.ptr_repr);
+                            get_vm!(thread).alloc.add_managed(result.ptr_repr);
                             slice.set_value(*dst, result);
                             continue;
                         }
@@ -341,9 +335,9 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             }
             Insc::Call(func_id, args, rets) => {
                 #[cfg(not(debug_assertions))]
-                    let compiled: &CompiledFunction = program.functions.get_unchecked(*func_id);
+                let compiled: &CompiledFunction = program.functions.get_unchecked(*func_id);
                 #[cfg(debug_assertions)]
-                    let compiled: &CompiledFunction = &program.functions[*func_id];
+                let compiled: &CompiledFunction = &program.functions[*func_id];
 
                 debug_assert_eq!(compiled.arg_count, args.len());
                 slice = thread.stack.func_call_grow_stack(
@@ -403,11 +397,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 for ret_value_loc /*: &usize*/ in ret_value_locs.iter() {
                     ffi_rets.push(slice.get_value_mut_ref(*ret_value_loc));
                 }
-                #[cfg(feature = "async")]
-                let mut combustor: Combustor<A> =
-                    Combustor::new(NonNull::from(thread.vm.get_shared_data_mut()));
-                #[cfg(not(feature = "async"))]
-                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(&mut thread.vm));
+                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
                 if let Some(_ /*: Exception*/) =
                     ffi_function.call_tyck(&mut combustor, &ffi_args, &mut ffi_rets)
@@ -445,8 +435,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 let exception: Value = slice.get_value(*exception_ptr);
                 let (new_slice, insc_ptr_next): (StackSlice, usize) =
                     checked_exception_unwind_stack(
-                        #[cfg(feature = "async")] thread.vm.get_shared_data_mut(),
-                        #[cfg(not(feature = "async"))] &mut thread.vm,
+                        get_vm!(thread),
                         &program,
                         exception,
                         &mut thread.stack,
@@ -474,10 +463,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::CreateObject(dest) => {
                 let object: Object = Object::new();
                 let object: Value = Value::new_owned(object);
-                #[cfg(feature = "async")]
-                thread.vm.get_shared_data_mut().alloc.add_managed(object.ptr_repr);
-                #[cfg(not(feature = "async"))]
-                thread.vm.alloc.add_managed(object.ptr_repr);
+                get_vm!(thread).alloc.add_managed(object.ptr_repr);
                 slice.set_value(*dest, object);
             }
             Insc::CreateContainer(_, _, _) => {}
