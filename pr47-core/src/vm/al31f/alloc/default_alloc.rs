@@ -202,7 +202,7 @@ mod test {
         let mut alloc: DefaultAlloc = DefaultAlloc::new();
         let mut stack: Stack = Stack::new();
 
-        let stack_slice: StackSlice = unsafe { stack.ext_func_call_grow_stack(0, 3, &[]) };
+        let mut stack_slice: StackSlice = unsafe { stack.ext_func_call_grow_stack(0, 3, &[]) };
 
         let str1: Value = Value::new_owned::<String>("114".into());
         let str2: Value = Value::new_owned::<String>("514".into());
@@ -254,7 +254,7 @@ mod test {
         let mut stack: Stack = Stack::new();
         let mut tyck_info_pool: TyckInfoPool = TyckInfoPool::new();
 
-        let stack_slice: StackSlice = unsafe { stack.ext_func_call_grow_stack(0, 3, &[]) };
+        let mut stack_slice: StackSlice = unsafe { stack.ext_func_call_grow_stack(0, 3, &[]) };
 
         let str1: Value = Value::new_owned::<String>("114".into());
         let str2: Value = Value::new_owned::<String>("514".into());

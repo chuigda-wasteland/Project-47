@@ -21,7 +21,7 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
 
     #[cfg(feature = "async")]
     return pollster::block_on(async {
-        let vm: Serializer<AL31F<A>> = Serializer::new(vm);
+        let vm: Serializer<AL31F<A>> = Serializer::new(vm).await;
         let mut thread: VMThread<A> = VMThread {
             vm,
             program: NonNull::new_unchecked(program as *mut _),

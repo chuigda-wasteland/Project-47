@@ -10,7 +10,7 @@ pub struct StackSlice(*mut [Option<Value>]);
 
 #[cfg(debug_assertions)]
 impl StackSlice {
-    pub unsafe fn set_value(&self, idx: usize, value: Value) {
+    pub unsafe fn set_value(&mut self, idx: usize, value: Value) {
         (*self.0)[idx].replace(value);
     }
 
@@ -127,7 +127,7 @@ impl Stack {
         );
         let old_slice: StackSlice =
             StackSlice(&mut self.values[this_frame_start..this_frame_end] as *mut _);
-        let new_slice: StackSlice =
+        let mut new_slice: StackSlice =
             StackSlice(&mut self.values[this_frame_end..new_frame_end] as *mut _);
         for (i /*: usize*/, arg_loc/*: &usize*/) in arg_locs.iter().enumerate() {
             new_slice.set_value(i, old_slice.get_value(*arg_loc));
@@ -160,7 +160,7 @@ impl Stack {
         assert_eq!(prev_frame.frame_end, this_frame.frame_start);
         let this_slice =
             StackSlice(&mut self.values[this_frame.frame_start..this_frame.frame_end] as *mut _);
-        let prev_slice =
+        let mut prev_slice =
             StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
 
         assert_eq!(ret_values.len(), this_frame.ret_value_locs.as_ref().len());

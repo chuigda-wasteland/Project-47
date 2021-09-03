@@ -477,6 +477,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 #[cfg(feature = "async")]
                 thread.vm.get_shared_data_mut().alloc.add_managed(object.ptr_repr);
                 #[cfg(not(feature = "async"))]
+                thread.vm.alloc.add_managed(object.ptr_repr);
                 slice.set_value(*dest, object);
             }
             Insc::CreateContainer(_, _, _) => {}

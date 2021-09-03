@@ -43,6 +43,13 @@ pub fn block_on_future<F, R>(fut: F) -> R
     async_std::task::block_on(fut)
 }
 
+#[cfg(all(any(test, feature = "bench"), not(feature = "async")))]
+pub fn block_on_future<F, R>(fut: F) -> R
+    where F: Future<Output=R> + 'static
+{
+    pollster::block_on(fut)
+}
+
 #[cfg(all(test, feature = "async-tokio"))]
 pub async fn testing_sleep(duration: Duration) {
     tokio::time::sleep(duration).await
