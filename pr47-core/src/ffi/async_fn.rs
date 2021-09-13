@@ -2,10 +2,9 @@ use std::future::Future;
 use std::pin::Pin;
 
 use crate::data::Value;
-use crate::data::exception::Exception;
 use crate::data::traits::StaticBase;
 use crate::data::wrapper::OwnershipInfo;
-use crate::ffi::Signature;
+use crate::ffi::{FFIException, Signature};
 use crate::util::serializer::Serializer;
 use crate::util::void::Void;
 
@@ -20,7 +19,7 @@ pub trait AsyncVMContext: 'static + Sized + Send + Sync {
     fn serializer(&self) -> &Serializer<Self::SharedData>;
 }
 
-pub type AsyncReturnType = Result<Box<[Value]>, Exception>;
+pub type AsyncReturnType = Result<Box<[Value]>, FFIException>;
 
 pub struct Promise {
     pub fut: Pin<Box<dyn Future<Output = AsyncReturnType> + Send + 'static>>,

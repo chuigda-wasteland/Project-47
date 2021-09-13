@@ -19,6 +19,7 @@ use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 #[cfg(feature = "bench")] use crate::defer;
 #[cfg(feature = "bench")] use crate::util::defer::Defer;
 #[cfg(feature = "async")] use crate::util::serializer::Serializer;
+use crate::util::either::Either;
 
 include!("impl_makro.rs");
 
@@ -127,9 +128,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
     get_vm!(thread).alloc.set_gc_allowed(true);
 
     let program: &CompiledProgram<A> = thread.program.as_ref();
-
-    let compiled_function: &CompiledFunction = &thread.program.as_ref().functions[func_id];
-
+    let compiled_function: &CompiledFunction = &program.functions[func_id];
     if compiled_function.arg_count != args.len() {
         let exception: UncheckedException = UncheckedException::ArgCountMismatch {
             func_id, expected: compiled_function.arg_count, got: args.len()
@@ -399,30 +398,73 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 }
                 let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
-                if let Some(_ /*: Exception*/) =
+                if let Some(e /*: FFIException*/) =
                     ffi_function.call_tyck(&mut combustor, &ffi_args, &mut ffi_rets)
                 {
-                    // is this checked exception or unchecked exception?
-                    // or we handle them altogether?
-                    todo!();
-                    // let (new_slice, insc_ptr_next): (StackSlice, usize) =
-                    //     checked_exception_unwind_stack(
-                    //         thread.vm.get_shared_data_mut(),
-                    //         &program,
-                    //         exception,
-                    //         &mut thread.stack,
-                    //         insc_ptr
-                    //     )?;
-                    // slice = new_slice;
-                    // insc_ptr = insc_ptr_next;
-                    // continue;
+                    match e {
+                        Either::Left(checked) => {
+                            let (new_slice, insc_ptr_next): (StackSlice, usize) =
+                                checked_exception_unwind_stack(
+                                    get_vm!(thread),
+                                    &program,
+                                    checked,
+                                    &mut thread.stack,
+                                    insc_ptr
+                                )?;
+                            slice = new_slice;
+                            insc_ptr = insc_ptr_next;
+                        },
+                        Either::Right(unchecked) => {
+                            return Err(unchecked_exception_unwind_stack(
+                                unchecked, &mut thread.stack, insc_ptr
+                            ));
+                        }
+                    }
                 }
 
                 ffi_args.clear();
                 ffi_rets.clear();
             }
             #[cfg(feature = "optimized-rtlc")]
-            Insc::FFICallRtlc(_, _, _) => {}
+            Insc::FFICallRtlc(ffi_func_id, args, ret_value_locs) => {
+                let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
+                    = &program.ffi_funcs[*ffi_func_id];
+
+                for arg /*: &usize*/ in args.iter() {
+                    ffi_args.push(slice.get_value(*arg));
+                }
+                for ret_value_loc /*: &usize*/ in ret_value_locs.iter() {
+                    ffi_rets.push(slice.get_value_mut_ref(*ret_value_loc));
+                }
+                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
+
+                if let Some(e /*: FFIException*/) =
+                    ffi_function.call_rtlc(&mut combustor, &ffi_args, &mut ffi_rets)
+                {
+                    match e {
+                        Either::Left(checked) => {
+                            let (new_slice, insc_ptr_next): (StackSlice, usize) =
+                                checked_exception_unwind_stack(
+                                    get_vm!(thread),
+                                    &program,
+                                    checked,
+                                    &mut thread.stack,
+                                    insc_ptr
+                                )?;
+                            slice = new_slice;
+                            insc_ptr = insc_ptr_next;
+                        },
+                        Either::Right(unchecked) => {
+                            return Err(unchecked_exception_unwind_stack(
+                                unchecked, &mut thread.stack, insc_ptr
+                            ));
+                        }
+                    }
+                }
+
+                ffi_args.clear();
+                ffi_rets.clear();
+            }
             Insc::FFICall(_, _, _) => {}
             Insc::FFICallAsyncTyck(_, _, _) => {}
             #[cfg(feature = "optimized-rtlc")]

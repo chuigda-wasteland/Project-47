@@ -1,6 +1,5 @@
 use crate::data::Value;
-use crate::data::exception::Exception;
-use crate::ffi::Signature;
+use crate::ffi::{FFIException, Signature};
 use crate::util::mem::FatPointer;
 
 pub trait VMContext: 'static + Sized {
@@ -15,19 +14,19 @@ pub trait FunctionBase: 'static {
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
-    ) -> Option<Exception>;
+    ) -> Option<FFIException>;
 
     unsafe fn call_rtlc<CTX: VMContext>(
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
-    ) -> Option<Exception>;
+    ) -> Option<FFIException>;
 
     unsafe fn call_unchecked<CTX: VMContext>(
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
-    ) -> Option<Exception>;
+    ) -> Option<FFIException>;
 }
 
 pub trait Function<CTX: VMContext>: 'static {
@@ -38,21 +37,21 @@ pub trait Function<CTX: VMContext>: 'static {
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
-    ) -> Option<Exception>;
+    ) -> Option<FFIException>;
 
     unsafe fn call_rtlc(
         &self,
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
-    ) -> Option<Exception>;
+    ) -> Option<FFIException>;
 
     unsafe fn call_unchecked(
         &self,
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
-    ) -> Option<Exception>;
+    ) -> Option<FFIException>;
 }
 
 impl<FBase, CTX> Function<CTX> for FBase where
@@ -68,7 +67,7 @@ impl<FBase, CTX> Function<CTX> for FBase where
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
-    ) -> Option<Exception> {
+    ) -> Option<FFIException> {
         <FBase as FunctionBase>::call_tyck(context, args, rets)
     }
 
@@ -77,7 +76,7 @@ impl<FBase, CTX> Function<CTX> for FBase where
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
-    ) -> Option<Exception> {
+    ) -> Option<FFIException> {
         <FBase as FunctionBase>::call_rtlc(context, args, rets)
     }
 
@@ -86,7 +85,7 @@ impl<FBase, CTX> Function<CTX> for FBase where
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
-    ) -> Option<Exception> {
+    ) -> Option<FFIException> {
         <FBase as FunctionBase>::call_unchecked(context, args, rets)
     }
 }

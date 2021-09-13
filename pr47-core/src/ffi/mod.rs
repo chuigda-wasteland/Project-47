@@ -1,6 +1,8 @@
 use std::any::TypeId;
 
 use crate::data::tyck::TyckInfo;
+use crate::util::either::Either;
+use crate::data::exception::{CheckedException, UncheckedException};
 
 pub mod sync_fn;
 
@@ -23,3 +25,5 @@ pub struct Signature {
     pub ret_option: Box<[DataOption]>,
     pub exceptions: Box<[TypeId]>
 }
+
+pub type FFIException = Either<CheckedException, UncheckedException>;

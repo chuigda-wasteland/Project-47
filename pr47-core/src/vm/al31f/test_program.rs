@@ -5,6 +5,9 @@ use crate::util::void::Void;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
 use crate::vm::al31f::insc::Insc;
+use crate::ffi::sync_fn::{FunctionBase, VMContext};
+use crate::ffi::{Signature, FFIException};
+use crate::data::Value;
 
 pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
     CompiledProgram {
@@ -162,3 +165,39 @@ pub fn exception_no_eh_program<A: Alloc>() -> CompiledProgram<A> {
         async_ffi_funcs: boxed_slice![]
     }
 }
+
+fn ffi_function(_x: &Object, _y: &Object, _z: &Object) {}
+
+#[allow(non_camel_case_types)]
+struct Pr47Binder_ffi_function();
+
+impl FunctionBase for Pr47Binder_ffi_function {
+    fn signature() -> Signature {
+        todo!()
+    }
+
+    fn call_tyck<CTX: VMContext>(
+        _context: &mut CTX,
+        _args: &[Value],
+        _rets: &[*mut Value]
+    ) -> Option<FFIException> {
+        todo!()
+    }
+
+    unsafe fn call_rtlc<CTX: VMContext>(
+        _context: &mut CTX,
+        _args: &[Value],
+        _rets: &[*mut Value]
+    ) -> Option<FFIException> {
+        todo!()
+    }
+
+    unsafe fn call_unchecked<CTX: VMContext>(
+        _context: &mut CTX,
+        _args: &[Value],
+        _rets: &[*mut Value]
+    ) -> Option<FFIException> {
+        todo!()
+    }
+}
+
