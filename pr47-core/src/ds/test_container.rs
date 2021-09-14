@@ -114,7 +114,7 @@ pub fn create_test_container_vt<T: 'static>(tyck_info_pool: &mut TyckInfoPool) -
 
     #[cfg(not(debug_assertions))]
     unsafe fn move_out(this: *mut (), out: *mut ()) {
-        gen_impls::generic_move_out::<TestContainer<()>>(this, out)
+        gen_impls::generic_move_out::<GenericTestContainer>(this, out)
     }
 
     unsafe fn children(this: *const ()) -> ChildrenType {

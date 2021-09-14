@@ -166,6 +166,7 @@ pub fn exception_no_eh_program<A: Alloc>() -> CompiledProgram<A> {
     }
 }
 
+#[allow(unused)]
 fn ffi_function(_x: &Object, _y: &Object, _z: &Object) {}
 
 #[allow(non_camel_case_types)]

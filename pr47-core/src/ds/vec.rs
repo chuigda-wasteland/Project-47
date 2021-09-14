@@ -5,15 +5,16 @@ use crate::data::wrapper::Wrapper;
 
 #[repr(C)]
 pub struct VMGenericVec {
-    inner: Vec<Value>
+    pub inner: Vec<Value>
 }
 
 #[repr(transparent)]
 pub struct VMVec<T: 'static> {
-    inner: VMGenericVec,
+    pub inner: VMGenericVec,
     _phantom: PhantomData<T>
 }
 
 pub struct VMVecRef<T: 'static> {
-    ptr: *mut Wrapper<()>
+    pub ptr: *mut Wrapper<()>,
+    _phantom: PhantomData<T>
 }

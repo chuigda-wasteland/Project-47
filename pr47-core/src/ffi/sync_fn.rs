@@ -1,5 +1,5 @@
 use crate::data::Value;
-use crate::data::exception::{UncheckedException, Exception};
+use crate::data::exception::{UncheckedException};
 use crate::data::traits::StaticBase;
 use crate::data::wrapper::{OwnershipInfo, Wrapper, OWN_INFO_READ_MASK};
 use crate::ffi::{FFIException, Signature};
@@ -97,7 +97,7 @@ impl<FBase, CTX> Function<CTX> for FBase where
 
 pub enum OwnershipGuard {
     DoNothing,
-    SetOwnershipInfo(*mut Wrapper<()>, OwnershipInfo)
+    SetOwnershipInfo(*mut Wrapper<()>, u8)
 }
 
 impl Drop for OwnershipGuard {
@@ -106,45 +106,57 @@ impl Drop for OwnershipGuard {
             OwnershipGuard::DoNothing => {},
             OwnershipGuard::SetOwnershipInfo(wrapper_ptr, ownership_info) => {
                 unsafe {
-                    (*wrapper_ptr).ownership_info = ownership_info as u8;
+                    (**wrapper_ptr).ownership_info = *ownership_info;
                 }
             }
         }
     }
 }
 
-#[inline] pub unsafe fn container_into_ref<'a, T, CR>(
+#[inline] pub unsafe fn container_into_ref<'a, CR>(
     value: Value
 ) -> Result<(CR, OwnershipGuard), FFIException>
-    where T: 'static,
-          CR: ContainerRef,
-          Void: StaticBase<T>
+    where CR: ContainerRef
 {
     let wrapper_ptr: *mut Wrapper<()> = value.untagged_ptr_field() as *mut _;
-    if wrapper_ptr.ownership_info & OWN_INFO_READ_MASK {
-        if wrapper_ptr.ownership_info != OwnershipInfo::SharedToRust as u8 {
-            let original: u8 = wrapper_ptr.ownership_info;
-            wrapper_ptr.ownership_info = OwnershipInfo::SharedToRust as u8;
+    let original: u8 = (*wrapper_ptr).ownership_info;
+    if original & OWN_INFO_READ_MASK != 0 {
+        if original != OwnershipInfo::SharedToRust as u8 {
+            (*wrapper_ptr).ownership_info = OwnershipInfo::SharedToRust as u8;
             Ok((
                 CR::create_ref(wrapper_ptr),
-                OwnershipGuard::SetOwnershipInfo(wrapper_ptr, original as OwnershipInfo)
+                OwnershipGuard::SetOwnershipInfo(wrapper_ptr, original)
             ))
         } else {
             Ok((CR::create_ref(wrapper_ptr), OwnershipGuard::DoNothing))
         }
     } else {
         Err(FFIException::Right(UncheckedException::OwnershipCheckFailure{
-            ownership_info: wrapper_ptr.ownership_info,
-            expected_mask: OWN_INFO_READ_MASK
+            ownership_info: original, expected_mask: OWN_INFO_READ_MASK
         }))
     }
 }
 
 #[inline] pub unsafe fn value_into_ref<'a, T>(
-    _value: Value
-) -> Result<(&'a T, OwnershipGuardNorm), FFIException>
+    value: Value
+) -> Result<(&'a T, OwnershipGuard), FFIException>
     where T: 'static,
           Void: StaticBase<T>
 {
-    todo!()
+    let wrapper_ptr: *mut Wrapper<()> = value.ptr_repr.ptr as *mut _;
+    let original: u8 = (*wrapper_ptr).ownership_info;
+    if original & OWN_INFO_READ_MASK != 0 {
+        let data_ptr: *const T = value.get_as_mut_ptr_norm() as *const T;
+        if original != OwnershipInfo::SharedToRust as u8 {
+            (*wrapper_ptr).ownership_info = OwnershipInfo::SharedToRust as u8;
+            Ok((&*data_ptr, OwnershipGuard::SetOwnershipInfo(wrapper_ptr, original)))
+        } else {
+            Ok((&*data_ptr, OwnershipGuard::DoNothing))
+        }
+    } else {
+        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure{
+            ownership_info: original,
+            expected_mask: OWN_INFO_READ_MASK
+        }))
+    }
 }
