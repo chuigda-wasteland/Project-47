@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use std::mem::transmute;
 use std::ptr::NonNull;
 
-use crate::data::custom_vt::ContainerVT;
+use crate::data::container::ContainerVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{ContainerTyckInfo, TyckInfo, TyckInfoPool};
 use crate::util::mem::FatPointer;
@@ -105,7 +105,7 @@ impl<T: 'static> StaticBase<TestContainer<T>> for Void
 pub fn create_test_container_vt<T: 'static>(tyck_info_pool: &mut TyckInfoPool) -> ContainerVT
     where Void: StaticBase<T>
 {
-    use crate::data::custom_vt::gen_impls;
+    use crate::data::container::gen_impls;
 
     #[cfg(debug_assertions)]
     unsafe fn move_out_ck(this: *mut (), out: *mut (), type_id: TypeId) {

@@ -2,7 +2,7 @@
 
 use std::ptr::NonNull;
 
-use crate::data::custom_vt::ContainerCtor;
+use crate::data::container::ContainerCtor;
 use crate::data::tyck::TyckInfo;
 
 /// An VM instruction

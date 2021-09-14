@@ -1,4 +1,4 @@
-pub mod custom_vt;
+pub mod container;
 pub mod exception;
 pub mod traits;
 pub mod tyck;
@@ -10,7 +10,7 @@ use std::mem::{MaybeUninit, transmute};
 
 use unchecked_unwrap::UncheckedUnwrap;
 
-use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
+use crate::data::container::{CONTAINER_MASK, ContainerVT};
 use crate::data::traits::StaticBase;
 use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
 use crate::data::wrapper::{DynBase, OwnershipInfo, Wrapper};
@@ -184,16 +184,6 @@ impl Value {
         self.ptr_repr.ptr & !TAG_BITS_MASK_USIZE
     }
 
-    /// Assuming that `self` **MUST NOT** be a custom pointer, get the fat pointer
-    /// `*mut dyn DynBase`
-    #[inline(always)] pub unsafe fn untagged_dyn_base(&self) -> *mut dyn DynBase {
-        debug_assert_eq!(self.ptr_repr.ptr & CONTAINER_MASK as usize, 0);
-        debug_assert!(!self.is_container());
-        std::mem::transmute::<FatPointer, *mut dyn DynBase>(
-            FatPointer::new(self.ptr_repr.ptr, self.ptr_repr.trivia)
-        )
-    }
-
     /// Assuming that `self` may be a custom pointer, get the reference counting
     pub unsafe fn ref_count(&self) -> u32 {
         #[cfg(debug_assertions)] self.assert_shared();
@@ -296,20 +286,24 @@ impl Value {
 
     /// Given that `self` **MUST** be a reference and **MUST BOT** be a custom pointer, set the GC
     /// information
+    #[cfg_attr(not(debug_assertions), inline)]
     pub unsafe fn set_gc_info_norm(&self, gc_info: u8) {
         debug_assert!(self.is_ref());
         debug_assert!(!self.is_container());
         *((self.ptr_repr.ptr + 5usize) as *mut u8) = gc_info;
     }
 
+    #[cfg_attr(not(debug_assertions), inline)]
     pub unsafe fn get_as_dyn_base(&self) -> *mut dyn DynBase {
         debug_assert!(self.is_ref());
+        debug_assert!(!self.is_container());
         let ret: FatPointer = FatPointer::new(self.untagged_ptr_field(), self.ptr_repr.trivia);
         transmute::<FatPointer, &mut dyn DynBase>(ret)
     }
 
     /// Given that `self` **MUST** be a reference, assuming that `self` may be a custom pointer,
     /// get a pointer to the referenced data
+    #[cfg_attr(not(debug_assertions), inline)]
     pub unsafe fn get_as_mut_ptr<T>(&self) -> *mut T
         where T: 'static,
               Void: StaticBase<T>
@@ -326,6 +320,7 @@ impl Value {
 
     /// Given that `self` **MUST** be a reference and **MUST BOT** be a custom pointer, get a
     /// pointer to the referenced data
+    #[cfg_attr(not(debug_assertions), inline)]
     pub unsafe fn get_as_mut_ptr_norm<T>(&self) -> *mut T
         where T: 'static,
               Void: StaticBase<T>

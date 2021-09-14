@@ -3,14 +3,15 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 use crate::data::Value;
-use crate::data::custom_vt::ContainerVT;
+use crate::data::container::ContainerVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool, ContainerTyckInfo};
 use crate::util::void::Void;
 
 pub enum UncheckedException {
     ArgCountMismatch { func_id: usize, expected: usize, got: usize },
-    InvalidBinaryOp { bin_op: char, lhs: Value, rhs: Value }
+    InvalidBinaryOp { bin_op: char, lhs: Value, rhs: Value },
+    OwnershipCheckFailure { ownership_info: u8, expected_mask: u8 }
 }
 
 pub type CheckedException = Value;
@@ -133,7 +134,7 @@ pub fn create_exception_vt(
     elem_type_name: &str,
     elem_tyck_info: NonNull<TyckInfo>
 ) -> ContainerVT {
-    use crate::data::custom_vt::gen_impls;
+    use crate::data::container::gen_impls;
 
     #[cfg(debug_assertions)]
     unsafe fn move_out_ck(this: *mut (), out: *mut (), type_id: TypeId) {

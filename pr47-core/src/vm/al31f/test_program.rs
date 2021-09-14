@@ -180,7 +180,7 @@ impl FunctionBase for Pr47Binder_ffi_function {
         _context: &mut CTX,
         _args: &[Value],
         _rets: &[*mut Value]
-    ) -> Option<FFIException> {
+    ) -> Result<(), FFIException> {
         todo!()
     }
 
@@ -188,7 +188,7 @@ impl FunctionBase for Pr47Binder_ffi_function {
         _context: &mut CTX,
         _args: &[Value],
         _rets: &[*mut Value]
-    ) -> Option<FFIException> {
+    ) -> Result<(), FFIException> {
         todo!()
     }
 
@@ -196,7 +196,7 @@ impl FunctionBase for Pr47Binder_ffi_function {
         _context: &mut CTX,
         _args: &[Value],
         _rets: &[*mut Value]
-    ) -> Option<FFIException> {
+    ) -> Result<(), FFIException> {
         todo!()
     }
 }

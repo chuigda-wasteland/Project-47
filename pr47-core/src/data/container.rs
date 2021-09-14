@@ -3,8 +3,13 @@ use std::ptr::NonNull;
 use crate::data::Value;
 use crate::data::traits::ChildrenType;
 use crate::data::tyck::ContainerTyckInfo;
+use crate::data::wrapper::Wrapper;
 
 #[cfg(debug_assertions)] use std::any::TypeId;
+
+pub trait ContainerRef {
+    fn create_ref(wrapper_ptr: *mut Wrapper<()>) -> Self;
+}
 
 pub const CONTAINER_MASK: u8 = 0b00000_010;
 

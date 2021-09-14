@@ -4,7 +4,7 @@ use std::mem::transmute;
 use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::data::PTR_BITS_MASK_USIZE;
-use crate::data::custom_vt::{CONTAINER_MASK, ContainerVT};
+use crate::data::container::{CONTAINER_MASK, ContainerVT};
 use crate::data::wrapper::{DynBase, OWN_INFO_COLLECT_MASK, Wrapper};
 use crate::util::mem::FatPointer;
 use crate::vm::al31f::alloc::Alloc;
@@ -191,7 +191,7 @@ impl Alloc for DefaultAlloc {
 #[cfg(test)]
 mod test {
     use crate::data::Value;
-    use crate::data::custom_vt::ContainerVT;
+    use crate::data::container::ContainerVT;
     use crate::data::tyck::TyckInfoPool;
     use crate::ds::test_container::{TestContainer, create_test_container_vt};
     use crate::vm::al31f::alloc::Alloc;

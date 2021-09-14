@@ -3,7 +3,7 @@ use std::mem::MaybeUninit;
 use std::ptr::{NonNull, addr_of, null_mut};
 
 use crate::data::Value;
-use crate::data::custom_vt::ContainerVT;
+use crate::data::container::ContainerVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::data::wrapper::{Wrapper, WrapperData, DynBase, OwnershipInfo};

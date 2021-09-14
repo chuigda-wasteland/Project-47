@@ -398,7 +398,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 }
                 let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
-                if let Some(e /*: FFIException*/) =
+                if let Err(e /*: FFIException*/) =
                     ffi_function.call_tyck(&mut combustor, &ffi_args, &mut ffi_rets)
                 {
                     match e {
@@ -438,7 +438,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 }
                 let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
-                if let Some(e /*: FFIException*/) =
+                if let Err(e /*: FFIException*/) =
                     ffi_function.call_rtlc(&mut combustor, &ffi_args, &mut ffi_rets)
                 {
                     match e {
