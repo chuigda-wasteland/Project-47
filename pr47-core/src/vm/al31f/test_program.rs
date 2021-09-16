@@ -221,11 +221,11 @@ impl FunctionBase for Pr47Binder_ffi_function {
 pub fn ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
     CompiledProgram {
         code: boxed_slice![
-                                                           // main() -> ()
-            /*00*/ Insc::CreateObject(0),                  // %0 = create-object
-            /*01*/ Insc::FFICall(0, boxed_slice![0, 0, 0], // ffi-call @0(%0, %0, %0)
-                                 boxed_slice![]),
-            /*02*/ Insc::ReturnNothing                     // return
+                                                               // main() -> ()
+            /*00*/ Insc::CreateObject(0),                      // %0 = create-object
+            /*01*/ Insc::FFICallRtlc(0, boxed_slice![0, 0, 0], // ffi-call-rtlc @0(%0, %0, %0)
+                                     boxed_slice![]),
+            /*02*/ Insc::ReturnNothing                         // return
         ],
         const_pool: boxed_slice![],
         init_proc: 0,
@@ -239,20 +239,42 @@ pub fn ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
     }
 }
 
-pub fn bench_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
+pub fn bench_raw_iter_program<A: Alloc>() -> CompiledProgram<A> {
     CompiledProgram {
         code: boxed_slice![
             /*00*/ Insc::MakeIntConst(0, 0),               // %0 = $0
             /*01*/ Insc::MakeIntConst(100_000_000, 1),     // %1 = $100_000_000
             /*02*/ Insc::MakeIntConst(1, 2),               // %2 = $1
-            /*03*/ Insc::CreateObject(3),                  // %3 = create-object
-            /*04*/ Insc::EqValue(0, 1, 4),                 // %4 = eq int %0, %1
-            /*05*/ Insc::JumpIfTrue(4, 9),                 // if %4 goto L.9
-            /*06*/ Insc::FFICall(0, boxed_slice![3, 3, 3], // ffi-call @0(%3, %3, %3)
-                                 boxed_slice![]),
-            /*07*/ Insc::AddInt(0, 2, 0),                  // %0 = add int %0, %2
-            /*08*/ Insc::Jump(4),                          // goto L.4
-            /*09*/ Insc::ReturnNothing                     // return
+            /*03*/ Insc::EqValue(0, 1, 3),                 // %3 = eq int %0, %1
+            /*04*/ Insc::JumpIfTrue(3, 7),                 // if %3 goto L.7
+            /*05*/ Insc::AddInt(0, 2, 0),                  // %0 = add int %0, %2
+            /*06*/ Insc::Jump(3),                          // goto L.3
+            /*07*/ Insc::ReturnNothing                     // return
+        ],
+        const_pool: boxed_slice![],
+        init_proc: 0,
+        functions: boxed_slice![
+            CompiledFunction::new(0, 0, 0, 5, boxed_slice![])
+        ],
+        ffi_funcs: boxed_slice![],
+        async_ffi_funcs: boxed_slice![]
+    }
+}
+
+pub fn bench_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
+    CompiledProgram {
+        code: boxed_slice![
+            /*00*/ Insc::MakeIntConst(0, 0),                   // %0 = $0
+            /*01*/ Insc::MakeIntConst(100_000_000, 1),         // %1 = $100_000_000
+            /*02*/ Insc::MakeIntConst(1, 2),                   // %2 = $1
+            /*03*/ Insc::CreateObject(3),                      // %3 = create-object
+            /*04*/ Insc::EqValue(0, 1, 4),                     // %4 = eq int %0, %1
+            /*05*/ Insc::JumpIfTrue(4, 9),                     // if %4 goto L.9
+            /*06*/ Insc::FFICallRtlc(0, boxed_slice![3, 3, 3], // ffi-call-rtlc @0(%3, %3, %3)
+                                     boxed_slice![]),
+            /*07*/ Insc::AddInt(0, 2, 0),                      // %0 = add int %0, %2
+            /*08*/ Insc::Jump(4),                              // goto L.4
+            /*09*/ Insc::ReturnNothing                         // return
         ],
         const_pool: boxed_slice![],
         init_proc: 0,

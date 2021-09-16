@@ -140,8 +140,8 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
         thread.stack.ext_func_call_grow_stack(func_id, compiled_function.stack_size, args);
     let mut insc_ptr: usize = compiled_function.start_addr;
 
-    let mut ffi_args: Vec<Value> = Vec::with_capacity(8);
-    let mut ffi_rets: Vec<*mut Value> = Vec::with_capacity(3);
+    let mut ffi_args: Vec<Value> = vec![Value::new_null(); 32];
+    let mut ffi_rets: Vec<*mut Value> = vec![std::ptr::null_mut(); 8];
 
     loop {
         #[cfg(not(debug_assertions))]
@@ -390,12 +390,18 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
                     = &program.ffi_funcs[*ffi_func_id];
 
-                for arg /*: &usize*/ in args.iter() {
-                    ffi_args.push(slice.get_value(*arg));
+                for i /*: usize*/ in 0..args.len() {
+                    let arg_idx: usize = *args.get_unchecked(i);
+                    *ffi_args.get_unchecked_mut(i) = slice.get_value(arg_idx);
                 }
-                for ret_value_loc /*: &usize*/ in ret_value_locs.iter() {
-                    ffi_rets.push(slice.get_value_mut_ref(*ret_value_loc));
+                ffi_args.set_len(args.len());
+
+                for i /*: usize*/ in 0..ret_value_locs.len() {
+                    let ret_value_loc_idx: usize = *ret_value_locs.get_unchecked(i);
+                    *ffi_rets.get_unchecked_mut(i) = slice.get_value_mut_ref(ret_value_loc_idx);
                 }
+                ffi_rets.set_len(ret_value_locs.len());
+
                 let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
                 if let Err(e /*: FFIException*/) =
@@ -421,21 +427,24 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                         }
                     }
                 }
-
-                ffi_args.clear();
-                ffi_rets.clear();
             }
             #[cfg(feature = "optimized-rtlc")]
             Insc::FFICallRtlc(ffi_func_id, args, ret_value_locs) => {
                 let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
                     = &program.ffi_funcs[*ffi_func_id];
 
-                for arg /*: &usize*/ in args.iter() {
-                    ffi_args.push(slice.get_value(*arg));
+                for i /*: usize*/ in 0..args.len() {
+                    let arg_idx: usize = *args.get_unchecked(i);
+                    *ffi_args.get_unchecked_mut(i) = slice.get_value(arg_idx);
                 }
-                for ret_value_loc /*: &usize*/ in ret_value_locs.iter() {
-                    ffi_rets.push(slice.get_value_mut_ref(*ret_value_loc));
+                ffi_args.set_len(args.len());
+
+                for i /*: usize*/ in 0..ret_value_locs.len() {
+                    let ret_value_loc_idx: usize = *ret_value_locs.get_unchecked(i);
+                    *ffi_rets.get_unchecked_mut(i) = slice.get_value_mut_ref(ret_value_loc_idx);
                 }
+                ffi_rets.set_len(ret_value_locs.len());
+
                 let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
                 if let Err(e /*: FFIException*/) =
@@ -461,9 +470,6 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                         }
                     }
                 }
-
-                ffi_args.clear();
-                ffi_rets.clear();
             }
             Insc::FFICall(_, _, _) => {}
             Insc::FFICallAsyncTyck(_, _, _) => {}
