@@ -34,6 +34,10 @@ flamegraph_bench_al31fm2_fib35:
 flamegraph_bench_al31fm2_new1m:
 	@BENCH_ITEM="new1m" cargo flamegraph --features=bench --bin bench_al31fm2
 
+.PHONY: flamegraph_bench_al31fm2_ffi
+flamegraph_bench_al31fm2_ffi:
+	@BENCH_ITEM="ffi" cargo flamegraph --features=bench --bin bench_al31fm2
+
 .PHONY: flamegraph_bench_al31fm2_sync_fib35
 flamegraph_bench_al31fm2_sync_fib35:
 	@BENCH_ITEM="fib35" cargo flamegraph --features=bench --bin bench_al31fm2_sync
