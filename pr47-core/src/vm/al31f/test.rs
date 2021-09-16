@@ -9,13 +9,7 @@ use crate::util::async_utils::block_on_future;
 use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
 use crate::vm::al31f::compiled::CompiledProgram;
 use crate::vm::al31f::executor::{VMThread, create_vm_main_thread, vm_thread_run_function};
-use crate::vm::al31f::test_program::{
-    basic_fn_call_program,
-    basic_program,
-    exception_no_eh_program,
-    exception_program,
-    fibonacci_program
-};
+use crate::vm::al31f::test_program::{basic_fn_call_program, basic_program, exception_no_eh_program, exception_program, fibonacci_program, ffi_call_program};
 
 async fn basic_program_eval() {
     let program: CompiledProgram<DefaultAlloc> = basic_program::<>();
@@ -128,6 +122,22 @@ async fn exception_call() {
     }
 }
 
+async fn ffi_call() {
+    let ffi_call_program: CompiledProgram<DefaultAlloc> = ffi_call_program();
+    let alloc: DefaultAlloc = DefaultAlloc::new();
+
+    let mut vm_thread: Box<VMThread<DefaultAlloc>> =
+        create_vm_main_thread(alloc, &ffi_call_program).await;
+    let result: Result<Vec<Value>, Exception> = unsafe {
+        vm_thread_run_function(&mut vm_thread, 0, &[]).await
+    };
+    if let Ok(result /*: Vec<Value>*/) = result {
+        assert_eq!(result.len(), 0);
+    } else {
+        panic!()
+    }
+}
+
 #[test] fn test_basic_program_eval() {
     block_on_future(basic_program_eval());
 }
@@ -147,3 +157,5 @@ async fn exception_call() {
 #[test] fn test_exception() {
     block_on_future(exception_call());
 }
+
+#[test] fn test_ffi_call() { block_on_future(ffi_call()); }

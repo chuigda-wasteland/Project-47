@@ -1,13 +1,14 @@
 use crate::boxed_slice;
+use crate::data::Value;
 use crate::data::traits::StaticBase;
 use crate::ds::object::Object;
+use crate::ffi::{FFIException, Signature};
+use crate::ffi::sync_fn::{Function, FunctionBase, OwnershipGuard, VMContext, value_into_ref};
 use crate::util::void::Void;
+use crate::vm::al31f::Combustor;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
 use crate::vm::al31f::insc::Insc;
-use crate::ffi::sync_fn::{FunctionBase, VMContext, OwnershipGuard, value_into_ref};
-use crate::ffi::{Signature, FFIException};
-use crate::data::Value;
 
 pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
     CompiledProgram {
@@ -166,8 +167,10 @@ pub fn exception_no_eh_program<A: Alloc>() -> CompiledProgram<A> {
     }
 }
 
-#[allow(unused)]
-fn ffi_function(_x: &Object, _y: &Object, _z: &Object) {}
+#[inline(never)] fn ffi_function(x: &Object, y: &Object, z: &Object) {
+    assert_eq!(x as *const Object as usize, y as *const Object as usize);
+    assert_eq!(y as *const Object as usize, z as *const Object as usize);
+}
 
 #[allow(non_camel_case_types)]
 struct Pr47Binder_ffi_function();
@@ -195,7 +198,7 @@ impl FunctionBase for Pr47Binder_ffi_function {
 
         let (a1, g1): (&Object, OwnershipGuard) = value_into_ref(*args.get_unchecked(0))?;
         let (a2, g2): (&Object, OwnershipGuard) = value_into_ref(*args.get_unchecked(1))?;
-        let (a3, g3): (&Object, OwnershipGuard) = value_into_ref(*args.get_unchecked(0))?;
+        let (a3, g3): (&Object, OwnershipGuard) = value_into_ref(*args.get_unchecked(2))?;
 
         ffi_function(a1, a2, a3);
 
@@ -212,5 +215,26 @@ impl FunctionBase for Pr47Binder_ffi_function {
         _rets: &[*mut Value]
     ) -> Result<(), FFIException> {
         todo!()
+    }
+}
+
+pub fn ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
+    CompiledProgram {
+        code: boxed_slice![
+                                                           // main() -> ()
+            /*00*/ Insc::CreateObject(0),                  // %0 = create-object
+            /*01*/ Insc::FFICall(0, boxed_slice![0, 0, 0], // ffi-call @0(%0, %0, %0)
+                                 boxed_slice![]),
+            /*02*/ Insc::ReturnNothing                     // return
+        ],
+        const_pool: boxed_slice![],
+        init_proc: 0,
+        functions: boxed_slice![
+            CompiledFunction::new(0, 0, 0, 1, boxed_slice![])
+        ],
+        ffi_funcs: boxed_slice![
+            Box::new(Pr47Binder_ffi_function()) as Box<dyn Function<Combustor<A>>>
+        ],
+        async_ffi_funcs: boxed_slice![]
     }
 }
