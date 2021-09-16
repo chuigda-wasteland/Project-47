@@ -14,6 +14,10 @@ bench_al31fm2_fib35:
 bench_al31fm2_new1m:
 	@BENCH_ITEM="new1m" cargo run --release --features=bench --bin bench_al31fm2
 
+.PHONY: bench_al31fm2_ffi
+bench_al31fm2_ffi:
+	@BENCH_ITEM="ffi" cargo run --release --features=bench --bin bench_al31fm2
+
 .PHONY: bench_al31fm2_sync_fib35
 bench_al31fm2_sync_fib35:
 	@BENCH_ITEM="fib35" cargo run --release --no-default-features --features=bench --bin bench_al31fm2_sync

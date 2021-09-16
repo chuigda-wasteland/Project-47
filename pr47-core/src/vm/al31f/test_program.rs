@@ -60,10 +60,10 @@ pub fn fibonacci_program<A: Alloc>() -> CompiledProgram<A> {
                                                                     // fibonacci(%0) -> (int)
             /*00*/ Insc::MakeIntConst(0, 1),                        // %1 = $0
             /*01*/ Insc::LeInt(0, 1, 2),                            // %2 = le int %0, %1
-            /*02*/ Insc::JumpIfTrue(2, 12),                         // if %2 goto 12
+            /*02*/ Insc::JumpIfTrue(2, 12),                         // if %2 goto L.12
             /*03*/ Insc::MakeIntConst(1, 1),                        // %1 = $1
             /*04*/ Insc::EqValue(0, 1, 2),                          // %2 = eq int %0, %1
-            /*05*/ Insc::JumpIfTrue(2, 12),                         // if %2 goto 12
+            /*05*/ Insc::JumpIfTrue(2, 12),                         // if %2 goto L.12
             /*06*/ Insc::SubInt(0, 1, 2),                           // %2 = sub int %0, %1
             /*07*/ Insc::MakeIntConst(2, 1),                        // %1 = $2
             /*08*/ Insc::SubInt(0, 1, 3),                           // %3 = sub int %0, %1
@@ -231,6 +231,33 @@ pub fn ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
         init_proc: 0,
         functions: boxed_slice![
             CompiledFunction::new(0, 0, 0, 1, boxed_slice![])
+        ],
+        ffi_funcs: boxed_slice![
+            Box::new(Pr47Binder_ffi_function()) as Box<dyn Function<Combustor<A>>>
+        ],
+        async_ffi_funcs: boxed_slice![]
+    }
+}
+
+pub fn bench_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
+    CompiledProgram {
+        code: boxed_slice![
+            /*00*/ Insc::MakeIntConst(0, 0),               // %0 = $0
+            /*01*/ Insc::MakeIntConst(100_000_000, 1),     // %1 = $100_000_000
+            /*02*/ Insc::MakeIntConst(1, 2),               // %2 = $1
+            /*03*/ Insc::CreateObject(3),                  // %3 = create-object
+            /*04*/ Insc::EqValue(0, 1, 4),                 // %4 = eq int %0, %1
+            /*05*/ Insc::JumpIfTrue(4, 9),                 // if %4 goto L.9
+            /*06*/ Insc::FFICall(0, boxed_slice![3, 3, 3], // ffi-call @0(%3, %3, %3)
+                                 boxed_slice![]),
+            /*07*/ Insc::AddInt(0, 2, 0),                  // %0 = add int %0, %2
+            /*08*/ Insc::Jump(4),                          // goto L.4
+            /*09*/ Insc::ReturnNothing                     // return
+        ],
+        const_pool: boxed_slice![],
+        init_proc: 0,
+        functions: boxed_slice![
+            CompiledFunction::new(0, 0, 0, 5, boxed_slice![])
         ],
         ffi_funcs: boxed_slice![
             Box::new(Pr47Binder_ffi_function()) as Box<dyn Function<Combustor<A>>>
