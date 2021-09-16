@@ -160,14 +160,14 @@ impl Drop for OwnershipGuard {
     where T: 'static,
           Void: StaticBase<T>
 {
-    value.move_out()
+    value.move_out::<T>()
 }
 
 #[inline] pub unsafe fn value_move_out_norm<T>(value: Value) -> T
     where T: 'static,
           Void: StaticBase<T>
 {
-    value.move_out_norm()
+    value.move_out_norm::<T>()
 }
 
 #[inline] pub unsafe fn value_into_ref<'a, T>(
@@ -340,6 +340,42 @@ impl Drop for OwnershipGuard {
             object: value,
             ownership_info: original,
             expected_mask: OWN_INFO_WRITE_MASK
+        }))
+    }
+}
+
+#[inline] pub unsafe fn value_copy<T>(value: Value) -> Result<T, FFIException>
+    where T: 'static + Clone,
+          Void: StaticBase<T>
+{
+    let wrapper_ptr: *mut Wrapper<()> = value.untagged_ptr_field() as *mut _;
+    let original: u8 = (*wrapper_ptr).ownership_info;
+    if original & OWN_INFO_READ_MASK != 0 {
+        let data_ptr: *const T = value.get_as_mut_ptr_norm() as *const T;
+        Ok((&*data_ptr).clone())
+    } else {
+        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+            object: value,
+            ownership_info: original,
+            expected_mask: OWN_INFO_READ_MASK
+        }))
+    }
+}
+
+#[inline] pub unsafe fn value_copy_norm<T>(value: Value) -> Result<T, FFIException>
+    where T: 'static + Clone,
+          Void: StaticBase<T>
+{
+    let wrapper_ptr: *mut Wrapper<()> = value.ptr_repr.ptr as *mut _;
+    let original: u8 = (*wrapper_ptr).ownership_info;
+    if original & OWN_INFO_READ_MASK != 0 {
+        let data_ptr: *const T = value.get_as_mut_ptr_norm() as *const T;
+        Ok((&*data_ptr).clone())
+    } else {
+        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+            object: value,
+            ownership_info: original,
+            expected_mask: OWN_INFO_READ_MASK
         }))
     }
 }
