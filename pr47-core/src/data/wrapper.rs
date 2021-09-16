@@ -59,7 +59,7 @@ impl OwnershipInfo {
 }
 
 impl UnsafeFrom<u8> for OwnershipInfo {
-    unsafe fn unsafe_from(data: u8) -> Self {
+    #[inline(always)] unsafe fn unsafe_from(data: u8) -> Self {
         std::mem::transmute::<u8, Self>(data)
     }
 }

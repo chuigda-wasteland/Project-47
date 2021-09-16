@@ -241,6 +241,7 @@ impl Value {
 
     /// Given that `self` **MUST** be a reference and **MUST NOT** be a custom pointer, get the
     /// ownership info
+    #[cfg_attr(not(debug_assertions), inline(always))]
     pub unsafe fn ownership_info_norm(&self) -> OwnershipInfo {
         debug_assert!(self.is_ref());
         debug_assert!(!self.is_container());
