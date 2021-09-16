@@ -5,7 +5,7 @@ use crate::util::void::Void;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
 use crate::vm::al31f::insc::Insc;
-use crate::ffi::sync_fn::{FunctionBase, VMContext};
+use crate::ffi::sync_fn::{FunctionBase, VMContext, OwnershipGuard, value_into_ref};
 use crate::ffi::{Signature, FFIException};
 use crate::data::Value;
 
@@ -187,10 +187,23 @@ impl FunctionBase for Pr47Binder_ffi_function {
 
     unsafe fn call_rtlc<CTX: VMContext>(
         _context: &mut CTX,
-        _args: &[Value],
-        _rets: &[*mut Value]
+        args: &[Value],
+        rets: &[*mut Value]
     ) -> Result<(), FFIException> {
-        todo!()
+        debug_assert_eq!(args.len(), 3);
+        debug_assert_eq!(rets.len(), 0);
+
+        let (a1, g1): (&Object, OwnershipGuard) = value_into_ref(*args.get_unchecked(0))?;
+        let (a2, g2): (&Object, OwnershipGuard) = value_into_ref(*args.get_unchecked(1))?;
+        let (a3, g3): (&Object, OwnershipGuard) = value_into_ref(*args.get_unchecked(0))?;
+
+        ffi_function(a1, a2, a3);
+
+        std::mem::drop(g3);
+        std::mem::drop(g2);
+        std::mem::drop(g1);
+
+        Ok(())
     }
 
     unsafe fn call_unchecked<CTX: VMContext>(
@@ -201,4 +214,3 @@ impl FunctionBase for Pr47Binder_ffi_function {
         todo!()
     }
 }
-

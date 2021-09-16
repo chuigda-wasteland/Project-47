@@ -1,7 +1,12 @@
 use crate::data::Value;
 use crate::data::exception::{UncheckedException};
 use crate::data::traits::StaticBase;
-use crate::data::wrapper::{OwnershipInfo, Wrapper, OWN_INFO_READ_MASK, OWN_INFO_OWNED_MASK};
+use crate::data::wrapper::{OwnershipInfo, Wrapper};
+use crate::data::wrapper::{
+    OWN_INFO_OWNED_MASK,
+    OWN_INFO_READ_MASK,
+    OWN_INFO_WRITE_MASK
+};
 use crate::ffi::{FFIException, Signature};
 use crate::util::mem::FatPointer;
 use crate::util::void::Void;
@@ -151,6 +156,20 @@ impl Drop for OwnershipGuard {
     }
 }
 
+#[inline] pub unsafe fn value_move_out<T>(value: Value) -> T
+    where T: 'static,
+          Void: StaticBase<T>
+{
+    value.move_out()
+}
+
+#[inline] pub unsafe fn value_move_out_norm<T>(value: Value) -> T
+    where T: 'static,
+          Void: StaticBase<T>
+{
+    value.move_out_norm()
+}
+
 #[inline] pub unsafe fn value_into_ref<'a, T>(
     value: Value
 ) -> Result<(&'a T, OwnershipGuard), FFIException>
@@ -241,35 +260,86 @@ impl Drop for OwnershipGuard {
 }
 
 #[inline] pub unsafe fn value_into_mut_ref<'a, T>(
-    _value: Value
+    value: Value
 ) -> Result<(&'a mut T, OwnershipGuard), FFIException>
     where T: 'static,
           Void: StaticBase<T>
 {
-    todo!()
+    let wrapper_ptr: *mut Wrapper<()> = value.ptr_repr.ptr as *mut _;
+    let original: u8 = (*wrapper_ptr).ownership_info;
+    if original & OWN_INFO_WRITE_MASK != 0 {
+        let data_ptr: *mut T = value.get_as_mut_ptr_norm() as *mut T;
+        (*wrapper_ptr).ownership_info = OwnershipInfo::MutSharedToRust as u8;
+        Ok((&mut *data_ptr, OwnershipGuard::SetOwnershipInfo(wrapper_ptr, original)))
+    } else {
+        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+            object: value,
+            ownership_info: original,
+            expected_mask: OWN_INFO_WRITE_MASK
+        }))
+    }
 }
 
 #[inline] pub unsafe fn value_into_mut_ref_noalias<'a, T>(
-    _value: Value
+    value: Value
 ) -> Result<&'a mut T, FFIException>
     where T: 'static,
           Void: StaticBase<T>
 {
-    todo!()
+    let wrapper_ptr: *mut Wrapper<()> = value.ptr_repr.ptr as *mut _;
+    let original: u8 = (*wrapper_ptr).ownership_info;
+    if original & OWN_INFO_WRITE_MASK != 0 {
+        let data_ptr: *mut T = value.get_as_mut_ptr_norm() as *mut T;
+        Ok(&mut *data_ptr)
+    } else {
+        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+            object: value,
+            ownership_info: original,
+            expected_mask: OWN_INFO_WRITE_MASK
+        }))
+    }
 }
 
 #[inline] pub unsafe fn container_into_mut_ref<CR>(
-    _value: Value
+    value: Value
 ) -> Result<(CR, OwnershipGuard), FFIException>
     where CR: ContainerRef
 {
-    todo!()
+    let wrapper_ptr: *mut Wrapper<()> = value.untagged_ptr_field() as *mut _;
+    let original: u8 = (*wrapper_ptr).ownership_info;
+    if original & OWN_INFO_WRITE_MASK != 0 {
+        if original != OwnershipInfo::MutSharedToRust as u8 {
+            (*wrapper_ptr).ownership_info = OwnershipInfo::MutSharedToRust as u8;
+            Ok((
+                CR::create_ref(wrapper_ptr),
+                OwnershipGuard::SetOwnershipInfo(wrapper_ptr, original)
+            ))
+        } else {
+            Ok((CR::create_ref(wrapper_ptr), OwnershipGuard::DoNothing))
+        }
+    } else {
+        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+            object: value,
+            ownership_info: original,
+            expected_mask: OWN_INFO_WRITE_MASK
+        }))
+    }
 }
 
 #[inline] pub unsafe fn container_into_mut_ref_noalias<CR>(
-    _value: Value
-) -> Result<(CR, OwnershipGuard), FFIException>
+    value: Value
+) -> Result<CR, FFIException>
     where CR: ContainerRef
 {
-    todo!()
+    let wrapper_ptr: *mut Wrapper<()> = value.untagged_ptr_field() as *mut _;
+    let original: u8 = (*wrapper_ptr).ownership_info;
+    if original & OWN_INFO_WRITE_MASK != 0 {
+        Ok(CR::create_ref(wrapper_ptr))
+    } else {
+        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+            object: value,
+            ownership_info: original,
+            expected_mask: OWN_INFO_WRITE_MASK
+        }))
+    }
 }
