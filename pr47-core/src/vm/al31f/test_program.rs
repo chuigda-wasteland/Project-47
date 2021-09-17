@@ -287,3 +287,104 @@ pub fn bench_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
         async_ffi_funcs: boxed_slice![]
     }
 }
+
+#[inline(never)] fn ffi_function2(a: i64, b: i64) -> i64 {
+    a + b
+}
+
+#[allow(non_camel_case_types)]
+struct Pr47Binder_ffi_function2();
+
+impl FunctionBase for Pr47Binder_ffi_function2 {
+    fn signature() -> Signature {
+        todo!()
+    }
+
+    fn call_tyck<CTX: VMContext>(
+        _context: &mut CTX,
+        _args: &[Value],
+        _rets: &[*mut Value]
+    ) -> Result<(), FFIException> {
+        todo!()
+    }
+
+    unsafe fn call_rtlc<CTX: VMContext>(
+        _context: &mut CTX,
+        args: &[Value],
+        rets: &[*mut Value]
+    ) -> Result<(), FFIException> {
+        debug_assert_eq!(args.len(), 2);
+        debug_assert_eq!(rets.len(), 1);
+
+        let a1: i64 = args.get_unchecked(0).vt_data.inner.int_value;
+        let a2: i64 = args.get_unchecked(1).vt_data.inner.int_value;
+
+        let ret: i64 = ffi_function2(a1, a2);
+        *(*rets.get_unchecked(0)) = Value::new_int(ret);
+
+        Ok(())
+    }
+
+    unsafe fn call_unchecked<CTX: VMContext>(
+        _context: &mut CTX,
+        _args: &[Value],
+        _rets: &[*mut Value]
+    ) -> Result<(), FFIException> {
+        todo!()
+    }
+}
+
+pub fn ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
+    CompiledProgram {
+        code: boxed_slice![
+                                                            // application_start(%0, %1) -> i64
+            /*00*/ Insc::FFICallRtlc(0, boxed_slice![0, 1], // %0 = ffi-call-rtlc @0(%0, %1)
+                                     boxed_slice![0]),
+            /*01*/ Insc::ReturnOne(0)                       // return %0
+        ],
+        const_pool: boxed_slice![],
+        init_proc: 0,
+        functions: boxed_slice![
+            CompiledFunction::new(0, 2, 1, 2, boxed_slice![])
+        ],
+        ffi_funcs: boxed_slice![
+            Box::new(Pr47Binder_ffi_function2()) as Box<dyn Function<Combustor<A>>>
+        ],
+        async_ffi_funcs: boxed_slice![]
+    }
+}
+
+pub fn bench_ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
+    CompiledProgram {
+        code: boxed_slice![
+            /*00*/ Insc::MakeIntConst(0, 0),                // %0 = $0
+            /*01*/ Insc::MakeIntConst(10_000, 1),           // %1 = $1
+            /*02*/ Insc::EqValue(0, 1, 2),                  // %2 = eq int %0, %1
+            /*03*/ Insc::JumpIfTrue(2, 15),                 // if %2 goto L.15
+            /*04*/ Insc::MakeIntConst(0, 3),                // %3 = $0
+            /*05*/ Insc::EqValue(3, 1, 2),                  // %2 = eq int %3, %1
+            /*06*/ Insc::JumpIfTrue(2, 13),                 // if %2 goto L.13
+            /*07*/ Insc::AddInt(0, 3, 4),                   // %4 = add int %0, %3
+            /*08*/ Insc::FFICallRtlc(0, boxed_slice![0, 3], // %5 = ffi-call-rtlc @0(%0, %3)
+                                     boxed_slice![5]),
+            /*09*/ Insc::EqValue(4, 5, 2),                  // %2 = eq int %4, %5
+            /*10*/ Insc::JumpIfFalse(2, 16),                // if !%2 goto L.16
+            /*11*/ Insc::IncrInt(3),                        // inc int %3
+            /*12*/ Insc::Jump(5),                           // goto L.5
+            /*13*/ Insc::IncrInt(0),                        // inc int %0
+            /*14*/ Insc::Jump(2),                           // goto L.2
+            /*15*/ Insc::ReturnNothing,                     // ret
+            /*16*/ Insc::CreateObject(0),                   // %0 = create-object
+            /*17*/ Insc::Raise(0)                           // raise %0
+        ],
+        const_pool: boxed_slice![],
+        init_proc: 0,
+        functions: boxed_slice![
+            CompiledFunction::new(0, 0, 0, 6, boxed_slice![])
+        ],
+        ffi_funcs: boxed_slice![
+            Box::new(Pr47Binder_ffi_function2()) as Box<dyn Function<Combustor<A>>>
+        ],
+        async_ffi_funcs: boxed_slice![]
+    }
+}

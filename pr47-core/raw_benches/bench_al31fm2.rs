@@ -6,7 +6,13 @@ use pr47::util::async_utils::block_on_future;
 use pr47::vm::al31f::alloc::default_alloc::DefaultAlloc;
 use pr47::vm::al31f::compiled::CompiledProgram;
 use pr47::vm::al31f::executor::{VMThread, create_vm_main_thread, vm_thread_run_function};
-use pr47::vm::al31f::test_program::{alloc_1m_program, bench_ffi_call_program, fibonacci_program, bench_raw_iter_program};
+use pr47::vm::al31f::test_program::{
+    alloc_1m_program,
+    bench_ffi_call_program,
+    bench_ffi_call_program2,
+    bench_raw_iter_program,
+    fibonacci_program
+};
 
 async fn run_program(program: CompiledProgram<DefaultAlloc>, args: Vec<Value>) {
     for _ in 0..10 {
@@ -36,10 +42,13 @@ fn bench_new_1m() {
 fn bench_ffi_call() {
     let raw_iter_program: CompiledProgram<DefaultAlloc> = bench_raw_iter_program();
     let program: CompiledProgram<DefaultAlloc> = bench_ffi_call_program();
+    let program2: CompiledProgram<DefaultAlloc> = bench_ffi_call_program2();
     eprintln!("raw iteration for 100,000,000 times: ");
     block_on_future(run_program(raw_iter_program, vec![]));
     eprintln!("do FFI call for 100,000,000 times: ");
     block_on_future(run_program(program, vec![]));
+    eprintln!("do FFI call for 10,000 * 10,000 times: ");
+    block_on_future(run_program(program2, vec![]));
 }
 
 const SUCK_WORDS: &'static str =
