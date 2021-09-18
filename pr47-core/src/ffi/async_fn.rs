@@ -2,16 +2,11 @@ use std::future::Future;
 use std::pin::Pin;
 
 use crate::data::Value;
-use crate::data::traits::StaticBase;
-use crate::data::wrapper::OwnershipInfo;
+use crate::data::traits::{StaticBase};
+use crate::data::wrapper::Wrapper;
 use crate::ffi::{FFIException, Signature};
 use crate::util::serializer::Serializer;
 use crate::util::void::Void;
-
-pub enum AsyncOwnInfoGuard {
-    DoNothing,
-    SetOwnInfo(Value, OwnershipInfo)
-}
 
 pub trait AsyncVMContext: 'static + Sized + Send + Sync {
     type SharedData;
@@ -19,14 +14,11 @@ pub trait AsyncVMContext: 'static + Sized + Send + Sync {
     fn serializer(&self) -> &Serializer<Self::SharedData>;
 }
 
-pub type AsyncReturnType = Result<Box<[Value]>, FFIException>;
-
-pub struct Promise {
-    pub fut: Pin<Box<dyn Future<Output = AsyncReturnType> + Send + 'static>>,
-    pub guards: Box<[AsyncOwnInfoGuard]>
+impl StaticBase<Promise> for Void {
+    fn type_name() -> String {
+        "promise".to_string()
+    }
 }
-
-impl StaticBase<Promise> for Void {}
 
 pub trait AsyncFunctionBase: 'static {
     fn signature() -> Signature;
@@ -59,4 +51,28 @@ impl<AFBase, CTX> AsyncFunction<CTX> for AFBase where
     unsafe fn call_rtlc(&self, context: &CTX, args: &[Value]) -> Promise {
         <AFBase as AsyncFunctionBase>::call_rtlc(context, args)
     }
+}
+
+#[derive(Copy, Clone)]
+pub struct AsyncResetGuard {
+    wrapper_ptr: *mut Wrapper<()>,
+    ownership_info: u8
+}
+
+#[derive(Copy, Clone)]
+pub struct AsyncShareGuard {
+    wrapper_ptr: *mut Wrapper<()>
+}
+
+pub union AsyncOwnershipGuard {
+    reset_guard: AsyncResetGuard,
+    share_guard: AsyncShareGuard
+}
+
+pub type AsyncReturnType = Result<Box<[Value]>, FFIException>;
+
+pub struct Promise {
+    pub fut: Pin<Box<dyn Future<Output = AsyncReturnType> + Send + 'static>>,
+    pub guards: Box<[AsyncOwnershipGuard]>,
+    pub reset_guard_count: usize
 }

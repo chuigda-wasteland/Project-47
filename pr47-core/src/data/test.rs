@@ -45,6 +45,7 @@ impl StaticBase<TestStruct2> for Void {
         ownership_info: 0,
         gc_info: 0,
         data_offset: 0,
+        ownership_info2: 0,
         data: WrapperData {
             ptr: null_mut()
         }
@@ -60,6 +61,7 @@ impl StaticBase<TestStruct2> for Void {
         ownership_info: 0,
         gc_info: 0,
         data_offset: 0,
+        ownership_info2: 0,
         data: WrapperData {
             ptr: null_mut()
         }
@@ -75,6 +77,7 @@ impl StaticBase<TestStruct2> for Void {
         ownership_info: 0,
         gc_info: 0,
         data_offset: 0,
+        ownership_info2: 0,
         data: WrapperData {
             ptr: null_mut()
         }

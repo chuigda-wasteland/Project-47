@@ -79,6 +79,7 @@ pub struct Wrapper<T: 'static> {
     /* +4 */ pub ownership_info: u8,
     /* +5 */ pub gc_info: u8,
     /* +6 */ pub data_offset: u8,
+    /* +7 */ pub ownership_info2: u8,
 
     /* +data_offset */ pub data: WrapperData<T>
 }
@@ -101,6 +102,7 @@ impl<T: 'static> Wrapper<T> {
             ownership_info: OwnershipInfo::VMOwned as u8,
             gc_info: 0,
             data_offset: 0,
+            ownership_info2: 0,
             data: WrapperData {
                 owned: ManuallyDrop::new(MaybeUninit::new(data))
             }
@@ -115,6 +117,7 @@ impl<T: 'static> Wrapper<T> {
             ownership_info: OwnershipInfo::SharedFromRust as u8,
             gc_info: 0,
             data_offset: 0,
+            ownership_info2: 0,
             data: WrapperData {
                 ptr: ptr as *mut T
             }
@@ -129,6 +132,7 @@ impl<T: 'static> Wrapper<T> {
             ownership_info: OwnershipInfo::MutSharedFromRust as u8,
             gc_info: 0,
             data_offset: 0,
+            ownership_info2: 0,
             data: WrapperData {
                 ptr
             }

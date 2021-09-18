@@ -31,6 +31,7 @@ default = ["optimized-rtlc", "async-tokio"]
 no-rtlc = []
 optimized-rtlc = []
 bench = []
+huge-align = []
 
 async-tokio = ["async", "tokio"]
 async-astd = ["async", "async-std"]

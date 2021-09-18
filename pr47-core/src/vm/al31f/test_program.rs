@@ -196,9 +196,9 @@ impl FunctionBase for Pr47Binder_ffi_function {
         debug_assert_eq!(args.len(), 3);
         debug_assert_eq!(rets.len(), 0);
 
-        let (a1, g1): (&Object, OwnershipGuard) = value_into_ref(*args.get_unchecked(0))?;
-        let (a2, g2): (&Object, OwnershipGuard) = value_into_ref(*args.get_unchecked(1))?;
-        let (a3, g3): (&Object, OwnershipGuard) = value_into_ref(*args.get_unchecked(2))?;
+        let (a1, g1): (&Object, Option<OwnershipGuard>) = value_into_ref(*args.get_unchecked(0))?;
+        let (a2, g2): (&Object, Option<OwnershipGuard>) = value_into_ref(*args.get_unchecked(1))?;
+        let (a3, g3): (&Object, Option<OwnershipGuard>) = value_into_ref(*args.get_unchecked(2))?;
 
         ffi_function(a1, a2, a3);
 
