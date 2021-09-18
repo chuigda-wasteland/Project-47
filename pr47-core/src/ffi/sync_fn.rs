@@ -1,4 +1,5 @@
 use crate::data::Value;
+use crate::data::container::ContainerRef;
 use crate::data::exception::{UncheckedException};
 use crate::data::traits::StaticBase;
 use crate::data::wrapper::{OwnershipInfo, Wrapper};
@@ -10,7 +11,6 @@ use crate::data::wrapper::{
 use crate::ffi::{FFIException, Signature};
 use crate::util::mem::FatPointer;
 use crate::util::void::Void;
-use crate::data::container::ContainerRef;
 
 pub trait VMContext: 'static + Sized {
     fn allocate(&mut self, fat_ptr: FatPointer);

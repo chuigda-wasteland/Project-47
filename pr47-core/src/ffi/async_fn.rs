@@ -69,6 +69,39 @@ pub union AsyncOwnershipGuard {
     share_guard: AsyncShareGuard
 }
 
+impl AsyncOwnershipGuard {
+    #[inline(always)]
+    pub fn new_reset_guard(wrapper_ptr: *mut Wrapper<()>, ownership_info: u8) -> Self {
+        Self {
+            reset_guard: AsyncResetGuard {
+                wrapper_ptr, ownership_info
+            }
+        }
+    }
+
+    #[inline(always)]
+    pub fn new_share_guard(wrapper_ptr: *mut Wrapper<()>) -> Self {
+        Self {
+            share_guard: AsyncShareGuard { wrapper_ptr }
+        }
+    }
+
+    #[cfg_attr(not(debug_assertions), inline(always))]
+    pub fn reset(&self) {
+        unsafe {
+            (*self.reset_guard.wrapper_ptr).ownership_info = self.reset_guard.ownership_info;
+        }
+    }
+
+    #[cfg_attr(not(debug_assertions), inline(always))]
+    pub fn un_share(&self) {
+        unsafe {
+            (*self.share_guard.wrapper_ptr).ownership_info =
+                (*self.share_guard.wrapper_ptr).ownership_info2;
+        }
+    }
+}
+
 pub type AsyncReturnType = Result<Box<[Value]>, FFIException>;
 
 pub struct Promise {
