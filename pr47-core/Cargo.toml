@@ -27,11 +27,12 @@ tokio = { version = "1", features = ["rt-multi-thread"] }
 variant_count = "1"
 
 [features]
-default = ["optimized-rtlc", "async-tokio"]
+default = ["async-tokio", "optimized-rtlc", "std47"]
 no-rtlc = []
 optimized-rtlc = []
 bench = []
 huge-align = []
+std47 = []
 
 async-tokio = ["async", "tokio"]
 async-astd = ["async", "async-std"]

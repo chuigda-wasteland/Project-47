@@ -14,6 +14,8 @@ pub mod syntax;
 pub mod util;
 pub mod vm;
 
+#[cfg(feature = "std47")] pub mod std47;
+
 #[cfg(all(feature = "async-astd", feature = "async-tokio"))]
 compile_error!("features `async-astd` and `async-tokio` are mutually exclusive");
 

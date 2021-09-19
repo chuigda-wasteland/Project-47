@@ -7,7 +7,7 @@ use crate::collections::object::Object;
 use crate::data::Value;
 use crate::data::exception::{CheckedException, Exception, UncheckedException};
 use crate::data::value_typed::{INT_TYPE_TAG, FLOAT_TYPE_TAG};
-use crate::data::wrapper::{DynBase, Wrapper, OwnershipInfo};
+use crate::data::wrapper::{DynBase};
 use crate::ffi::sync_fn::Function as FFIFunction;
 use crate::util::either::Either;
 use crate::util::mem::FatPointer;
@@ -17,6 +17,7 @@ use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
 use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 
+#[cfg(feature = "async")] use crate::data::wrapper::{Wrapper, OwnershipInfo};
 #[cfg(feature = "async")] use crate::ffi::async_fn::{AsyncReturnType, Promise};
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
 #[cfg(feature = "async")] use crate::util::serializer::Serializer;
@@ -476,7 +477,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             }
             Insc::FFICall(_, _, _) => {}
             Insc::FFICallAsyncTyck(_, _, _) => {}
-            #[cfg(feature = "optimized-rtlc")]
+            #[cfg(all(feature = "optimized-rtlc", feature = "async"))]
             Insc::FFICallAsync(async_ffi_func_id, args, ret) => {
                 let async_ffi_function: &Box<dyn FFIAsyncFunction<AsyncCombustor<A>>>
                     = &program.async_ffi_funcs[*async_ffi_func_id];

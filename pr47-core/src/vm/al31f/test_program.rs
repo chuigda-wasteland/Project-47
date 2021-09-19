@@ -235,7 +235,7 @@ pub fn ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
         ffi_funcs: boxed_slice![
             Box::new(Pr47Binder_ffi_function()) as Box<dyn Function<Combustor<A>>>
         ],
-        async_ffi_funcs: boxed_slice![]
+        #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
 
@@ -257,7 +257,7 @@ pub fn bench_raw_iter_program<A: Alloc>() -> CompiledProgram<A> {
             CompiledFunction::new(0, 0, 0, 5, boxed_slice![])
         ],
         ffi_funcs: boxed_slice![],
-        async_ffi_funcs: boxed_slice![]
+        #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
 
@@ -284,7 +284,7 @@ pub fn bench_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
         ffi_funcs: boxed_slice![
             Box::new(Pr47Binder_ffi_function()) as Box<dyn Function<Combustor<A>>>
         ],
-        async_ffi_funcs: boxed_slice![]
+        #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
 
@@ -350,7 +350,7 @@ pub fn ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
         ffi_funcs: boxed_slice![
             Box::new(Pr47Binder_ffi_function2()) as Box<dyn Function<Combustor<A>>>
         ],
-        async_ffi_funcs: boxed_slice![]
+        #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
 
@@ -385,6 +385,6 @@ pub fn bench_ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
         ffi_funcs: boxed_slice![
             Box::new(Pr47Binder_ffi_function2()) as Box<dyn Function<Combustor<A>>>
         ],
-        async_ffi_funcs: boxed_slice![]
+        #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
