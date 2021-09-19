@@ -1,7 +1,7 @@
 use crate::boxed_slice;
+use crate::collections::object::Object;
 use crate::data::Value;
 use crate::data::traits::StaticBase;
-use crate::ds::object::Object;
 use crate::ffi::{FFIException, Signature};
 use crate::ffi::sync_fn::{Function, FunctionBase, OwnershipGuard, VMContext, value_into_ref};
 use crate::util::void::Void;

@@ -2,12 +2,16 @@ use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::ptr::{NonNull, addr_of, null_mut};
 
+use crate::collections::test_container::{
+    GenericTestContainer,
+    TestContainer,
+    create_test_container_vt
+};
 use crate::data::Value;
 use crate::data::container::ContainerVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::data::wrapper::{Wrapper, WrapperData, DynBase, OwnershipInfo};
-use crate::ds::test_container::{TestContainer, create_test_container_vt, GenericTestContainer};
 use crate::util::mem::FatPointer;
 use crate::util::void::Void;
 

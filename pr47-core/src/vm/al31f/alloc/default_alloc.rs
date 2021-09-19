@@ -190,10 +190,10 @@ impl Alloc for DefaultAlloc {
 
 #[cfg(test)]
 mod test {
+    use crate::collections::test_container::{TestContainer, create_test_container_vt};
     use crate::data::Value;
     use crate::data::container::ContainerVT;
     use crate::data::tyck::TyckInfoPool;
-    use crate::ds::test_container::{TestContainer, create_test_container_vt};
     use crate::vm::al31f::alloc::Alloc;
     use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
     use crate::vm::al31f::stack::{Stack, StackSlice};

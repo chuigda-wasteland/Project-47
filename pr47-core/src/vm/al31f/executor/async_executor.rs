@@ -3,11 +3,11 @@ use std::ptr::NonNull;
 
 use unchecked_unwrap::UncheckedUnwrap;
 
+use crate::collections::object::Object;
 use crate::data::Value;
 use crate::data::exception::{CheckedException, Exception, UncheckedException};
 use crate::data::value_typed::{INT_TYPE_TAG, FLOAT_TYPE_TAG};
 use crate::data::wrapper::{DynBase, Wrapper, OwnershipInfo};
-use crate::ds::object::Object;
 use crate::ffi::sync_fn::Function as FFIFunction;
 use crate::util::either::Either;
 use crate::util::mem::FatPointer;

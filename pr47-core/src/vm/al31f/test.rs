@@ -1,10 +1,10 @@
 use std::any::TypeId;
 
+use crate::collections::object::Object;
 use crate::data::Value;
 use crate::data::exception::Exception;
 use crate::data::wrapper::DynBase;
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
-use crate::ds::object::Object;
 use crate::util::async_utils::block_on_future;
 use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
 use crate::vm::al31f::compiled::CompiledProgram;
