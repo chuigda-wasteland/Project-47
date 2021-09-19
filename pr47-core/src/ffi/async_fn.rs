@@ -20,12 +20,6 @@ pub trait AsyncVMContext: 'static + Sized + Send + Sync {
     fn serializer(&self) -> &Serializer<Self::SharedData>;
 }
 
-impl StaticBase<Promise> for Void {
-    fn type_name() -> String {
-        "promise".to_string()
-    }
-}
-
 pub trait AsyncFunctionBase: 'static {
     fn signature() -> Signature;
 
@@ -107,10 +101,43 @@ impl From<AsyncShareGuard> for AsyncOwnershipGuard {
 
 pub type AsyncReturnType = Result<Box<[Value]>, FFIException>;
 
-pub struct Promise {
-    pub fut: Pin<Box<dyn Future<Output = AsyncReturnType> + Send + 'static>>,
+pub struct PromiseGuard {
     pub guards: Box<[AsyncOwnershipGuard]>,
     pub reset_guard_count: usize
+}
+
+impl Drop for PromiseGuard {
+    fn drop(&mut self) {
+        let guard_count: usize = self.guards.len();
+        for i in 0..self.reset_guard_count {
+            unsafe { self.guards.get_unchecked(i).reset() }
+        }
+        for i in self.reset_guard_count..guard_count {
+            unsafe { self.guards.get_unchecked(i).un_share() }
+        }
+    }
+}
+
+pub struct Promise {
+    pub fut: Pin<Box<dyn Future<Output=AsyncReturnType> + Send + 'static>>,
+    pub guard: PromiseGuard
+}
+
+impl Promise {
+    pub async fn await_promise(self) -> AsyncReturnType {
+        let fut: Pin<Box<dyn Future<Output=AsyncReturnType> + Send + 'static>> = self.fut;
+        let guard: PromiseGuard = self.guard;
+
+        let result: AsyncReturnType = fut.await;
+        drop(guard);
+        result
+    }
+}
+
+impl StaticBase<Promise> for Void {
+    fn type_name() -> String {
+        "promise".to_string()
+    }
 }
 
 pub use crate::ffi::sync_fn::{
