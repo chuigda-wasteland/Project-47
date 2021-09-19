@@ -23,17 +23,19 @@ pub trait AsyncVMContext: 'static + Sized + Send + Sync {
 pub trait AsyncFunctionBase: 'static {
     fn signature() -> Signature;
 
-    fn call_tyck<ACTX: AsyncVMContext>(context: &ACTX, args: &[Value]) -> Promise;
+    fn call_tyck<ACTX: AsyncVMContext>(context: &ACTX, args: &[Value])
+        -> Result<Promise, FFIException>;
 
-    unsafe fn call_rtlc<ACTX: AsyncVMContext>(context: &ACTX, args: &[Value]) -> Promise;
+    unsafe fn call_rtlc<ACTX: AsyncVMContext>(context: &ACTX, args: &[Value])
+        -> Result<Promise, FFIException>;
 }
 
 pub trait AsyncFunction<ACTX: AsyncVMContext>: 'static {
     fn signature(&self) -> Signature;
 
-    fn call_tyck(&self, context: &ACTX, args: &[Value]) -> Promise;
+    fn call_tyck(&self, context: &ACTX, args: &[Value]) -> Result<Promise, FFIException>;
 
-    unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Promise;
+    unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Result<Promise, FFIException>;
 }
 
 impl<AFBase, CTX> AsyncFunction<CTX> for AFBase where
@@ -44,11 +46,11 @@ impl<AFBase, CTX> AsyncFunction<CTX> for AFBase where
         <AFBase as AsyncFunctionBase>::signature()
     }
 
-    fn call_tyck(&self, context: &CTX, args: &[Value]) -> Promise {
+    fn call_tyck(&self, context: &CTX, args: &[Value]) -> Result<Promise, FFIException> {
         <AFBase as AsyncFunctionBase>::call_tyck(context, args)
     }
 
-    unsafe fn call_rtlc(&self, context: &CTX, args: &[Value]) -> Promise {
+    unsafe fn call_rtlc(&self, context: &CTX, args: &[Value]) -> Result<Promise, FFIException> {
         <AFBase as AsyncFunctionBase>::call_rtlc(context, args)
     }
 }
@@ -99,7 +101,10 @@ impl From<AsyncShareGuard> for AsyncOwnershipGuard {
     }
 }
 
-pub type AsyncReturnType = Result<Box<[Value]>, FFIException>;
+pub struct AsyncReturnType(pub Result<Box<[Value]>, FFIException>);
+
+unsafe impl Send for AsyncReturnType {}
+unsafe impl Sync for AsyncReturnType {}
 
 pub struct PromiseGuard {
     pub guards: Box<[AsyncOwnershipGuard]>,
@@ -126,10 +131,7 @@ pub struct Promise {
 impl Promise {
     pub async fn await_promise(self) -> AsyncReturnType {
         let fut: Pin<Box<dyn Future<Output=AsyncReturnType> + Send + 'static>> = self.fut;
-        let guard: PromiseGuard = self.guard;
-
         let result: AsyncReturnType = fut.await;
-        drop(guard);
         result
     }
 }

@@ -6,9 +6,10 @@ use unchecked_unwrap::UncheckedUnwrap;
 use crate::data::Value;
 use crate::data::exception::{CheckedException, Exception, UncheckedException};
 use crate::data::value_typed::{INT_TYPE_TAG, FLOAT_TYPE_TAG};
-use crate::data::wrapper::DynBase;
+use crate::data::wrapper::{DynBase, Wrapper, OwnershipInfo};
 use crate::ds::object::Object;
 use crate::ffi::sync_fn::Function as FFIFunction;
+use crate::util::either::Either;
 use crate::util::mem::FatPointer;
 use crate::vm::al31f::{AL31F, Combustor};
 use crate::vm::al31f::alloc::Alloc;
@@ -16,10 +17,12 @@ use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
 use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 
+#[cfg(feature = "async")] use crate::ffi::async_fn::{AsyncReturnType, Promise};
+#[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
+#[cfg(feature = "async")] use crate::util::serializer::Serializer;
+#[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 #[cfg(feature = "bench")] use crate::defer;
 #[cfg(feature = "bench")] use crate::util::defer::Defer;
-#[cfg(feature = "async")] use crate::util::serializer::Serializer;
-use crate::util::either::Either;
 
 include!("impl_makro.rs");
 
@@ -474,11 +477,98 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::FFICall(_, _, _) => {}
             Insc::FFICallAsyncTyck(_, _, _) => {}
             #[cfg(feature = "optimized-rtlc")]
-            Insc::FFICallAsync(_, _, _) => {}
+            Insc::FFICallAsync(async_ffi_func_id, args, ret) => {
+                let async_ffi_function: &Box<dyn FFIAsyncFunction<AsyncCombustor<A>>>
+                    = &program.async_ffi_funcs[*async_ffi_func_id];
+
+                for i /*: usize*/ in 0..args.len() {
+                    let arg_idx: usize = *args.get_unchecked(i);
+                    *ffi_args.get_unchecked_mut(i) = slice.get_value(arg_idx);
+                }
+                ffi_args.set_len(args.len());
+
+                let mut combustor: AsyncCombustor<A> = AsyncCombustor::new(
+                    NonNull::from(&thread.vm)
+                );
+
+                match async_ffi_function.call_rtlc(&mut combustor, &ffi_args) {
+                    Ok(promise /*: Promise*/) => {
+                        let promise: Value = Value::new_owned(promise);
+                        thread.vm.get_shared_data_mut().alloc.add_managed(promise.ptr_repr);
+                        slice.set_value(*ret, promise);
+                    },
+                    Err(e /*: FFIException*/) => {
+                        match e {
+                            Either::Left(checked) => {
+                                let (new_slice, insc_ptr_next): (StackSlice, usize) =
+                                    checked_exception_unwind_stack(
+                                        get_vm!(thread),
+                                        &program,
+                                        checked,
+                                        &mut thread.stack,
+                                        insc_ptr
+                                    )?;
+                                slice = new_slice;
+                                insc_ptr = insc_ptr_next;
+                            },
+                            Either::Right(unchecked) => {
+                                return Err(unchecked_exception_unwind_stack(
+                                    unchecked, &mut thread.stack, insc_ptr
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
             #[cfg(feature = "no-rtlc")]
             Insc::FFICallAsyncUnchecked(_, _, _) => {}
             #[cfg(feature = "async")]
-            Insc::Await(_, _) => {}
+            Insc::Await(promise, dests) => {
+                let promise: Value = slice.get_value(*promise);
+                let wrapper: *mut Wrapper<()> = promise.ptr_repr.ptr as *mut Wrapper<()>;
+                if (*wrapper).ownership_info == OwnershipInfo::MovedToRust as u8 {
+                    return Err(unchecked_exception_unwind_stack(
+                        UncheckedException::AlreadyAwaited { promise },
+                        &mut thread.stack,
+                        insc_ptr
+                    ));
+                }
+
+                let promise: Promise = promise.move_out::<Promise>();
+                (*wrapper).ownership_info = OwnershipInfo::MovedToRust as u8;
+
+                let AsyncReturnType(result) = thread.vm.co_await(promise.await_promise()).await;
+                match result {
+                    Ok(values) => {
+                        debug_assert_eq!(values.len(), dests.len());
+                        for i in 0..dests.len() {
+                            let dest: usize = *dests.get_unchecked(i);
+                            slice.set_value(dest, *values.get_unchecked(i));
+                        }
+                    },
+                    Err(e) => {
+                        match e {
+                            Either::Left(checked) => {
+                                let (new_slice, insc_ptr_next): (StackSlice, usize) =
+                                    checked_exception_unwind_stack(
+                                        get_vm!(thread),
+                                        &program,
+                                        checked,
+                                        &mut thread.stack,
+                                        insc_ptr
+                                    )?;
+                                slice = new_slice;
+                                insc_ptr = insc_ptr_next;
+                            },
+                            Either::Right(unchecked) => {
+                                return Err(unchecked_exception_unwind_stack(
+                                    unchecked, &mut thread.stack, insc_ptr
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
             Insc::Raise(exception_ptr) => {
                 let exception: Value = slice.get_value(*exception_ptr);
                 let (new_slice, insc_ptr_next): (StackSlice, usize) =

@@ -32,9 +32,7 @@ pub struct Combustor<A: Alloc> {
 
 impl<A: Alloc> Combustor<A> {
     pub fn new(vm: NonNull<AL31F<A>>) -> Self {
-        Self {
-            vm
-        }
+        Self { vm }
     }
 }
 
@@ -51,6 +49,13 @@ impl<A: Alloc> VMContext for Combustor<A> {
 #[cfg(feature = "async")]
 pub struct AsyncCombustor<A: Alloc> {
     vm: NonNull<Serializer<AL31F<A>>>
+}
+
+#[cfg(feature = "async")]
+impl<A: Alloc> AsyncCombustor<A> {
+    pub fn new(vm: NonNull<Serializer<AL31F<A>>>) -> Self {
+        Self { vm }
+    }
 }
 
 #[cfg(feature = "async")]
