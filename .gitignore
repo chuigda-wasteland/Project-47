@@ -8,3 +8,9 @@ Cargo.lock
 *.data
 *.data.old
 *.s
+*.zip
+*.x47
+*.b47
+*.a47
+*.s47
+*.p47

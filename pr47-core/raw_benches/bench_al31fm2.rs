@@ -39,6 +39,12 @@ fn bench_new_1m() {
     block_on_future(run_program(program, vec![]));
 }
 
+fn bench_raw_iter() {
+    let raw_iter_program: CompiledProgram<DefaultAlloc> = bench_raw_iter_program();
+    eprintln!("raw iteration for 100,000,000 times: ");
+    block_on_future(run_program(raw_iter_program, vec![]));
+}
+
 fn bench_ffi_call() {
     let raw_iter_program: CompiledProgram<DefaultAlloc> = bench_raw_iter_program();
     let program: CompiledProgram<DefaultAlloc> = bench_ffi_call_program();
@@ -59,6 +65,7 @@ fn main() {
         "fib35" => bench_fibonacci_call(),
         "new1m" => bench_new_1m(),
         "ffi" => bench_ffi_call(),
+        "raw_iter" => bench_raw_iter(),
         _ => panic!("{}", SUCK_WORDS)
     }
 }

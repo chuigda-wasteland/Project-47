@@ -14,6 +14,10 @@ bench_al31fm2_fib35:
 bench_al31fm2_new1m:
 	@BENCH_ITEM="new1m" cargo run --release --features=bench --bin bench_al31fm2
 
+.PHONY: bench_al31fm2_raw_iter
+bench_al31fm2_raw_iter:
+	@BENCH_ITEM="raw_iter" cargo run --release --features=bench --bin bench_al31fm2
+
 .PHONY: bench_al31fm2_ffi
 bench_al31fm2_ffi:
 	@BENCH_ITEM="ffi" cargo run --release --features=bench --bin bench_al31fm2
@@ -25,6 +29,10 @@ bench_al31fm2_sync_fib35:
 .PHONY: bench_al31fm2_sync_new1m
 bench_al31fm2_sync_new1m:
 	@BENCH_ITEM="new1m" cargo run --release --no-default-features --features="bench optimized-rtlc" --bin bench_al31fm2_sync
+
+.PHONY: bench_al31fm2_sync_raw_iter
+bench_al31fm2_sync_raw_iter:
+	@BENCH_ITEM="raw_iter" cargo run --release --no-default-features --features="bench optimized-rtlc" --bin bench_al31fm2_sync
 
 .PHONY: bench_al31fm2_sync_ffi
 bench_al31fm2_sync_ffi:
@@ -38,17 +46,25 @@ flamegraph_bench_al31fm2_fib35:
 flamegraph_bench_al31fm2_new1m:
 	@BENCH_ITEM="new1m" cargo flamegraph --features=bench --bin bench_al31fm2
 
+.PHONY: flamegraph_bench_al31fm2_raw_iter
+flamegraph_bench_al31fm2_raw_iter:
+	@BENCH_ITEM="raw_iter" cargo flamegraph --features=bench --bin bench_al31fm2
+
 .PHONY: flamegraph_bench_al31fm2_ffi
 flamegraph_bench_al31fm2_ffi:
 	@BENCH_ITEM="ffi" cargo flamegraph --features=bench --bin bench_al31fm2
 
 .PHONY: flamegraph_bench_al31fm2_sync_fib35
 flamegraph_bench_al31fm2_sync_fib35:
-	@BENCH_ITEM="fib35" cargo flamegraph --features="bench optimized-rtlc" --bin bench_al31fm2_sync
+	@BENCH_ITEM="fib35" cargo flamegraph --no-default-features --features="bench optimized-rtlc" --bin bench_al31fm2_sync
+
+.PHONY: flamegraph_bench_al31fm2_sync_raw_iter
+flamegraph_bench_al31fm2_sync_raw_iter:
+	@BENCH_ITEM="raw_iter" cargo flamegraph --no-default-features --features="bench optimized-rtlc" --bin bench_al31fm2_sync
 
 .PHONY: flamegraph_bench_al31fm2_sync_new1m
 flamegraph_bench_al31fm2_sync_new1m:
-	@BENCH_ITEM="new1m" cargo flamegraph --features="bench optimized-rtlc" --bin bench_al31fm2_sync
+	@BENCH_ITEM="new1m" cargo flamegraph --no-default-features --features="bench optimized-rtlc" --bin bench_al31fm2_sync
 
 .PHONY: miri_test_pr47_core_data
 miri_test_pr47_core_data:
