@@ -20,7 +20,7 @@ async-trait = { optional = true, version = "0.1" }
 futures = { optional = true, version = "0.3" }
 tokio = { optional = true, version = "1", features = ["rt", "sync", "time"] }
 
-pr47-codegen = "0.0.1"
+pr47-codegen = { path = "../pr47-codegen" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread"] }

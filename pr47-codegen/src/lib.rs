@@ -1,16 +1,29 @@
-use proc_macro::TokenStream;
+mod attrs;
+mod types;
 
-#[proc_macro]
-pub fn pr47_test_suite(input: TokenStream) -> TokenStream {
-    if !input.is_empty() {
-        let expanded: TokenStream = TokenStream::from(quote::quote! {
-            compile_error!("this function does not accept any parameters")
-        });
-        expanded
-    } else {
-        let expanded: TokenStream = TokenStream::from(quote::quote! {
-            compile_error!("this function does not accept any parameters")
-        });
-        expanded
-    }
+use proc_macro::TokenStream;
+use quote::quote;
+use syn::{parse_macro_input, ItemFn, FnArg};
+
+use crate::attrs::parse_function_bind_attrs;
+
+#[proc_macro_attribute]
+pub fn pr47_function_bind(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let item: ItemFn = parse_macro_input!(item as ItemFn);
+
+    let attrs: Vec<String> = match parse_function_bind_attrs(attr) {
+        Ok(attrs) => attrs,
+        Err(e) => {
+            return (quote!{
+                compile_error!( #e ) ;
+            }).into()
+        }
+    };
+
+    let args: Vec<&FnArg> = item.sig.inputs.iter().collect::<_>();
+    let ret = quote!{
+        #item
+    };
+
+    ret.into()
 }
