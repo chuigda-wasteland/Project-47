@@ -6,14 +6,13 @@ use unchecked_unwrap::UncheckedUnwrap;
 use crate::collections::object::Object;
 use crate::data::Value;
 use crate::data::exception::{CheckedException, Exception, UncheckedException};
-use crate::data::value_typed::{INT_TYPE_TAG, FLOAT_TYPE_TAG};
-use crate::data::wrapper::{DynBase};
 use crate::ffi::sync_fn::Function as FFIFunction;
 use crate::util::either::Either;
 use crate::util::mem::FatPointer;
 use crate::vm::al31f::{AL31F, Combustor};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
+use crate::vm::al31f::executor::checked_ops::{checked_add};
 use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 
@@ -25,6 +24,7 @@ use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 #[cfg(feature = "bench")] use crate::defer;
 #[cfg(feature = "bench")] use crate::util::defer::Defer;
 
+include!("get_vm_makro.rs");
 include!("impl_makro.rs");
 
 pub struct VMThread<A: Alloc> {
@@ -160,48 +160,10 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::AddAny(src1, src2, dst) => {
                 let src1: Value = slice.get_value(*src1);
                 let src2: Value = slice.get_value(*src2);
-                if !src1.is_value() || !src2.is_value() {
-                    if !src1.is_container() && !src2.is_container() {
-                        let src1: *mut dyn DynBase = src1.get_as_dyn_base();
-                        let src2: *mut dyn DynBase = src2.get_as_dyn_base();
-                        if (*src1).dyn_type_id() == TypeId::of::<String>()
-                            && (*src2).dyn_type_id() == TypeId::of::<String>() {
-                            let src1: *const String = src1 as *mut String as *const _;
-                            let src2: *const String = src2 as *mut String as *const _;
-                            let result: String = format!("{}{}", *src1, *src2);
-                            let result: Value = Value::new_owned(result);
-                            get_vm!(thread).alloc.add_managed(result.ptr_repr);
-                            slice.set_value(*dst, result);
-                            continue;
-                        }
-                    }
+                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
 
-                    // TODO resolve overloaded call
-                    let exception: UncheckedException = UncheckedException::InvalidBinaryOp {
-                        bin_op: '+', lhs: src1, rhs: src2
-                    };
-                    return Err(unchecked_exception_unwind_stack(
-                        exception, &mut thread.stack, insc_ptr
-                    ));
-                }
-
-                if src1.vt_data.tag & INT_TYPE_TAG != 0 && src2.vt_data.tag & INT_TYPE_TAG != 0 {
-                    slice.set_value(*dst, Value::new_int(
-                        src1.vt_data.inner.int_value + src2.vt_data.inner.int_value
-                    ))
-                } else if src1.vt_data.tag & FLOAT_TYPE_TAG != 0
-                    && src2.vt_data.tag & FLOAT_TYPE_TAG != 0
-                {
-                    slice.set_value(*dst, Value::new_float(
-                        src1.vt_data.inner.float_value + src2.vt_data.inner.float_value
-                    ))
-                } else {
-                    let exception: UncheckedException = UncheckedException::InvalidBinaryOp {
-                        bin_op: '+', lhs: src1, rhs: src2
-                    };
-                    return Err(unchecked_exception_unwind_stack(
-                        exception, &mut thread.stack, insc_ptr
-                    ));
+                if let Err(e /*: UncheckedException*/) = checked_add(thread, src1, src2, dst) {
+                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
                 }
             },
             Insc::IncrInt(pos) => {

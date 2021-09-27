@@ -11,7 +11,7 @@ use crate::attrs::parse_function_bind_attrs;
 pub fn pr47_function_bind(attr: TokenStream, item: TokenStream) -> TokenStream {
     let item: ItemFn = parse_macro_input!(item as ItemFn);
 
-    let attrs: Vec<String> = match parse_function_bind_attrs(attr) {
+    let _attrs: Vec<String> = match parse_function_bind_attrs(attr) {
         Ok(attrs) => attrs,
         Err(e) => {
             return (quote!{
@@ -20,7 +20,7 @@ pub fn pr47_function_bind(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    let args: Vec<&FnArg> = item.sig.inputs.iter().collect::<_>();
+    let _args: Vec<&FnArg> = item.sig.inputs.iter().collect::<_>();
     let ret = quote!{
         #item
     };

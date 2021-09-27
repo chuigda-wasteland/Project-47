@@ -1,5 +1,6 @@
 use proc_macro::TokenStream;
 
+#[allow(unused)]
 pub enum TypeInfo {
     AsyncCombustor,
     Bool,
