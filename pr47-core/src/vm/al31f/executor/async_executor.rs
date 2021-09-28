@@ -23,6 +23,7 @@ use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 #[cfg(feature = "bench")] use crate::defer;
 #[cfg(feature = "bench")] use crate::util::defer::Defer;
+use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, FLOAT_TYPE_TAG};
 
 include!("get_vm_makro.rs");
 include!("impl_makro.rs");
@@ -239,14 +240,41 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 let src2: u64 = slice.get_value(*src2).vt_data.inner.repr;
                 slice.set_value(*dst, Value::new_bool(src1 == src2));
             },
+            Insc::EqFloat(src1, src2, dst) => {
+                debug_assert_eq!(
+                    slice.get_value(*src1).vt_data.tag & (VALUE_TYPE_TAG_MASK as usize),
+                    FLOAT_TYPE_TAG
+                );
+                debug_assert_eq!(
+                    slice.get_value(*src2).vt_data.tag & (VALUE_TYPE_TAG_MASK as usize),
+                    FLOAT_TYPE_TAG
+                );
+                let src1: f64 = slice.get_value(*src1).vt_data.inner.float_value;
+                let src2: f64 = slice.get_value(*src2).vt_data.inner.float_value;
+                slice.set_value(*dst, Value::new_bool(f64::abs(src1 - src2) <= f64::EPSILON));
+            },
             Insc::EqRef(src1, src2, dst) => {
                 let src1: usize = slice.get_value(*src1).ptr_repr.ptr;
                 let src2: usize = slice.get_value(*src2).ptr_repr.ptr;
                 slice.set_value(*dst, Value::new_bool(src1 == src2));
             },
             Insc::EqAny(src1, src2, dst) => {
-                let src1: FatPointer = slice.get_value(*src1).ptr_repr;
-                let src2: FatPointer = slice.get_value(*src2).ptr_repr;
+                let src1: Value = slice.get_value(*src1);
+                let src2: Value = slice.get_value(*src2);
+                if src1.is_value() && src2.is_value() {
+                    let src1_tag: usize = src1.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize);
+                    let src2_tag: usize = src2.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize);
+                    if src1_tag == FLOAT_TYPE_TAG && src2_tag == FLOAT_TYPE_TAG {
+                        let src1: f64 = src1.vt_data.inner.float_value;
+                        let src2: f64 = src2.vt_data.inner.float_value;
+                        slice.set_value(
+                            *dst,
+                            Value::new_bool(f64::abs(src1 - src2) <= f64::EPSILON)
+                        );
+                    }
+                }
+                let src1: FatPointer = src1.ptr_repr;
+                let src2: FatPointer = src2.ptr_repr;
                 slice.set_value(*dst, Value::new_bool(src1 == src2));
             },
             Insc::NeValue(src1, src2, dst) => {
@@ -256,14 +284,41 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 let src2: u64 = slice.get_value(*src2).vt_data.inner.repr;
                 slice.set_value(*dst, Value::new_bool(src1 != src2));
             },
+            Insc::NeFloat(src1, src2, dst) => {
+                debug_assert_eq!(
+                    slice.get_value(*src1).vt_data.tag & (VALUE_TYPE_TAG_MASK as usize),
+                    FLOAT_TYPE_TAG
+                );
+                debug_assert_eq!(
+                    slice.get_value(*src2).vt_data.tag & (VALUE_TYPE_TAG_MASK as usize),
+                    FLOAT_TYPE_TAG
+                );
+                let src1: f64 = slice.get_value(*src1).vt_data.inner.float_value;
+                let src2: f64 = slice.get_value(*src2).vt_data.inner.float_value;
+                slice.set_value(*dst, Value::new_bool(f64::abs(src1 - src2) > f64::EPSILON));
+            },
             Insc::NeRef(src1, src2, dst) => {
                 let src1: usize = slice.get_value(*src1).ptr_repr.ptr;
                 let src2: usize = slice.get_value(*src2).ptr_repr.ptr;
                 slice.set_value(*dst, Value::new_bool(src1 != src2));
             },
             Insc::NeAny(src1, src2, dst) => {
-                let src1: FatPointer = slice.get_value(*src1).ptr_repr;
-                let src2: FatPointer = slice.get_value(*src2).ptr_repr;
+                let src1: Value = slice.get_value(*src1);
+                let src2: Value = slice.get_value(*src2);
+                if src1.is_value() && src2.is_value() {
+                    let src1_tag: usize = src1.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize);
+                    let src2_tag: usize = src2.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize);
+                    if src1_tag == FLOAT_TYPE_TAG && src2_tag == FLOAT_TYPE_TAG {
+                        let src1: f64 = src1.vt_data.inner.float_value;
+                        let src2: f64 = src2.vt_data.inner.float_value;
+                        slice.set_value(
+                            *dst,
+                            Value::new_bool(f64::abs(src1 - src2) > f64::EPSILON)
+                        );
+                    }
+                }
+                let src1: FatPointer = src1.ptr_repr;
+                let src2: FatPointer = src2.ptr_repr;
                 slice.set_value(*dst, Value::new_bool(src1 != src2));
             },
             Insc::LtInt(src1, src2, dst) =>

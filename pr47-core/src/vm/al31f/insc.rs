@@ -106,8 +106,15 @@ pub enum Insc {
 
     /// `EQ-VALUE [VALUE@SRC1] [VALUE@SRC2] [DEST]`
     ///
-    /// Assume that `SRC1` and `SRC2` are **values of same type**, check their equality.
+    /// Assume that `SRC1` and `SRC2` are **values of same type**, check their equality. This
+    /// instruction should not be used for float comparison. For comparing float values, use
+    /// `EQ-FLOAT`.
     EqValue(usize, usize, usize),
+
+    /// `EQ-FLOAT [FLOAT@SRC1] [FLOAT@SRC2] [DEST]`
+    ///
+    /// Assume that `SRC1` and `SRC` are both **float**s, check their equality.
+    EqFloat(usize, usize, usize),
 
     /// `EQ-REF [REF@SRC1] [REF@SRC2] [DEST]`
     ///
@@ -123,6 +130,11 @@ pub enum Insc {
     ///
     /// Similar to `EQ-VALUE` but yields inverted result.
     NeValue(usize, usize, usize),
+
+    /// `NE-FLOAT [FLOAT@SRC1] [FLOAT@SRC2] [DEST]`
+    ///
+    /// Similar with `EQ-FLOAT` but yields inverted result.
+    NeFloat(usize, usize, usize),
 
     /// `NE-REF [REF@SRC1] [REF@SRC2] [DEST]`
     ///
