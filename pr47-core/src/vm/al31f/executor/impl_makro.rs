@@ -34,11 +34,20 @@ macro_rules! impl_cast_op {
 }
 
 macro_rules! impl_int_binop {
+    ($slice:ident, $src1:ident, $src2:ident, $dst:ident, $fn:ident) => {
+        {
+            let src1: i64 = $slice.get_value(*$src1).vt_data.inner.int_value;
+            let src2: i64 = $slice.get_value(*$src2).vt_data.inner.int_value;
+            $slice.set_value(*$dst, Value::new_int(i64::$fn(src1, src2)));
+        }
+    };
     ($slice:ident, $src1:ident, $src2:ident, $dst:ident, $op:tt) => {
         {
-            impl_value_typed_binop![$slice, $src1, $src2, $dst, i64, $op, int_value, new_int];
+            let src1: i64 = $slice.get_value(*$src1).vt_data.inner.int_value;
+            let src2: i64 = $slice.get_value(*$src2).vt_data.inner.int_value;
+            $slice.set_value(*$dst, Value::new_int(src1 $op src2));
         }
-    }
+    };
 }
 
 macro_rules! impl_float_binop {

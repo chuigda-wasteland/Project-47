@@ -64,7 +64,7 @@ pub unsafe fn checked_add<A: Alloc>(
     }
 }
 
-pub unsafe fn checked_sub<A: Alloc>(
+pub unsafe fn checked_sub(
     src1: Value,
     src2: Value,
     dest: &mut Value
@@ -87,7 +87,7 @@ pub unsafe fn checked_sub<A: Alloc>(
     }
 }
 
-pub unsafe fn checked_mul<A: Alloc>(
+pub unsafe fn checked_mul(
     src1: Value,
     src2: Value,
     dest: &mut Value
@@ -107,5 +107,63 @@ pub unsafe fn checked_mul<A: Alloc>(
         Ok(())
     } else {
         Err(UncheckedException::InvalidBinaryOp { bin_op: '*', lhs: src1, rhs: src2 })
+    }
+}
+
+pub unsafe fn checked_div(
+    src1: Value,
+    src2: Value,
+    dest: &mut Value
+) -> Result<(), UncheckedException> {
+    if !src1.is_value() || !src2.is_value() {
+        return Err(UncheckedException::InvalidBinaryOp { bin_op: '/', lhs: src1, rhs: src2 });
+    }
+
+    let src1_tag: usize = src1.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize);
+    let src2_tag: usize = src2.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize);
+
+    if src1_tag == INT_TYPE_TAG && src2_tag == INT_TYPE_TAG {
+        if let Some(result /*: UncheckedException*/) = i64::checked_div(
+            src1.vt_data.inner.int_value, src2.vt_data.inner.int_value
+        ) {
+            *dest = Value::new_int(result);
+        } else {
+            return Err(UncheckedException::DivideByZero)
+        }
+        Ok(())
+    } else if src1_tag == FLOAT_TYPE_TAG && src2_tag == FLOAT_TYPE_TAG {
+        *dest = Value::new_float(src1.vt_data.inner.float_value / src2.vt_data.inner.float_value);
+        Ok(())
+    } else {
+        Err(UncheckedException::InvalidBinaryOp { bin_op: '/', lhs: src1, rhs: src2 })
+    }
+}
+
+pub unsafe fn checked_mod(
+    src1: Value,
+    src2: Value,
+    dest: &mut Value
+) -> Result<(), UncheckedException> {
+    if !src1.is_value() || !src2.is_value() {
+        return Err(UncheckedException::InvalidBinaryOp { bin_op: '%', lhs: src1, rhs: src2 });
+    }
+
+    let src1_tag: usize = src1.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize);
+    let src2_tag: usize = src2.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize);
+
+    if src1_tag == INT_TYPE_TAG && src2_tag == INT_TYPE_TAG {
+        if let Some(result /*: UncheckedException*/) = i64::checked_rem(
+            src1.vt_data.inner.int_value, src2.vt_data.inner.int_value
+        ) {
+            *dest = Value::new_int(result);
+        } else {
+            return Err(UncheckedException::DivideByZero)
+        }
+        Ok(())
+    } else if src1_tag == FLOAT_TYPE_TAG && src2_tag == FLOAT_TYPE_TAG {
+        *dest = Value::new_float(src1.vt_data.inner.float_value / src2.vt_data.inner.float_value);
+        Ok(())
+    } else {
+        Err(UncheckedException::InvalidBinaryOp { bin_op: '%', lhs: src1, rhs: src2 })
     }
 }

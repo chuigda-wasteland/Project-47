@@ -13,7 +13,8 @@ pub enum UncheckedException {
     InvalidBinaryOp { bin_op: char, lhs: Value, rhs: Value },
     OwnershipCheckFailure { object: Value, expected_mask: u8 },
     AlreadyAwaited { promise: Value },
-    UnexpectedNull { value: Value }
+    UnexpectedNull { value: Value },
+    DivideByZero,
 }
 
 pub type CheckedException = Value;

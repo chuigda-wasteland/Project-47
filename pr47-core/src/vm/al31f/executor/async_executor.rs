@@ -12,7 +12,7 @@ use crate::util::mem::FatPointer;
 use crate::vm::al31f::{AL31F, Combustor};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
-use crate::vm::al31f::executor::checked_ops::{checked_add};
+use crate::vm::al31f::executor::checked_ops::{checked_add, checked_sub, checked_mul, checked_div, checked_mod};
 use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 
@@ -155,13 +155,12 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
 
         insc_ptr += 1;
         match insc {
-            Insc::AddInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, +],
+            Insc::AddInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, wrapping_add],
             Insc::AddFloat(src1, src2, dst) => impl_float_binop![slice, src1, src2, dst, +],
             Insc::AddAny(src1, src2, dst) => {
                 let src1: Value = slice.get_value(*src1);
                 let src2: Value = slice.get_value(*src2);
                 let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
-
                 if let Err(e /*: UncheckedException*/) = checked_add(thread, src1, src2, dst) {
                     return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
                 }
@@ -174,17 +173,65 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 let v: Value = Value::new_int(slice.get_value(*pos).vt_data.inner.int_value - 1);
                 slice.set_value(*pos, v);
             },
-            Insc::SubInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, -],
+            Insc::SubInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, wrapping_sub],
             Insc::SubFloat(src1, src2, dst) => impl_float_binop![slice, src1, src2, dst, -],
-            Insc::SubAny(_, _, _) => {}
-            Insc::MulInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, *],
+            Insc::SubAny(src1, src2, dst) => {
+                let src1: Value = slice.get_value(*src1);
+                let src2: Value = slice.get_value(*src2);
+                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
+                if let Err(e /*: UncheckedException*/) = checked_sub(src1, src2, dst) {
+                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
+                }
+            },
+            Insc::MulInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, wrapping_mul],
             Insc::MulFloat(src1, src2, dst) => impl_float_binop![slice, src1, src2, dst, *],
-            Insc::MulAny(_, _, _) => {}
-            Insc::DivInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, /],
+            Insc::MulAny(src1, src2, dst) => {
+                let src1: Value = slice.get_value(*src1);
+                let src2: Value = slice.get_value(*src2);
+                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
+                if let Err(e /*: UncheckedException*/) = checked_mul(src1, src2, dst) {
+                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
+                }
+            },
+            Insc::DivInt(src1, src2, dst) => {
+                let src1: i64 = slice.get_value(*src1).vt_data.inner.int_value;
+                let src2: i64 = slice.get_value(*src2).vt_data.inner.int_value;
+                if let Some(result) = i64::checked_div(src1, src2) {
+                    slice.set_value(*dst, Value::new_int(result))
+                } else {
+                    return Err(unchecked_exception_unwind_stack(
+                        UncheckedException::DivideByZero, &mut thread.stack, insc_ptr
+                    ))
+                }
+            },
             Insc::DivFloat(src1, src2, dst) => impl_float_binop![slice, src1, src2, dst, /],
-            Insc::DivAny(_, _, _) => {}
-            Insc::ModInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, %],
-            Insc::ModAny(_, _, _) => {}
+            Insc::DivAny(src1, src2, dst) => {
+                let src1: Value = slice.get_value(*src1);
+                let src2: Value = slice.get_value(*src2);
+                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
+                if let Err(e /*: UncheckedException*/) = checked_div(src1, src2, dst) {
+                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
+                }
+            },
+            Insc::ModInt(src1, src2, dst) => {
+                let src1: i64 = slice.get_value(*src1).vt_data.inner.int_value;
+                let src2: i64 = slice.get_value(*src2).vt_data.inner.int_value;
+                if let Some(result) = i64::checked_rem(src1, src2) {
+                    slice.set_value(*dst, Value::new_int(result))
+                } else {
+                    return Err(unchecked_exception_unwind_stack(
+                        UncheckedException::DivideByZero, &mut thread.stack, insc_ptr
+                    ))
+                }
+            },
+            Insc::ModAny(src1, src2, dst) => {
+                let src1: Value = slice.get_value(*src1);
+                let src2: Value = slice.get_value(*src2);
+                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
+                if let Err(e /*: UncheckedException*/) = checked_mod(src1, src2, dst) {
+                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
+                }
+            },
             Insc::EqValue(src1, src2, dst) => {
                 debug_assert_eq!(slice.get_value(*src1).vt_data.tag,
                                  slice.get_value(*src2).vt_data.tag);
