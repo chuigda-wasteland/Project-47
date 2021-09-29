@@ -118,6 +118,12 @@ impl Value {
         }
     }
 
+    #[inline(always)] pub fn new_raw_value(tag: usize, repr: u64) -> Self {
+        Self {
+            vt_data: ValueTypedData::new_raw(tag, repr)
+        }
+    }
+
     /// Create a new integer `Value`
     #[inline(always)] pub fn new_int(int_value: i64) -> Self {
         Self {

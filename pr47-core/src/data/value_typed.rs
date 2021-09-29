@@ -41,6 +41,15 @@ pub struct ValueTypedData {
     pub inner: ValueTypedDataInner
 }
 
+impl ValueTypedData {
+    #[inline(always)] pub fn new_raw(tag: usize, repr: u64) -> Self {
+        Self {
+            tag: tag | (VALUE_TYPE_MASK as usize),
+            inner: ValueTypedDataInner { repr }
+        }
+    }
+}
+
 impl From<i64> for ValueTypedData {
     #[inline(always)] fn from(int_value: i64) -> Self {
         Self {

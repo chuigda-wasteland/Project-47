@@ -6,6 +6,7 @@ use unchecked_unwrap::UncheckedUnwrap;
 use crate::collections::object::Object;
 use crate::data::Value;
 use crate::data::exception::{CheckedException, Exception, UncheckedException};
+use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, FLOAT_TYPE_TAG, INT_TYPE_TAG};
 use crate::ffi::sync_fn::Function as FFIFunction;
 use crate::util::either::Either;
 use crate::util::mem::FatPointer;
@@ -23,7 +24,6 @@ use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 #[cfg(feature = "bench")] use crate::defer;
 #[cfg(feature = "bench")] use crate::util::defer::Defer;
-use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, FLOAT_TYPE_TAG};
 
 include!("get_vm_makro.rs");
 include!("impl_makro.rs");
@@ -347,10 +347,19 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::BOrAny(_, _, _) => {}
             Insc::BXorInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, ^],
             Insc::BXorAny(_, _, _) => {}
-            Insc::BNotInt(_, _) => {}
+            Insc::BNotInt(src, dst) => {
+                let src: u64 = slice.get_value(*src).vt_data.inner.repr;
+                slice.set_value(*dst, Value::new_raw_value(INT_TYPE_TAG, u64::reverse_bits(src)));
+            },
             Insc::BNotAny(_, _) => {}
-            Insc::NegInt(_, _) => {}
-            Insc::NegFloat(_, _) => {}
+            Insc::NegInt(src, dst) => {
+                let src: i64 = slice.get_value(*src).vt_data.inner.int_value;
+                slice.set_value(*dst, Value::new_int(i64::wrapping_neg(src)));
+            },
+            Insc::NegFloat(src, dst) => {
+                let src: f64 = slice.get_value(*src).vt_data.inner.float_value;
+                slice.set_value(*dst, Value::new_float(-src));
+            },
             Insc::NegAny(_, _) => {}
             Insc::AndBool(src1, src2, dst) => impl_bool_binop![slice, src1, src2, dst, &],
             Insc::AndAny(_, _, _) => {}

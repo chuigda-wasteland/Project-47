@@ -9,7 +9,7 @@ use crate::vm::al31f::executor::VMThread;
 
 include!("get_vm_makro.rs");
 
-pub unsafe fn checked_add<A: Alloc>(
+#[inline(never)] pub unsafe fn checked_add<A: Alloc>(
     thread: &mut VMThread<A>,
     src1: Value,
     src2: Value,
@@ -64,7 +64,7 @@ pub unsafe fn checked_add<A: Alloc>(
     }
 }
 
-pub unsafe fn checked_sub(
+#[inline(never)] pub unsafe fn checked_sub(
     src1: Value,
     src2: Value,
     dest: &mut Value
@@ -87,7 +87,7 @@ pub unsafe fn checked_sub(
     }
 }
 
-pub unsafe fn checked_mul(
+#[inline(never)] pub unsafe fn checked_mul(
     src1: Value,
     src2: Value,
     dest: &mut Value
@@ -110,7 +110,7 @@ pub unsafe fn checked_mul(
     }
 }
 
-pub unsafe fn checked_div(
+#[inline(never)] pub unsafe fn checked_div(
     src1: Value,
     src2: Value,
     dest: &mut Value
@@ -139,7 +139,7 @@ pub unsafe fn checked_div(
     }
 }
 
-pub unsafe fn checked_mod(
+#[inline(never)] pub unsafe fn checked_mod(
     src1: Value,
     src2: Value,
     dest: &mut Value
@@ -166,4 +166,28 @@ pub unsafe fn checked_mod(
     } else {
         Err(UncheckedException::InvalidBinaryOp { bin_op: '%', lhs: src1, rhs: src2 })
     }
+}
+
+#[inline(never)] pub unsafe fn checked_lt(
+    _src1: Value,
+    _src2: Value,
+    _dest: &mut Value
+) -> Result<(), UncheckedException> {
+    todo!()
+}
+
+#[inline(never)] pub unsafe fn checked_gt(
+    _src1: Value,
+    _src2: Value,
+    _dest: &mut Value
+) -> Result<(), UncheckedException> {
+    todo!()
+}
+
+#[inline(never)] pub unsafe fn checked_bit_and(
+    _src1: Value,
+    _src2: Value,
+    _dest: &mut Value
+) -> Result<(), UncheckedException> {
+    todo!()
 }
