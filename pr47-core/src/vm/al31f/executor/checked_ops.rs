@@ -169,19 +169,49 @@ include!("get_vm_makro.rs");
 }
 
 #[inline(never)] pub unsafe fn checked_lt(
-    _src1: Value,
-    _src2: Value,
-    _dest: &mut Value
+    src1: Value,
+    src2: Value,
+    dest: &mut Value
 ) -> Result<(), UncheckedException> {
-    todo!()
+    if !src1.is_value() || !src2.is_value() {
+        return Err(UncheckedException::InvalidBinaryOp { bin_op: '<', lhs: src1, rhs: src2 });
+    }
+
+    let src1_tag: usize = src1.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize);
+    let src2_tag: usize = src2.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize);
+
+    if src1_tag == INT_TYPE_TAG && src2_tag == INT_TYPE_TAG {
+        *dest = Value::new_bool(src1.vt_data.inner.int_value < src2.vt_data.inner.int_value);
+        Ok(())
+    } else if src1_tag == FLOAT_TYPE_TAG && src2_tag == FLOAT_TYPE_TAG {
+        *dest = Value::new_bool(src1.vt_data.inner.float_value < src2.vt_data.inner.float_value);
+        Ok(())
+    } else {
+        Err(UncheckedException::InvalidBinaryOp { bin_op: '<', lhs: src1, rhs: src2 })
+    }
 }
 
 #[inline(never)] pub unsafe fn checked_gt(
-    _src1: Value,
-    _src2: Value,
-    _dest: &mut Value
+    src1: Value,
+    src2: Value,
+    dest: &mut Value
 ) -> Result<(), UncheckedException> {
-    todo!()
+    if !src1.is_value() || !src2.is_value() {
+        return Err(UncheckedException::InvalidBinaryOp { bin_op: '>', lhs: src1, rhs: src2 });
+    }
+
+    let src1_tag: usize = src1.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize);
+    let src2_tag: usize = src2.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize);
+
+    if src1_tag == INT_TYPE_TAG && src2_tag == INT_TYPE_TAG {
+        *dest = Value::new_bool(src1.vt_data.inner.int_value > src2.vt_data.inner.int_value);
+        Ok(())
+    } else if src1_tag == FLOAT_TYPE_TAG && src2_tag == FLOAT_TYPE_TAG {
+        *dest = Value::new_bool(src1.vt_data.inner.float_value > src2.vt_data.inner.float_value);
+        Ok(())
+    } else {
+        Err(UncheckedException::InvalidBinaryOp { bin_op: '>', lhs: src1, rhs: src2 })
+    }
 }
 
 #[inline(never)] pub unsafe fn checked_bit_and(

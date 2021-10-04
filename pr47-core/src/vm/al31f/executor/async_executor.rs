@@ -15,10 +15,12 @@ use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
 use crate::vm::al31f::executor::checked_ops::{
     checked_add,
-    checked_sub,
-    checked_mul,
     checked_div,
-    checked_mod
+    checked_gt,
+    checked_lt,
+    checked_mod,
+    checked_mul,
+    checked_sub
 };
 use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
@@ -277,12 +279,26 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 impl_rel_op![slice, src1, src2, dst, <, i64, int_value],
             Insc::LtFloat(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, <, f64, float_value],
-            Insc::LtAny(_, _, _) => {}
+            Insc::LtAny(src1, src2, dst) => {
+                let src1: Value = slice.get_value(*src1);
+                let src2: Value = slice.get_value(*src2);
+                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
+                if let Err(e /*: UncheckedException*/) = checked_lt(src1, src2, dst) {
+                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
+                }
+            },
             Insc::GtInt(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, >, i64, int_value],
             Insc::GtFloat(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, >, f64, float_value],
-            Insc::GtAny(_, _, _) => {}
+            Insc::GtAny(src1, src2, dst) => {
+                let src1: Value = slice.get_value(*src1);
+                let src2: Value = slice.get_value(*src2);
+                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
+                if let Err(e /*: UncheckedException*/) = checked_gt(src1, src2, dst) {
+                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
+                }
+            },
             Insc::LeInt(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, <=, i64, int_value],
             Insc::LeFloat(src1, src2, dst) =>
@@ -319,7 +335,10 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::OrAny(_, _, _) => {}
             Insc::XorBool(src1, src2, dst) => impl_bool_binop![slice, src1, src2, dst, ^],
             Insc::XorAny(_, _, _) => {}
-            Insc::NotBool(_, _) => {}
+            Insc::NotBool(src, dst) => {
+                let src: bool = slice.get_value(*src).vt_data.inner.bool_value;
+                slice.set_value(*dst, Value::new_bool(!src));
+            },
             Insc::NotAny(_, _) => {}
             Insc::ShlInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, <<],
             Insc::ShlAny(_, _, _) => {}
@@ -355,12 +374,21 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::IsNull(src, dst) => {
                 let src: Value = slice.get_value(*src);
                 slice.set_value(*dst, Value::new_bool(src.is_null()));
-            }
-            Insc::NullCheck(_) => {}
+            },
+            Insc::NullCheck(src) => {
+                let src: Value = slice.get_value(*src);
+                if src.is_null() {
+                    return Err(unchecked_exception_unwind_stack(
+                        UncheckedException::UnexpectedNull { value: src },
+                        &mut thread.stack,
+                        insc_ptr
+                    ))
+                }
+            },
             Insc::TypeCheck(src, _tyck_info) => {
                 let _src: Value = slice.get_value(*src);
                 todo!();
-            }
+            },
             Insc::Call(func_id, args, rets) => {
                 #[cfg(not(debug_assertions))]
                 let compiled: &CompiledFunction = program.functions.get_unchecked(*func_id);
@@ -376,7 +404,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                     insc_ptr
                 );
                 insc_ptr = compiled.start_addr;
-            }
+            },
             Insc::CallTyck(_, _, _) => {}
             Insc::CallPtr(_, _, _) => {}
             Insc::CallPtrTyck(_, _, _) => {}
@@ -400,7 +428,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 } else {
                     return Ok(vec![slice.get_value(*ret_value)]);
                 }
-            }
+            },
             Insc::Return(ret_values) => {
                 if let Some((prev_stack_slice, ret_addr)) =
                     thread.stack.done_func_call_shrink_stack(&ret_values)
@@ -414,7 +442,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                     }
                     return Ok(ret_vec);
                 }
-            }
+            },
             Insc::FFICallTyck(ffi_func_id, args, ret_value_locs) => {
                 let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
                     = &program.ffi_funcs[*ffi_func_id];
@@ -456,7 +484,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                         }
                     }
                 }
-            }
+            },
             #[cfg(feature = "optimized-rtlc")]
             Insc::FFICallRtlc(ffi_func_id, args, ret_value_locs) => {
                 let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
@@ -499,7 +527,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                         }
                     }
                 }
-            }
+            },
             Insc::FFICall(_, _, _) => {}
             Insc::FFICallAsyncTyck(_, _, _) => {}
             #[cfg(all(feature = "optimized-rtlc", feature = "async"))]
@@ -545,7 +573,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                         }
                     }
                 }
-            }
+            },
             #[cfg(feature = "no-rtlc")]
             Insc::FFICallAsyncUnchecked(_, _, _) => {}
             #[cfg(feature = "async")]
@@ -594,7 +622,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                         }
                     }
                 }
-            }
+            },
             Insc::Raise(exception_ptr) => {
                 let exception: Value = slice.get_value(*exception_ptr);
                 let (new_slice, insc_ptr_next): (StackSlice, usize) =
@@ -608,28 +636,28 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 slice = new_slice;
                 insc_ptr = insc_ptr_next;
                 continue;
-            }
+            },
             Insc::JumpIfTrue(condition, dest) => {
                 let condition: bool = slice.get_value(*condition).vt_data.inner.bool_value;
                 if condition {
                     insc_ptr = *dest;
                 }
-            }
+            },
             Insc::JumpIfFalse(condition, dest) => {
                 let condition: bool = slice.get_value(*condition).vt_data.inner.bool_value;
                 if !condition {
                     insc_ptr = *dest;
                 }
-            }
+            },
             Insc::Jump(dest) => {
                 insc_ptr = *dest;
-            }
+            },
             Insc::CreateObject(dest) => {
                 let object: Object = Object::new();
                 let object: Value = Value::new_owned(object);
                 get_vm!(thread).alloc.add_managed(object.ptr_repr);
                 slice.set_value(*dest, object);
-            }
+            },
             Insc::CreateContainer(_, _, _) => {}
             Insc::VecIndex(_, _, _) => {}
             Insc::VecIndexPut(_, _, _) => {}
