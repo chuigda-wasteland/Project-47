@@ -111,11 +111,6 @@ pub enum Insc {
     /// `EQ-FLOAT`.
     EqValue(usize, usize, usize),
 
-    /// `EQ-FLOAT [FLOAT@SRC1] [FLOAT@SRC2] [DEST]`
-    ///
-    /// Assume that `SRC1` and `SRC` are both **float**s, check their equality.
-    EqFloat(usize, usize, usize),
-
     /// `EQ-REF [REF@SRC1] [REF@SRC2] [DEST]`
     ///
     /// Assume that `SRC1` and `SRC2` are both **references**, check their equality.
@@ -130,11 +125,6 @@ pub enum Insc {
     ///
     /// Similar to `EQ-VALUE` but yields inverted result.
     NeValue(usize, usize, usize),
-
-    /// `NE-FLOAT [FLOAT@SRC1] [FLOAT@SRC2] [DEST]`
-    ///
-    /// Similar with `EQ-FLOAT` but yields inverted result.
-    NeFloat(usize, usize, usize),
 
     /// `NE-REF [REF@SRC1] [REF@SRC2] [DEST]`
     ///
