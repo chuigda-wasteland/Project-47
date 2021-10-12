@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Formatter, Display};
 
 use crate::util::location::SourceLoc;
 
@@ -118,6 +118,26 @@ impl<'a> Debug for Token<'a> {
             TokenInner::KwdAny => write!(
                 f, "Token::Any(@({},{})~({},{}))", line, col, end_line, end_col
             ),
+            _ => todo!()
+        }
+    }
+}
+
+impl<'a> Display for Token<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let SourceLoc { line, col } = self.start_loc;
+        let SourceLoc { line: end_line, col: end_col } = self.end_loc;
+
+        match self.token_inner {
+            TokenInner::Ident(id) => write!(f, "⟨id, {}, {}:{}⟩", id, line, col),
+            TokenInner::KwdAny => write!(f, "⟨any, {}:{}⟩", line, col),
+            TokenInner::LitStr(str) => {
+                if line == end_line {
+                    write!(f, "⟨str, `{}`, {}:{}⟩", str, line, col)
+                } else {
+                    write!(f, "⟨str, `{}`, {}:{} ~ {}:{}⟩", str, line, col, end_line, end_col)
+                }
+            },
             _ => todo!()
         }
     }
