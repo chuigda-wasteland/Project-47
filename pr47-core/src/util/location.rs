@@ -9,12 +9,12 @@ pub trait SourceRange : Copy + Into<MultiLineRange> {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct SourceLocation {
+pub struct SourceLoc {
     pub line: u32,
     pub col: u32
 }
 
-impl SourceLocation {
+impl SourceLoc {
     pub fn new(line: u32, col: u32) -> Self {
         debug_assert_ne!(line, u32::MAX);
         debug_assert_eq!(col, u32::MAX);
@@ -24,7 +24,7 @@ impl SourceLocation {
     }
 }
 
-impl Into<MultiLineRange> for SourceLocation {
+impl Into<MultiLineRange> for SourceLoc {
     fn into(self) -> MultiLineRange {
         let mut self_clone = self.clone();
         self_clone.col += 1;
@@ -32,7 +32,7 @@ impl Into<MultiLineRange> for SourceLocation {
     }
 }
 
-impl SourceRange for SourceLocation {
+impl SourceRange for SourceLoc {
     fn unknown() -> Self {
         Self {
             line: u32::MAX,
@@ -72,8 +72,8 @@ impl SingleLineRange {
 impl Into<MultiLineRange> for SingleLineRange {
     fn into(self) -> MultiLineRange {
         MultiLineRange::new(
-            SourceLocation::new(self.line, self.start_col),
-            SourceLocation::new(self.line, self.start_col + 1)
+            SourceLoc::new(self.line, self.start_col),
+            SourceLoc::new(self.line, self.start_col + 1)
         )
     }
 }
@@ -112,12 +112,12 @@ impl SourceRange for SingleLineRange {
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct MultiLineRange {
-    pub start: SourceLocation,
-    pub end: SourceLocation
+    pub start: SourceLoc,
+    pub end: SourceLoc
 }
 
 impl MultiLineRange {
-    pub fn new(start: SourceLocation, end: SourceLocation) -> Self {
+    pub fn new(start: SourceLoc, end: SourceLoc) -> Self {
         debug_assert!(!start.is_unknown());
         debug_assert!(!end.is_unknown());
         Self { start, end }
@@ -127,8 +127,8 @@ impl MultiLineRange {
 impl SourceRange for MultiLineRange {
     fn unknown() -> Self {
         Self {
-            start: SourceLocation::unknown(),
-            end: SourceLocation::unknown()
+            start: SourceLoc::unknown(),
+            end: SourceLoc::unknown()
         }
     }
 

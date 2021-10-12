@@ -1,11 +1,11 @@
-use crate::util::location::{SingleLineRange, SourceLocation, MultiLineRange};
+use crate::util::location::{SingleLineRange, SourceLoc, MultiLineRange};
 
 pub struct AttrList {
     pub attributes: Vec<Attribute>,
 
-    pub sharp_loc: SourceLocation,
-    pub left_bracket_loc: SourceLocation,
-    pub right_bracket_loc: SourceLocation
+    pub sharp_loc: SourceLoc,
+    pub left_bracket_loc: SourceLoc,
+    pub right_bracket_loc: SourceLoc
 }
 
 pub enum Attribute {
@@ -49,7 +49,7 @@ pub struct AttrStrValue {
 pub struct AttrListValue {
     pub value: Vec<Attribute>,
 
-    pub left_paren_loc: SourceLocation,
-    pub right_paren_loc: SourceLocation
+    pub left_paren_loc: SourceLoc,
+    pub right_paren_loc: SourceLoc
 }
 

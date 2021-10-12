@@ -44,7 +44,7 @@ use crate::vm::al31f::executor::checked_unary_ops::{
     checked_not
 };
 use crate::vm::al31f::insc::Insc;
-use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
+use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
 
 #[cfg(feature = "async")] use crate::data::wrapper::{Wrapper, OwnershipInfo};
 #[cfg(feature = "async")] use crate::ffi::async_fn::{AsyncReturnType, Promise};

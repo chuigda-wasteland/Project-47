@@ -9,6 +9,7 @@
 pub mod collections;
 pub mod data;
 pub mod ffi;
+pub mod parse;
 pub mod sema;
 pub mod syntax;
 pub mod util;

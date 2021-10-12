@@ -1,4 +1,4 @@
-use crate::util::location::{SingleLineRange, SourceLocation};
+use crate::util::location::{SingleLineRange, SourceLoc};
 
 pub enum ConcreteType {
     SimpleType(ConcreteSimpleType),
@@ -23,6 +23,6 @@ pub enum ConcreteSimpleTypeContent {
 
 pub struct ConcreteGenericType {
     pub inner: Box<ConcreteType>,
-    pub left_angle: SourceLocation,
-    pub right_angle: SourceLocation
+    pub left_angle: SourceLoc,
+    pub right_angle: SourceLoc
 }

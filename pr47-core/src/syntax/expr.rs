@@ -1,6 +1,6 @@
 use crate::syntax::id::Identifier;
 use crate::syntax::ty::ConcreteType;
-use crate::util::location::{SingleLineRange, SourceLocation};
+use crate::util::location::{SingleLineRange, SourceLoc};
 
 pub enum ConcreteExpr {
     LiteralExpr(ConcreteLiteralExpr),
@@ -59,7 +59,7 @@ pub struct ConcreteUnaryExpr {
     pub op: UnaryOp,
     pub operand: Box<ConcreteExpr>,
 
-    pub op_loc: SourceLocation
+    pub op_loc: SourceLoc
 }
 
 pub enum BinaryOp {
@@ -107,30 +107,30 @@ pub struct ConcreteAssignExpr {
     pub lhs: Box<ConcreteExpr>,
     pub rhs: Box<ConcreteExpr>,
 
-    pub op_loc: SourceLocation
+    pub op_loc: SourceLoc
 }
 
 pub struct ConcreteFuncCallExpr {
     pub func: Box<ConcreteExpr>,
     pub args: Vec<Box<ConcreteExpr>>,
 
-    pub left_paren: SourceLocation,
-    pub right_paren: SourceLocation
+    pub left_paren: SourceLoc,
+    pub right_paren: SourceLoc
 }
 
 pub struct ConcreteSubscriptExpr {
     pub base: Box<ConcreteExpr>,
     pub idx: Box<ConcreteExpr>,
 
-    pub left_bracket: SourceLocation,
-    pub right_bracket: SourceLocation
+    pub left_bracket: SourceLoc,
+    pub right_bracket: SourceLoc
 }
 
 pub struct ConcreteFieldRefExpr {
     pub base: Box<ConcreteExpr>,
     pub id: Identifier,
 
-    pub dot_loc: SourceLocation
+    pub dot_loc: SourceLoc
 }
 
 pub struct ConcreteMethodCallExpr {
@@ -138,9 +138,9 @@ pub struct ConcreteMethodCallExpr {
     pub func_id: Identifier,
     pub args: Vec<Box<ConcreteExpr>>,
 
-    pub dot_loc: SourceLocation,
-    pub left_paren: SourceLocation,
-    pub right_paren: SourceLocation
+    pub dot_loc: SourceLoc,
+    pub left_paren: SourceLoc,
+    pub right_paren: SourceLoc
 }
 
 pub struct ConcreteAsExpr {
