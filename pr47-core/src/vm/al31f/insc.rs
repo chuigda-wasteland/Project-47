@@ -399,6 +399,9 @@ pub enum Insc {
     CastAnyFloat(usize, usize),
     CastAnyChar(usize, usize),
 
+    CastIntBool(usize, usize),
+    CastAnyBool(usize, usize),
+
     /// `IS-NULL [SRC] [DEST]`
     ///
     /// Check if data stored in `SRC` is `null`, and save the boolean result to `DEST`.

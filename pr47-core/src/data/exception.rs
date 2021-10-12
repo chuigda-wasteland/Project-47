@@ -10,7 +10,9 @@ use crate::util::void::Void;
 
 pub enum UncheckedException {
     ArgCountMismatch { func_id: usize, expected: usize, got: usize },
+    InvalidUnaryOp { unary_op: char, src: Value },
     InvalidBinaryOp { bin_op: char, lhs: Value, rhs: Value },
+    InvalidCastOp { dest_type: &'static str, src: Value },
     OwnershipCheckFailure { object: Value, expected_mask: u8 },
     AlreadyAwaited { promise: Value },
     UnexpectedNull { value: Value },

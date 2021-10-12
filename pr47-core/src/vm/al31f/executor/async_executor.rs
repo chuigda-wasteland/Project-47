@@ -13,14 +13,35 @@ use crate::util::mem::FatPointer;
 use crate::vm::al31f::{AL31F, Combustor};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
-use crate::vm::al31f::executor::checked_ops::{
+use crate::vm::al31f::executor::checked_bin_ops::{
     checked_add,
+    checked_bit_and,
+    checked_bit_or,
+    checked_bit_shl,
+    checked_bit_shr,
+    checked_bit_xor,
     checked_div,
+    checked_ge,
     checked_gt,
+    checked_le,
+    checked_logic_and,
+    checked_logic_or,
+    checked_logic_xor,
     checked_lt,
     checked_mod,
     checked_mul,
     checked_sub
+};
+use crate::vm::al31f::executor::checked_cast_ops::{
+    cast_any_bool,
+    cast_any_char,
+    cast_any_float,
+    cast_any_int
+};
+use crate::vm::al31f::executor::checked_unary_ops::{
+    checked_bit_not,
+    checked_neg,
+    checked_not
 };
 use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
@@ -30,6 +51,7 @@ use crate::vm::al31f::stack::{Stack, StackSlice, FrameInfo};
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
 #[cfg(feature = "async")] use crate::util::serializer::Serializer;
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
+
 #[cfg(feature = "bench")] use crate::defer;
 #[cfg(feature = "bench")] use crate::util::defer::Defer;
 
@@ -166,14 +188,8 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
         match insc {
             Insc::AddInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, wrapping_add],
             Insc::AddFloat(src1, src2, dst) => impl_float_binop![slice, src1, src2, dst, +],
-            Insc::AddAny(src1, src2, dst) => {
-                let src1: Value = slice.get_value(*src1);
-                let src2: Value = slice.get_value(*src2);
-                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
-                if let Err(e /*: UncheckedException*/) = checked_add(thread, src1, src2, dst) {
-                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
-                }
-            },
+            Insc::AddAny(src1, src2, dst) =>
+                impl_checked_op2![slice, src1, src2, dst, checked_add, thread, insc_ptr],
             Insc::IncrInt(pos) => {
                 let v: Value = Value::new_int(slice.get_value(*pos).vt_data.inner.int_value + 1);
                 slice.set_value(*pos, v);
@@ -184,24 +200,12 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             },
             Insc::SubInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, wrapping_sub],
             Insc::SubFloat(src1, src2, dst) => impl_float_binop![slice, src1, src2, dst, -],
-            Insc::SubAny(src1, src2, dst) => {
-                let src1: Value = slice.get_value(*src1);
-                let src2: Value = slice.get_value(*src2);
-                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
-                if let Err(e /*: UncheckedException*/) = checked_sub(src1, src2, dst) {
-                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
-                }
-            },
+            Insc::SubAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_sub, thread, insc_ptr],
             Insc::MulInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, wrapping_mul],
             Insc::MulFloat(src1, src2, dst) => impl_float_binop![slice, src1, src2, dst, *],
-            Insc::MulAny(src1, src2, dst) => {
-                let src1: Value = slice.get_value(*src1);
-                let src2: Value = slice.get_value(*src2);
-                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
-                if let Err(e /*: UncheckedException*/) = checked_mul(src1, src2, dst) {
-                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
-                }
-            },
+            Insc::MulAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_mul, thread, insc_ptr],
             Insc::DivInt(src1, src2, dst) => {
                 let src1: i64 = slice.get_value(*src1).vt_data.inner.int_value;
                 let src2: i64 = slice.get_value(*src2).vt_data.inner.int_value;
@@ -214,14 +218,8 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 }
             },
             Insc::DivFloat(src1, src2, dst) => impl_float_binop![slice, src1, src2, dst, /],
-            Insc::DivAny(src1, src2, dst) => {
-                let src1: Value = slice.get_value(*src1);
-                let src2: Value = slice.get_value(*src2);
-                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
-                if let Err(e /*: UncheckedException*/) = checked_div(src1, src2, dst) {
-                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
-                }
-            },
+            Insc::DivAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_div, thread, insc_ptr],
             Insc::ModInt(src1, src2, dst) => {
                 let src1: i64 = slice.get_value(*src1).vt_data.inner.int_value;
                 let src2: i64 = slice.get_value(*src2).vt_data.inner.int_value;
@@ -233,14 +231,8 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                     ))
                 }
             },
-            Insc::ModAny(src1, src2, dst) => {
-                let src1: Value = slice.get_value(*src1);
-                let src2: Value = slice.get_value(*src2);
-                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
-                if let Err(e /*: UncheckedException*/) = checked_mod(src1, src2, dst) {
-                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
-                }
-            },
+            Insc::ModAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_mod, thread, insc_ptr],
             Insc::EqValue(src1, src2, dst) => {
                 debug_assert_eq!(slice.get_value(*src1).vt_data.tag,
                                  slice.get_value(*src2).vt_data.tag);
@@ -279,47 +271,41 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 impl_rel_op![slice, src1, src2, dst, <, i64, int_value],
             Insc::LtFloat(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, <, f64, float_value],
-            Insc::LtAny(src1, src2, dst) => {
-                let src1: Value = slice.get_value(*src1);
-                let src2: Value = slice.get_value(*src2);
-                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
-                if let Err(e /*: UncheckedException*/) = checked_lt(src1, src2, dst) {
-                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
-                }
-            },
+            Insc::LtAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_lt, thread, insc_ptr],
             Insc::GtInt(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, >, i64, int_value],
             Insc::GtFloat(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, >, f64, float_value],
-            Insc::GtAny(src1, src2, dst) => {
-                let src1: Value = slice.get_value(*src1);
-                let src2: Value = slice.get_value(*src2);
-                let dst: &mut Value = &mut *slice.get_value_mut_ref(*dst);
-                if let Err(e /*: UncheckedException*/) = checked_gt(src1, src2, dst) {
-                    return Err(unchecked_exception_unwind_stack(e, &mut thread.stack, insc_ptr));
-                }
-            },
+            Insc::GtAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_gt, thread, insc_ptr],
             Insc::LeInt(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, <=, i64, int_value],
             Insc::LeFloat(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, <=, f64, float_value],
-            Insc::LeAny(_, _, _) => {}
+            Insc::LeAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_le, thread, insc_ptr],
             Insc::GeInt(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, >=, i64, int_value],
             Insc::GeFloat(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, >=, f64, float_value],
-            Insc::GeAny(_, _, _) => {}
+            Insc::GeAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_ge, thread, insc_ptr],
             Insc::BAndInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, &],
-            Insc::BAndAny(_, _, _) => {}
+            Insc::BAndAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_bit_and, thread, insc_ptr],
             Insc::BOrInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, |],
-            Insc::BOrAny(_, _, _) => {}
+            Insc::BOrAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_bit_or, thread, insc_ptr],
             Insc::BXorInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, ^],
-            Insc::BXorAny(_, _, _) => {}
+            Insc::BXorAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_bit_xor, thread, insc_ptr],
             Insc::BNotInt(src, dst) => {
                 let src: u64 = slice.get_value(*src).vt_data.inner.repr;
                 slice.set_value(*dst, Value::new_raw_value(INT_TYPE_TAG, u64::reverse_bits(src)));
             },
-            Insc::BNotAny(_, _) => {}
+            Insc::BNotAny(src, dst) =>
+                impl_checked_unary_op![slice, src, dst, checked_bit_not, thread, insc_ptr],
             Insc::NegInt(src, dst) => {
                 let src: i64 = slice.get_value(*src).vt_data.inner.int_value;
                 slice.set_value(*dst, Value::new_int(i64::wrapping_neg(src)));
@@ -328,22 +314,29 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 let src: f64 = slice.get_value(*src).vt_data.inner.float_value;
                 slice.set_value(*dst, Value::new_float(-src));
             },
-            Insc::NegAny(_, _) => {}
+            Insc::NegAny(src, dst) =>
+                impl_checked_unary_op![slice, src, dst, checked_neg, thread, insc_ptr],
             Insc::AndBool(src1, src2, dst) => impl_bool_binop![slice, src1, src2, dst, &],
-            Insc::AndAny(_, _, _) => {}
+            Insc::AndAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_logic_and, thread, insc_ptr],
             Insc::OrBool(src1, src2, dst) => impl_bool_binop![slice, src1, src2, dst, |],
-            Insc::OrAny(_, _, _) => {}
+            Insc::OrAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_logic_or, thread, insc_ptr],
             Insc::XorBool(src1, src2, dst) => impl_bool_binop![slice, src1, src2, dst, ^],
-            Insc::XorAny(_, _, _) => {}
+            Insc::XorAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_logic_xor, thread, insc_ptr],
             Insc::NotBool(src, dst) => {
                 let src: bool = slice.get_value(*src).vt_data.inner.bool_value;
                 slice.set_value(*dst, Value::new_bool(!src));
             },
-            Insc::NotAny(_, _) => {}
+            Insc::NotAny(src, dst) =>
+                impl_checked_unary_op![slice, src, dst, checked_not, thread, insc_ptr],
             Insc::ShlInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, <<],
-            Insc::ShlAny(_, _, _) => {}
+            Insc::ShlAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_bit_shl, thread, insc_ptr],
             Insc::ShrInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, >>],
-            Insc::ShrAny(_, _, _) => {}
+            Insc::ShrAny(src1, src2, dst) =>
+                impl_checked_bin_op![slice, src1, src2, dst, checked_bit_shr, thread, insc_ptr],
             Insc::MakeIntConst(i64_const, dst) =>
                 slice.set_value(*dst, Value::new_int(*i64_const)),
             Insc::MakeFloatConst(f64_const, dst) =>
@@ -366,11 +359,21 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 impl_cast_op![slice, src, dst, f64, i64, float_value, new_int],
             Insc::CastBoolInt(src, dst) =>
                 impl_cast_op![slice, src, dst, bool, i64, bool_value, new_int],
-            Insc::CastAnyInt(_, _) => {}
+            Insc::CastAnyInt(src, dst) =>
+                impl_checked_cast_op![slice, src, dst, cast_any_int, thread, insc_ptr],
             Insc::CastIntFloat(src, dst) =>
                 impl_cast_op![slice, src, dst, i64, f64, int_value, new_float],
-            Insc::CastAnyFloat(_, _) => {}
-            Insc::CastAnyChar(_, _) => {}
+            Insc::CastAnyFloat(src, dst) =>
+                impl_checked_cast_op![slice, src, dst, cast_any_float, thread, insc_ptr],
+            Insc::CastAnyChar(src, dst) =>
+                impl_checked_cast_op![slice, src, dst, cast_any_char, thread, insc_ptr],
+            Insc::CastIntBool(src, dst) => {
+                let src: i64 = slice.get_value(*src).vt_data.inner.int_value;
+                let casted: bool = src != 0;
+                slice.set_value(*dst, Value::new_bool(casted));
+            }
+            Insc::CastAnyBool(src, dst) =>
+                impl_checked_cast_op![slice, src, dst, cast_any_bool, thread, insc_ptr],
             Insc::IsNull(src, dst) => {
                 let src: Value = slice.get_value(*src);
                 slice.set_value(*dst, Value::new_bool(src.is_null()));
