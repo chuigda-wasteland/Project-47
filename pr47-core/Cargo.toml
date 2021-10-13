@@ -12,8 +12,9 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-unchecked_unwrap = "3"
+phf = { version = "0.10", features = ["macros"] }
 pollster = "0.2"
+unchecked_unwrap = "3"
 
 async-std = { optional = true, version = "1" }
 async-trait = { optional = true, version = "0.1" }
