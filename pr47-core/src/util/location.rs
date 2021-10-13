@@ -16,8 +16,6 @@ pub struct SourceLoc {
 
 impl SourceLoc {
     pub fn new(line: u32, col: u32) -> Self {
-        debug_assert_ne!(line, u32::MAX);
-        debug_assert_eq!(col, u32::MAX);
         Self {
             line, col
         }
