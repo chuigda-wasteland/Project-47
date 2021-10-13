@@ -8,7 +8,7 @@ use crate::syntax::token::{Token, TokenInner};
 #[derive(Clone, Copy, Eq, PartialEq)]
 #[repr(u8)]
 pub enum LexerMode {
-    LexCommon,
+    LexExpr,
     LexType
 }
 
@@ -53,7 +53,7 @@ pub struct Lexer<'a> {
 impl<'a> Lexer<'a> {
     pub fn new(source: &'a str) -> Self {
         let mut ret: Self = Self {
-            mode: vec![LexerMode::LexCommon],
+            mode: vec![LexerMode::LexExpr],
             char_indices: source.char_indices().peekable(),
 
             cur_ch_idx: None,
@@ -120,7 +120,7 @@ impl<'a> Lexer<'a> {
                 ch if (ch as usize) < (' ' as usize) => {
                     todo!("革命人民心中的太阳心中的红太阳")
                 },
-                ch => {
+                _ch => {
                     todo!()
                 }
             }

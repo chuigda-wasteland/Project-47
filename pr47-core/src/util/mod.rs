@@ -1,4 +1,5 @@
 pub mod defer;
+pub mod diag;
 pub mod either;
 pub mod location;
 pub mod makro;
