@@ -4,6 +4,9 @@ use std::str::CharIndices;
 use phf::phf_map;
 
 use crate::syntax::token::{Token, TokenInner};
+use crate::util::diag::DiagContext;
+
+#[cfg(feature = "compiler-pretty-diag")] use unicode_width::UnicodeWidthChar;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 #[repr(u8)]
@@ -42,23 +45,31 @@ static DEFAULT_KEYWORDS_MAP: phf::Map<&'static str, TokenInner<'static>> = phf_m
 };
 
 pub struct Lexer<'a> {
+    file_name: &'a str,
+
     mode: Vec<LexerMode>,
     char_indices: Peekable<CharIndices<'a>>,
 
     cur_ch_idx: Option<(char, usize)>,
     line: u32,
-    col: u32
+    col: u32,
+
+    diag: &'a DiagContext<'a>
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(source: &'a str) -> Self {
+    pub fn new(file_name: &'a str, source: &'a str, diag: &'a DiagContext<'a>) -> Self {
         let mut ret: Self = Self {
+            file_name,
+
             mode: vec![LexerMode::LexExpr],
             char_indices: source.char_indices().peekable(),
 
             cur_ch_idx: None,
             line: 1,
-            col: 1
+            col: 1,
+
+            diag
         };
         ret.next_char();
         ret
@@ -79,12 +90,28 @@ impl<'a> Lexer<'a> {
                     self.line += 1;
                     self.col = 1;
                 },
-                '\t' => {
-                    self.col += 4;
-                },
+                '\t' => self.col += 4,
                 '\r' => {},
-                _ => {
-                    self.col += 1;
+                ' ' => self.col += 1,
+                ch => {
+                    if ch.is_whitespace() && !ch.is_ascii_whitespace() {
+                        // TODO diag about non-ascii spaces
+                    }
+
+                    #[cfg(feature = "compiler-pretty-diag")]
+                    if let Some(width /*: usize*/) = ch.width() {
+                        self.col += width as u32;
+                    } else {
+                        // TODO diag about unexpected control character
+                        // do nothing
+                    }
+
+                    #[cfg(not(feature = "compiler-pretty-diag"))]
+                    if ch.is_control() {
+                        // TODO diag about unexpected control character
+                    } else {
+                        self.col += 1;
+                    }
                 }
             }
             self.cur_ch_idx = Some((ch, idx));
@@ -106,7 +133,7 @@ impl<'a> Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     pub fn next_token(&'a mut self) -> Option<Token<'a>> {
-        if let Some((ch, _idx)) = self.cur_char() {
+        if let Some((ch, _)) = self.cur_char() {
             match ch {
                 'a'..='z' => {
                     todo!("红色的太阳升起在东方光芒万丈")
@@ -121,7 +148,7 @@ impl<'a> Lexer<'a> {
                     todo!("革命人民心中的太阳心中的红太阳")
                 },
                 _ch => {
-                    todo!()
+                    todo!("万岁毛主席，万岁毛主席，万岁万岁万岁，万岁万万岁，万岁万岁毛主席")
                 }
             }
         } else {

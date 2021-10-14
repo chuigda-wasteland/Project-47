@@ -12,15 +12,15 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-phf = { version = "0.10", features = ["macros"] }
 pollster = "0.2"
-smallvec = "1"
 unchecked_unwrap = "3"
 
 async-std = { optional = true, version = "1" }
-async-trait = { optional = true, version = "0.1" }
 futures = { optional = true, version = "0.3" }
+phf = { optional = true, version = "0.10", features = ["macros"] }
+smallvec = { optional = true, version = "1" }
 tokio = { optional = true, version = "1", features = ["rt", "sync", "time"] }
+unicode-width = { optional = true, version = "0.1" }
 
 pr47-codegen = { path = "../pr47-codegen" }
 
@@ -29,7 +29,9 @@ tokio = { version = "1", features = ["rt-multi-thread"] }
 variant_count = "1"
 
 [features]
-default = ["async-tokio", "optimized-rtlc", "std47"]
+default = ["async-tokio", "compiler", "compiler-pretty-diag", "optimized-rtlc", "std47"]
+compiler = ["phf", "smallvec"]
+compiler-pretty-diag = ["unicode-width"]
 no-rtlc = []
 optimized-rtlc = []
 bench = []
@@ -38,7 +40,7 @@ std47 = []
 
 async-tokio = ["async", "tokio"]
 async-astd = ["async", "async-std"]
-async = ["async-trait", "futures"]
+async = ["futures"]
 
 [[bin]]
 name = "bench_al31fm2_sync"
