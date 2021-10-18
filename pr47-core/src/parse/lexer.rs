@@ -32,6 +32,7 @@ static DEFAULT_KEYWORDS_MAP: phf::Map<&'static str, TokenInner<'static>> = phf_m
     "float" => TokenInner::KwdFloat,
     "func" => TokenInner::KwdFunc,
     "if" => TokenInner::KwdIf,
+    "import" => TokenInner::KwdImport,
     "int" => TokenInner::KwdInt,
     "object" => TokenInner::KwdObject,
     "return" => TokenInner::KwdReturn,
@@ -43,7 +44,12 @@ static DEFAULT_KEYWORDS_MAP: phf::Map<&'static str, TokenInner<'static>> = phf_m
     "typeof" => TokenInner::KwdTypeOf,
     "var" => TokenInner::KwdVar,
     "vector" => TokenInner::KwdVector,
-    "while" => TokenInner::KwdWhile
+    "while" => TokenInner::KwdWhile,
+
+    "asm" => TokenInner::RsvAsm,
+    "attribute" => TokenInner::RsvAttribute,
+    "ckx" => TokenInner::RsvCkx,
+    "refl" => TokenInner::RsvRefl
 };
 
 pub struct Lexer<'a, 'b> {
@@ -295,6 +301,8 @@ impl<'a, 'b> Lexer<'a, 'b> {
             '#' => self.lex_single_char_sym(location, SymSharp),
             '/' => self.lex_single_char_sym(location, SymSlash),
             '~' => self.lex_single_char_sym(location, SymTilde),
+            '@' => self.lex_reserved_sym(location, RsymAt, '@'),
+            '$' => self.lex_reserved_sym(location, RsymDollar, '$'),
             _ => unreachable!()
         }
     }
@@ -363,6 +371,20 @@ impl<'a, 'b> Lexer<'a, 'b> {
         Token::new(otherwise, location, SourceLoc::unknown())
     }
 
+    fn lex_reserved_sym(
+        &mut self,
+        location: SourceLoc,
+        token: TokenInner<'a>,
+        ch: char
+    ) -> Token<'a> {
+        self.diag.diag(self.file, messages::err_reserved_symbol_0)
+            .add_location(location)
+            .add_mark(DiagMark::from(location))
+            .add_arg(ch.to_string())
+            .build();
+        Token::new(token, location, SourceLoc::unknown())
+    }
+
     fn maybe_diag_reserved_keyword(
         &mut self,
         keyword: &TokenInner,
@@ -374,9 +396,10 @@ impl<'a, 'b> Lexer<'a, 'b> {
         if keyword.is_reserved() {
             self.diag.diag(self.file, messages::err_reserved_identifier_0)
                 .add_location(start_loc)
-                .add_mark(DiagMark::new(
-                    start_loc.line, start_loc.col, end_loc.col
-                ).add_comment("reserved identifier"))
+                .add_mark(
+                    DiagMark::new(start_loc.line, start_loc.col, end_loc.col)
+                        .add_comment("reserved identifier")
+                )
                 .add_arg(id)
                 .build();
         }
@@ -386,9 +409,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
         if id.starts_with('_') {
             self.diag.diag(self.file, messages::warn_underscored_id_reserved)
                 .add_location(start_loc)
-                .add_mark(DiagMark::new(
-                    start_loc.line, start_loc.col, end_loc.col
-                ))
+                .add_mark(DiagMark::new(start_loc.line, start_loc.col, end_loc.col))
                 .build();
         }
     }

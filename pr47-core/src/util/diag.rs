@@ -187,6 +187,10 @@ impl<'a> DiagContext<'a> {
     }
 
     pub fn add_diag(&mut self, diag: Diagnostic<'a>) {
+        if messages::is_error(diag.diag_id) {
+            self.has_error = true;
+        }
+        self.has_diag = true;
         self.diags.push(diag);
     }
 
