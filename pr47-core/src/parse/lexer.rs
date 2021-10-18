@@ -69,7 +69,10 @@ pub fn is_special(ch: char) -> bool {
 }
 
 pub fn part_of_identifier(ch: char) -> bool {
-    !(ch.is_whitespace() || is_special(ch))
+    match ch {
+        '_' | 'A'..='Z' | 'a'..='z' | '0'..='9' | '!' | '?' => true,
+        ch => !(ch.is_whitespace() || is_special(ch))
+    }
 }
 
 impl<'a> Lexer<'a> {
@@ -166,7 +169,7 @@ impl<'a> Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    pub fn next_token(&'a mut self) -> Option<Token<'a>> {
+    pub fn next_token(&mut self) -> Option<Token<'a>> {
         if let Some((ch, _)) = self.cur_char() {
             match ch {
                 'a'..='z' => {
@@ -191,7 +194,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn skip_whitespace(&'a mut self) {
+    pub fn skip_whitespace(&mut self) {
         while let Some((ch, _)) = self.cur_char() {
             if ch.is_whitespace() {
                 self.next_char()
@@ -201,7 +204,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn lex_id_or_keyword(&'a mut self) -> Token<'a> {
+    pub fn lex_id_or_keyword(&mut self) -> Token<'a> {
         let start_loc: SourceLoc = self.current_loc();
         let (_, start_idx): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
         self.next_char();
@@ -234,7 +237,7 @@ impl<'a> Lexer<'a> {
         unreachable!()
     }
 
-    pub fn lex_id(&'a mut self) -> Token<'a> {
+    pub fn lex_id(&mut self) -> Token<'a> {
         let start_loc: SourceLoc = self.current_loc();
         let (_, start_idx): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
         self.next_char();
