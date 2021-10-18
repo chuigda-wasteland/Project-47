@@ -190,6 +190,10 @@ impl<'a> DiagContext<'a> {
         self.diags.push(diag);
     }
 
+    pub fn has_diag(&self) -> bool { self.has_diag }
+
+    pub fn has_error(&self) -> bool { self.has_error }
+
     #[must_use] pub fn clear_reset(&mut self) -> Vec<Diagnostic<'a>> {
         self.has_diag = false;
         self.has_error = false;

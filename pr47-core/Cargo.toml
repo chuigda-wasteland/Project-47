@@ -42,6 +42,13 @@ async-tokio = ["async", "tokio"]
 async-astd = ["async", "async-std"]
 async = ["futures"]
 
+# Compiler testing binaries
+[[bin]]
+name = "token47"
+path = "bin/token47.rs"
+required-features = ["compiler", "compiler-pretty-diag"]
+
+# Benchmarking
 [[bin]]
 name = "bench_al31fm2_sync"
 path = "raw_benches/bench_al31fm2_sync.rs"

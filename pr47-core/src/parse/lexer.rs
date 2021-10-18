@@ -46,7 +46,7 @@ static DEFAULT_KEYWORDS_MAP: phf::Map<&'static str, TokenInner<'static>> = phf_m
     "while" => TokenInner::KwdWhile
 };
 
-pub struct Lexer<'a> {
+pub struct Lexer<'a, 'b> {
     file: &'a str,
 
     mode: Vec<LexerMode>,
@@ -57,7 +57,7 @@ pub struct Lexer<'a> {
     line: u32,
     col: u32,
 
-    diag: &'a mut DiagContext<'a>
+    diag: &'b mut DiagContext<'a>
 }
 
 pub fn is_special(ch: char) -> bool {
@@ -75,8 +75,8 @@ pub fn part_of_identifier(ch: char) -> bool {
     }
 }
 
-impl<'a> Lexer<'a> {
-    pub fn new(file: &'a str, source: &'a str, diag: &'a mut DiagContext<'a>) -> Self {
+impl<'a, 'b> Lexer<'a, 'b> {
+    pub fn new(file: &'a str, source: &'a str, diag: &'b mut DiagContext<'a>) -> Self {
         let mut ret: Self = Self {
             file,
 
@@ -173,7 +173,7 @@ impl<'a> Lexer<'a> {
     }
 }
 
-impl<'a> Lexer<'a> {
+impl<'a, 'b> Lexer<'a, 'b> {
     pub fn next_token(&mut self) -> Option<Token<'a>> {
         if let Some((ch, _) /*: (char, usize)*/) = self.cur_char() {
             match ch {
@@ -316,7 +316,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn lex_single_char_sym(&mut self, location: SourceLoc, token: TokenInner<'a>) -> Token<'a> {
-        self.next_token();
+        self.next_char();
         Token::new(token, location, SourceLoc::unknown())
     }
 
