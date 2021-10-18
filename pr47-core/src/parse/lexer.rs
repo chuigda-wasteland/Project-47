@@ -111,42 +111,27 @@ impl<'a> Lexer<'a> {
             match ch {
                 '\n' => {
                     self.line += 1;
-                    self.col = 1;
+                    self.col = 0;
                 },
                 '\t' => self.col += 4,
                 '\r' => {},
                 ' ' => self.col += 1,
                 ch => {
                     let location: SourceLoc = self.current_loc();
-                    if ch.is_whitespace() && !ch.is_ascii_whitespace() {
-                        self.diag.diag(self.file, messages::warn_space_character_0_ignored)
-                            .add_location(location)
-                            .add_mark(DiagMark::from(location).add_comment("non_ascii whitespace"))
-                            .add_arg(format!("\\{:x}", ch as u32))
-                            .build();
-                    }
+
+                    self.maybe_diag_non_ascii_whitespace(ch, location);
 
                     #[cfg(feature = "compiler-pretty-diag")]
                     if let Some(width /*: usize*/) = ch.width() {
                         self.col += width as u32;
                     } else {
-                        let location: SourceLoc = self.current_loc();
-                        self.diag.diag(self.file, messages::err_unexpected_control_char_0)
-                            .add_location(location)
-                            .add_mark(location.into())
-                            .add_arg(format!("\\{:x}", ch as u32))
-                            .build();
+                        self.diag_unexpected_control_char(ch, location);
                         return self.next_char();
                     }
 
                     #[cfg(not(feature = "compiler-pretty-diag"))]
                     if ch.is_control() {
-                        let location: SourceLoc = self.current_loc();
-                        self.diag.diag(self.file, messages::err_unexpected_control_char_0)
-                            .add_location(location)
-                            .add_mark(location.into())
-                            .add_arg(format!("\\{:x}", ch as u32))
-                            .build();
+                        self.diag_unexpected_control_char(ch, location);
                         return self.next_char();
                     }
                 }
@@ -160,17 +145,37 @@ impl<'a> Lexer<'a> {
     pub fn push_lexer_mode(&mut self, lexer_mode: LexerMode) {
         self.mode.push(lexer_mode);
     }
+
     pub fn pop_lexer_mode(&mut self) {
         let _: LexerMode = self.mode.pop().unwrap();
     }
+
     pub fn current_mode(&self) -> LexerMode {
         *self.mode.last().unwrap()
+    }
+
+    fn maybe_diag_non_ascii_whitespace(&mut self, ch: char, location: SourceLoc) {
+        if ch.is_whitespace() && !ch.is_ascii_whitespace() {
+            self.diag.diag(self.file, messages::warn_space_character_0_ignored)
+                .add_location(location)
+                .add_mark(DiagMark::from(location).add_comment("non_ascii whitespace"))
+                .add_arg(format!("\\{:x}", ch as u32))
+                .build();
+        }
+    }
+
+    fn diag_unexpected_control_char(&mut self, ch: char, location: SourceLoc) {
+        self.diag.diag(self.file, messages::err_unexpected_control_char_0)
+            .add_location(location)
+            .add_mark(location.into())
+            .add_arg(format!("\\{:x}", ch as u32))
+            .build();
     }
 }
 
 impl<'a> Lexer<'a> {
     pub fn next_token(&mut self) -> Option<Token<'a>> {
-        if let Some((ch, _)) = self.cur_char() {
+        if let Some((ch, _) /*: (char, usize)*/) = self.cur_char() {
             match ch {
                 'a'..='z' => {
                     Some(self.lex_id_or_keyword())
@@ -195,7 +200,7 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn skip_whitespace(&mut self) {
-        while let Some((ch, _)) = self.cur_char() {
+        while let Some((ch, _) /*: (char, usize)*/) = self.cur_char() {
             if ch.is_whitespace() {
                 self.next_char()
             } else {
@@ -210,25 +215,17 @@ impl<'a> Lexer<'a> {
         self.next_char();
 
         let mut maybe_end_loc: SourceLoc = self.current_loc();
-        while let Some((ch, idx)) = self.cur_char() {
+        while let Some((ch, idx) /*: (char, usize)*/) = self.cur_char() {
             if part_of_identifier(ch) {
                 maybe_end_loc = self.current_loc();
                 self.next_char();
             } else {
                 let id: &'a str = unsafe { self.source.get_unchecked(start_idx..idx) };
-                return if let Some(keyword /*TokenInner*/) = DEFAULT_KEYWORDS_MAP.get(id) {
-                    if keyword.is_reserved() {
-                        self.diag.diag(self.file, messages::err_reserved_identifier_0)
-                            .add_location(start_loc)
-                            .add_mark(
-                                DiagMark::new(start_loc.line, start_loc.col, maybe_end_loc.col)
-                                    .add_comment("reserved identifier")
-                            )
-                            .add_arg(id)
-                            .build();
-                    }
+                return if let Some(keyword /*: TokenInner*/) = DEFAULT_KEYWORDS_MAP.get(id) {
+                    self.maybe_diag_reserved_keyword(keyword, id, start_loc, maybe_end_loc);
                     Token::new(*keyword, start_loc, maybe_end_loc)
                 } else {
+                    self.maybe_diag_underscored_id(id, start_loc, maybe_end_loc);
                     Token::new_id(id, start_loc, maybe_end_loc)
                 }
             }
@@ -249,10 +246,41 @@ impl<'a> Lexer<'a> {
                 self.next_char();
             } else {
                 let id: &'a str = unsafe { self.source.get_unchecked(start_idx..idx) };
+
                 return Token::new_id(id, start_loc, maybe_end_loc);
             }
         }
 
         unreachable!()
+    }
+
+    fn maybe_diag_reserved_keyword(
+        &mut self,
+        keyword: &TokenInner,
+        id: &str,
+        start_loc:
+        SourceLoc,
+        end_loc: SourceLoc
+    ) {
+        if keyword.is_reserved() {
+            self.diag.diag(self.file, messages::err_reserved_identifier_0)
+                .add_location(start_loc)
+                .add_mark(DiagMark::new(
+                    start_loc.line, start_loc.col, end_loc.col
+                ).add_comment("reserved identifier"))
+                .add_arg(id)
+                .build();
+        }
+    }
+
+    fn maybe_diag_underscored_id(&mut self, id: &str, start_loc: SourceLoc, end_loc: SourceLoc) {
+        if id.starts_with('_') {
+            self.diag.diag(self.file, messages::warn_underscored_id_reserved)
+                .add_location(start_loc)
+                .add_mark(DiagMark::new(
+                    start_loc.line, start_loc.col, end_loc.col
+                ))
+                .build();
+        }
     }
 }

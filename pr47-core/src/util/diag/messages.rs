@@ -12,6 +12,7 @@ pub const err_reserved_identifier_0: u32 = 2003;
 // warnings
 pub const warn_commence_placeholder: u32 = 4000;
 pub const warn_space_character_0_ignored: u32 = 4001;
+pub const warn_underscored_id_reserved: u32 = 4002;
 
 pub const fn diag_message(code: u32) -> &'static str {
     if code > err_commence_placeholder {
@@ -28,6 +29,8 @@ pub const fn diag_message(code: u32) -> &'static str {
     } else if code > warn_commence_placeholder {
         match code {
             warn_space_character_0_ignored => "unicode space character '?0' ignored",
+            warn_underscored_id_reserved =>
+                "identifiers starting with underscore (`_`) are considered special",
             _ => "INVALID_ERROR_CODE"
         }
     } else {
