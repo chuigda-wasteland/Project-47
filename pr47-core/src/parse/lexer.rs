@@ -6,7 +6,7 @@ use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::syntax::token::{Token, TokenInner};
 use crate::util::diag::{DiagContext, messages, DiagMark};
-use crate::util::location::SourceLoc;
+use crate::util::location::{SourceLoc, SourceRange};
 
 #[cfg(feature = "compiler-pretty-diag")] use unicode_width::UnicodeWidthChar;
 
@@ -70,7 +70,7 @@ pub fn is_special(ch: char) -> bool {
 
 pub fn part_of_identifier(ch: char) -> bool {
     match ch {
-        '_' | 'A'..='Z' | 'a'..='z' | '0'..='9' | '!' | '?' => true,
+        '_' | 'A'..='Z' | 'a'..='z' | '0'..='9' => true,
         ch => !(ch.is_whitespace() || is_special(ch))
     }
 }
@@ -180,15 +180,16 @@ impl<'a> Lexer<'a> {
                 'a'..='z' => {
                     Some(self.lex_id_or_keyword())
                 },
-                '0'..='9' => {
-                    todo!("Nhu co bac ho trong ngay vui dai thang")
-                },
+                '0'..='9' => Some(self.lex_number_lit()),
+                '\'' => Some(self.lex_char_lit()),
+                '\"' => Some(self.lex_string_lit()),
+                '`' => Some(self.lex_raw_string_lit()),
                 ch if ch.is_whitespace() => {
                     self.skip_whitespace();
-                    return self.next_token();
+                    self.next_token()
                 },
                 ch if is_special(ch) => {
-                    todo!("Loi bac nay da thanh chien thang huy hoang")
+                    Some(self.lex_symbol())
                 }
                 _ => {
                     Some(self.lex_id())
@@ -252,6 +253,114 @@ impl<'a> Lexer<'a> {
         }
 
         unreachable!()
+    }
+
+    pub fn lex_symbol(&mut self) -> Token<'a> {
+        let location: SourceLoc = self.current_loc();
+        let (ch, _): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
+
+        use TokenInner::*;
+        match ch {
+            '&' => self.lex_maybe_consecutive(location, '&', SymAmp, SymDAmp),
+            '*' => self.lex_single_char_sym(location, SymAster),
+            '\\' => self.lex_single_char_sym(location, SymBackslash),
+            '^' => self.lex_maybe_consecutive(location, '^', SymDCaret, SymCaret),
+            ':' => self.lex_maybe_consecutive(location, ':', SymDColon, SymColon),
+            ',' => self.lex_single_char_sym(location, SymComma),
+            '=' => self.lex_maybe_consecutive(location, '=', SymDEq, SymEq),
+            '>' => if self.current_mode() == LexerMode::LexType {
+                self.lex_single_char_sym(location, SymGt)
+            } else {
+                self.lex_maybe_consecutive2(location, '>', SymDGt, '=', SymGe, SymGt)
+            },
+            '<' => if self.current_mode() == LexerMode::LexType {
+                self.lex_single_char_sym(location, SymLt)
+            } else {
+                self.lex_maybe_consecutive2(location, '<', SymDLt, '=', SymLe, SymLt)
+            },
+            '|' => self.lex_maybe_consecutive(location, '|', SymDPipe, SymPipe),
+            '+' => self.lex_maybe_consecutive(location, '+', SymDPlus, SymPlus),
+            '-' => self.lex_maybe_consecutive(location, '+', SymDMinus, SymMinus),
+            '.' => self.lex_single_char_sym(location, SymDot),
+            '!' => self.lex_maybe_consecutive(location, '=', SymNe, SymExclaim),
+            '{' => self.lex_single_char_sym(location, SymLBrace),
+            '[' => self.lex_single_char_sym(location, SymLBracket),
+            '(' => self.lex_single_char_sym(location, SymLParen),
+            '%' => self.lex_single_char_sym(location, SymPercent),
+            '?' => self.lex_single_char_sym(location, SymQues),
+            '}' => self.lex_single_char_sym(location, SymRBrace),
+            ']' => self.lex_single_char_sym(location, SymRBracket),
+            ')' => self.lex_single_char_sym(location, SymRParen),
+            ';' => self.lex_single_char_sym(location, SymSemicolon),
+            '#' => self.lex_single_char_sym(location, SymSharp),
+            '/' => self.lex_single_char_sym(location, SymSlash),
+            '~' => self.lex_single_char_sym(location, SymTilde),
+            _ => unreachable!()
+        }
+    }
+
+    pub fn lex_number_lit(&mut self) -> Token<'a> {
+        todo!("이 조선 이끄는 힘 억세다")
+    }
+
+    pub fn lex_char_lit(&mut self) -> Token<'a> {
+        todo!("인민의 운명을 한몸에 안고")
+    }
+
+    pub fn lex_string_lit(&mut self) -> Token<'a> {
+        todo!("우리가 바라는 꿈과 리상")
+    }
+
+    pub fn lex_raw_string_lit(&mut self) -> Token<'a> {
+        todo!("모두다 꽃펴주실 분")
+    }
+
+    fn lex_single_char_sym(&mut self, location: SourceLoc, token: TokenInner<'a>) -> Token<'a> {
+        self.next_token();
+        Token::new(token, location, SourceLoc::unknown())
+    }
+
+    fn lex_maybe_consecutive(
+        &mut self,
+        location: SourceLoc,
+        ch: char,
+        consecutive: TokenInner<'a>,
+        otherwise: TokenInner<'a>
+    ) -> Token<'a> {
+        self.next_char();
+
+        if let Some((got_ch, _) /*: (char, usize)*/) = self.cur_char() {
+            if got_ch == ch {
+                self.next_char();
+                return Token::new(consecutive, location, SourceLoc::unknown())
+            }
+        }
+
+        Token::new(otherwise, location, SourceLoc::unknown())
+    }
+
+    fn lex_maybe_consecutive2(
+        &mut self,
+        location: SourceLoc,
+        ch1: char,
+        consecutive1: TokenInner<'a>,
+        ch2: char,
+        consecutive2: TokenInner<'a>,
+        otherwise: TokenInner<'a>
+    ) -> Token<'a> {
+        self.next_char();
+
+        if let Some((got_ch, _) /*: (char, usize)*/) = self.cur_char() {
+            if got_ch == ch1 {
+                self.next_char();
+                return Token::new(consecutive1, location, SourceLoc::unknown())
+            } else if got_ch == ch2 {
+                self.next_char();
+                return Token::new(consecutive2, location, SourceLoc::unknown())
+            }
+        }
+
+        Token::new(otherwise, location, SourceLoc::unknown())
     }
 
     fn maybe_diag_reserved_keyword(
