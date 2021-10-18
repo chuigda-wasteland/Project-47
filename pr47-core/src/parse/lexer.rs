@@ -221,19 +221,18 @@ impl<'a, 'b> Lexer<'a, 'b> {
         let (_, start_idx): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
         self.next_char();
 
-        let mut maybe_end_loc: SourceLoc = self.current_loc();
         while let Some((ch, idx) /*: (char, usize)*/) = self.cur_char() {
             if part_of_identifier(ch) {
-                maybe_end_loc = self.current_loc();
                 self.next_char();
             } else {
+                let end_loc: SourceLoc = self.current_loc();
                 let id: &'a str = unsafe { self.source.get_unchecked(start_idx..idx) };
                 return if let Some(keyword /*: TokenInner*/) = DEFAULT_KEYWORDS_MAP.get(id) {
-                    self.maybe_diag_reserved_keyword(keyword, id, start_loc, maybe_end_loc);
-                    Token::new(*keyword, start_loc, maybe_end_loc)
+                    self.maybe_diag_reserved_keyword(keyword, id, start_loc, end_loc);
+                    Token::new(*keyword, start_loc, end_loc)
                 } else {
-                    self.maybe_diag_underscored_id(id, start_loc, maybe_end_loc);
-                    Token::new_id(id, start_loc, maybe_end_loc)
+                    self.maybe_diag_underscored_id(id, start_loc, end_loc);
+                    Token::new_id(id, start_loc, end_loc)
                 }
             }
         }
@@ -246,15 +245,14 @@ impl<'a, 'b> Lexer<'a, 'b> {
         let (_, start_idx): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
         self.next_char();
 
-        let mut maybe_end_loc: SourceLoc = self.current_loc();
         while let Some((ch, idx)) = self.cur_char() {
             if part_of_identifier(ch) {
-                maybe_end_loc = self.current_loc();
                 self.next_char();
             } else {
+                let end_loc: SourceLoc = self.current_loc();
                 let id: &'a str = unsafe { self.source.get_unchecked(start_idx..idx) };
 
-                return Token::new_id(id, start_loc, maybe_end_loc);
+                return Token::new_id(id, start_loc, end_loc);
             }
         }
 
@@ -382,6 +380,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
             .add_mark(DiagMark::from(location))
             .add_arg(ch.to_string())
             .build();
+        self.next_char();
         Token::new(token, location, SourceLoc::unknown())
     }
 

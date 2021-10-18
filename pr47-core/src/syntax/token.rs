@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use crate::util::location::SourceLoc;
+use smallvec::alloc::fmt::Debug;
 
 #[derive(Clone, Copy)]
 pub enum TokenInner<'a> {
@@ -225,5 +226,11 @@ impl<'a> Display for Token<'a> {
             SymSlash => write!(f, "⟨`/`, {}:{}⟩", line, col),
             SymTilde => write!(f, "⟨~, {}:{}⟩", line, col)
         }
+    }
+}
+
+impl<'a> Debug for Token<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }

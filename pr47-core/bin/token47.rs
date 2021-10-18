@@ -1,6 +1,10 @@
 use std::fs::read_to_string;
-use pr47::util::diag::DiagContext;
+
 use pr47::parse::lexer::Lexer;
+use pr47::util::diag::DiagContext;
+use pr47::util::diag::pretty::prettify_diag;
+use pr47::util::source_map::SourceMap;
+use pr47::syntax::token::Token;
 
 fn main() {
     let args: Vec<String> = std::env::args()
@@ -13,20 +17,26 @@ fn main() {
     }
 
     let source: String = read_to_string(&args[1]).expect("cannot read appointed file");
+    let lines: Vec<&str> = source.split('\n').collect::<Vec<_>>();
 
     let mut diag: DiagContext = DiagContext::new();
     let mut lexer: Lexer = Lexer::new(&args[1], &source, &mut diag);
 
-    eprint!("[");
+    let mut tokens: Vec<Token> = Vec::new();
     while let Some(token /*: Token*/) = lexer.next_token() {
-        eprint!("{}, ", token);
+        tokens.push(token);
     }
-    eprintln!("]");
     drop(lexer);
 
-    if diag.has_error() {
-        eprintln!("*** There's error in source code");
+    let mut source_map: SourceMap = SourceMap::new();
+    source_map.add_source(&args[1], lines);
+
+    for diag /*: Diagnostic<'_>*/ in diag.clear_reset() {
+        eprintln!("{}", prettify_diag(&diag, &source_map));
+        drop(diag)
     }
+
+    eprintln!("{:?}", tokens);
 
     drop(diag);
 }

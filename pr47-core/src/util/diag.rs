@@ -1,5 +1,7 @@
 pub mod messages;
 
+#[cfg(feature = "compiler-pretty-diag")] pub mod pretty;
+
 use std::mem::replace;
 
 use smallvec::SmallVec;

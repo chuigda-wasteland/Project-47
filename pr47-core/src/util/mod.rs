@@ -4,6 +4,7 @@ pub mod either;
 pub mod location;
 pub mod makro;
 pub mod mem;
+pub mod source_map;
 pub mod std_ext;
 pub mod type_assert;
 pub mod unchecked_cell;
