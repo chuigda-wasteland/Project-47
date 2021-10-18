@@ -35,7 +35,7 @@ impl DiagMark {
 
     pub fn add_comment(mut self, comment: &'static str) -> Self {
         let opt: Option<&'static str> = self.comment.replace(comment);
-        assert!(opt.is_none());
+        debug_assert!(opt.is_none());
         self
     }
 }
@@ -94,11 +94,15 @@ impl<'a> DiagDetailBuilder<'a> {
         self.detail.location = location;
         self
     }
+
+    #[must_use] pub fn build(self) -> DiagDetail<'a> {
+        self.detail
+    }
 }
 
 pub struct Diagnostic<'a> {
     pub file: &'a str,
-    pub diag_id: usize,
+    pub diag_id: u32,
     pub args: SmallVec<[String; 4]>,
 
     pub location: SourceLoc,
@@ -107,7 +111,7 @@ pub struct Diagnostic<'a> {
 }
 
 impl<'a> Diagnostic<'a> {
-    #[must_use] pub fn builder(file: &'a str, diag_id: usize) -> DiagBuilder<'a> {
+    #[must_use] pub fn builder(file: &'a str, diag_id: u32) -> DiagBuilder<'a> {
         DiagBuilder {
             diag: Self {
                 file,
@@ -132,7 +136,7 @@ impl<'a> DiagBuilder<'a> {
         self
     }
 
-    #[must_use] pub fn with_location(mut self, location: SourceLoc) -> Self {
+    #[must_use] pub fn add_location(mut self, location: SourceLoc) -> Self {
         debug_assert!(!location.is_unknown());
         self.diag.location = location;
         self
@@ -160,6 +164,11 @@ pub struct DiagContext<'a> {
     has_error: bool
 }
 
+pub struct DiagBuilderCtx<'a, 'b> {
+    diag_context: &'b mut DiagContext<'a>,
+    diag_builder: DiagBuilder<'a>
+}
+
 impl<'a> DiagContext<'a> {
     pub fn new() -> Self {
         Self {
@@ -169,10 +178,48 @@ impl<'a> DiagContext<'a> {
         }
     }
 
-    pub fn clear_reset(&mut self) -> Vec<Diagnostic<'a>> {
+    pub fn diag<'b>(&'b mut self, file_name: &'a str, diag_id: u32) -> DiagBuilderCtx<'a, 'b> {
+        let diag_builder: DiagBuilder<'a> = Diagnostic::builder(file_name, diag_id);
+        DiagBuilderCtx {
+            diag_context: self,
+            diag_builder
+        }
+    }
+
+    pub fn add_diag(&mut self, diag: Diagnostic<'a>) {
+        self.diags.push(diag);
+    }
+
+    #[must_use] pub fn clear_reset(&mut self) -> Vec<Diagnostic<'a>> {
         self.has_diag = false;
         self.has_error = false;
 
         return replace(&mut self.diags, vec![])
+    }
+}
+
+impl<'a, 'b> DiagBuilderCtx<'a, 'b> {
+    #[must_use] pub fn add_arg(mut self, arg: impl ToString) -> Self {
+        self.diag_builder = self.diag_builder.add_arg(arg);
+        self
+    }
+
+    #[must_use] pub fn add_location(mut self, location: SourceLoc) -> Self {
+        self.diag_builder = self.diag_builder.add_location(location);
+        self
+    }
+
+    #[must_use] pub fn add_mark(mut self, mark: DiagMark) -> Self {
+        self.diag_builder = self.diag_builder.add_mark(mark);
+        self
+    }
+
+    #[must_use] pub fn add_detail(mut self, detail: DiagDetail<'a>) -> Self {
+        self.diag_builder = self.diag_builder.add_detail(detail);
+        self
+    }
+
+    pub fn build(self) {
+        self.diag_context.add_diag(self.diag_builder.build())
     }
 }

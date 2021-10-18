@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use crate::util::location::SourceLoc;
 
+#[derive(Clone, Copy)]
 pub enum TokenInner<'a> {
     Ident(&'a str),
 
@@ -81,6 +82,16 @@ pub enum TokenInner<'a> {
     SymSharp,
     SymSlash,
     SymTilde
+}
+
+impl<'a> TokenInner<'a> {
+    pub fn is_reserved(&self) -> bool {
+        use TokenInner::*;
+        match *self {
+            RsvAsm | RsvAttribute | RsvCkx | RsvRefl | RsymAt | RsymDollar => true,
+            _ => false
+        }
+    }
 }
 
 pub struct Token<'a> {

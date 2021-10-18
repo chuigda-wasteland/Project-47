@@ -2,9 +2,11 @@ use std::iter::Peekable;
 use std::str::CharIndices;
 
 use phf::phf_map;
+use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::syntax::token::{Token, TokenInner};
-use crate::util::diag::DiagContext;
+use crate::util::diag::{DiagContext, messages, DiagMark};
+use crate::util::location::SourceLoc;
 
 #[cfg(feature = "compiler-pretty-diag")] use unicode_width::UnicodeWidthChar;
 
@@ -45,24 +47,38 @@ static DEFAULT_KEYWORDS_MAP: phf::Map<&'static str, TokenInner<'static>> = phf_m
 };
 
 pub struct Lexer<'a> {
-    file_name: &'a str,
+    file: &'a str,
 
     mode: Vec<LexerMode>,
+    source: &'a str,
     char_indices: Peekable<CharIndices<'a>>,
 
     cur_ch_idx: Option<(char, usize)>,
     line: u32,
     col: u32,
 
-    diag: &'a DiagContext<'a>
+    diag: &'a mut DiagContext<'a>
+}
+
+pub fn is_special(ch: char) -> bool {
+    match ch {
+        '@' | '$' | '&' | '*' | '\\' | '^' | ':' | ',' | '=' | '>' | '<' | '|' | '.' | '!' |
+        '{' | '[' | '(' | '-' | '%' | '+' | '?' | '}' | ']' | ')' | ';' | '#' | '/' | '~' => true,
+        _ => false
+    }
+}
+
+pub fn part_of_identifier(ch: char) -> bool {
+    !(ch.is_whitespace() || is_special(ch))
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(file_name: &'a str, source: &'a str, diag: &'a DiagContext<'a>) -> Self {
+    pub fn new(file: &'a str, source: &'a str, diag: &'a mut DiagContext<'a>) -> Self {
         let mut ret: Self = Self {
-            file_name,
+            file,
 
             mode: vec![LexerMode::LexExpr],
+            source,
             char_indices: source.char_indices().peekable(),
 
             cur_ch_idx: None,
@@ -83,6 +99,10 @@ impl<'a> Lexer<'a> {
         self.char_indices.peek().map(|(_, ch): &(usize, char)| *ch)
     }
 
+    pub fn current_loc(&mut self) -> SourceLoc {
+        SourceLoc::new(self.line, self.col)
+    }
+
     pub fn next_char(&mut self) {
         if let Some((idx, ch) /*: (usize, char)*/) = self.char_indices.next() {
             match ch {
@@ -94,23 +114,37 @@ impl<'a> Lexer<'a> {
                 '\r' => {},
                 ' ' => self.col += 1,
                 ch => {
+                    let location: SourceLoc = self.current_loc();
                     if ch.is_whitespace() && !ch.is_ascii_whitespace() {
-                        // TODO diag about non-ascii spaces
+                        self.diag.diag(self.file, messages::warn_space_character_0_ignored)
+                            .add_location(location)
+                            .add_mark(DiagMark::from(location).add_comment("non_ascii whitespace"))
+                            .add_arg(format!("\\{:x}", ch as u32))
+                            .build();
                     }
 
                     #[cfg(feature = "compiler-pretty-diag")]
                     if let Some(width /*: usize*/) = ch.width() {
                         self.col += width as u32;
                     } else {
-                        // TODO diag about unexpected control character
-                        // do nothing
+                        let location: SourceLoc = self.current_loc();
+                        self.diag.diag(self.file, messages::err_unexpected_control_char_0)
+                            .add_location(location)
+                            .add_mark(location.into())
+                            .add_arg(format!("\\{:x}", ch as u32))
+                            .build();
+                        return self.next_char();
                     }
 
                     #[cfg(not(feature = "compiler-pretty-diag"))]
                     if ch.is_control() {
-                        // TODO diag about unexpected control character
-                    } else {
-                        self.col += 1;
+                        let location: SourceLoc = self.current_loc();
+                        self.diag.diag(self.file, messages::err_unexpected_control_char_0)
+                            .add_location(location)
+                            .add_mark(location.into())
+                            .add_arg(format!("\\{:x}", ch as u32))
+                            .build();
+                        return self.next_char();
                     }
                 }
             }
@@ -136,23 +170,86 @@ impl<'a> Lexer<'a> {
         if let Some((ch, _)) = self.cur_char() {
             match ch {
                 'a'..='z' => {
-                    todo!("红色的太阳升起在东方光芒万丈")
+                    Some(self.lex_id_or_keyword())
                 },
                 '0'..='9' => {
-                    todo!("东风万里鲜花开放红旗像大海洋")
+                    todo!("Nhu co bac ho trong ngay vui dai thang")
                 },
                 ch if ch.is_whitespace() => {
-                    todo!("伟大的领袖英明的导师敬爱的毛主席")
+                    self.skip_whitespace();
+                    return self.next_token();
                 },
-                ch if (ch as usize) < (' ' as usize) => {
-                    todo!("革命人民心中的太阳心中的红太阳")
-                },
-                _ch => {
-                    todo!("万岁毛主席，万岁毛主席，万岁万岁万岁，万岁万万岁，万岁万岁毛主席")
+                ch if is_special(ch) => {
+                    todo!("Loi bac nay da thanh chien thang huy hoang")
+                }
+                _ => {
+                    Some(self.lex_id())
                 }
             }
         } else {
             None
         }
+    }
+
+    pub fn skip_whitespace(&'a mut self) {
+        while let Some((ch, _)) = self.cur_char() {
+            if ch.is_whitespace() {
+                self.next_char()
+            } else {
+                break;
+            }
+        }
+    }
+
+    pub fn lex_id_or_keyword(&'a mut self) -> Token<'a> {
+        let start_loc: SourceLoc = self.current_loc();
+        let (_, start_idx): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
+        self.next_char();
+
+        let mut maybe_end_loc: SourceLoc = self.current_loc();
+        while let Some((ch, idx)) = self.cur_char() {
+            if part_of_identifier(ch) {
+                maybe_end_loc = self.current_loc();
+                self.next_char();
+            } else {
+                let id: &'a str = unsafe { self.source.get_unchecked(start_idx..idx) };
+                return if let Some(keyword /*TokenInner*/) = DEFAULT_KEYWORDS_MAP.get(id) {
+                    if keyword.is_reserved() {
+                        self.diag.diag(self.file, messages::err_reserved_identifier_0)
+                            .add_location(start_loc)
+                            .add_mark(
+                                DiagMark::new(start_loc.line, start_loc.col, maybe_end_loc.col)
+                                    .add_comment("reserved identifier")
+                            )
+                            .add_arg(id)
+                            .build();
+                    }
+                    Token::new(*keyword, start_loc, maybe_end_loc)
+                } else {
+                    Token::new_id(id, start_loc, maybe_end_loc)
+                }
+            }
+        }
+
+        unreachable!()
+    }
+
+    pub fn lex_id(&'a mut self) -> Token<'a> {
+        let start_loc: SourceLoc = self.current_loc();
+        let (_, start_idx): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
+        self.next_char();
+
+        let mut maybe_end_loc: SourceLoc = self.current_loc();
+        while let Some((ch, idx)) = self.cur_char() {
+            if part_of_identifier(ch) {
+                maybe_end_loc = self.current_loc();
+                self.next_char();
+            } else {
+                let id: &'a str = unsafe { self.source.get_unchecked(start_idx..idx) };
+                return Token::new_id(id, start_loc, maybe_end_loc);
+            }
+        }
+
+        unreachable!()
     }
 }
