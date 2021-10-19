@@ -52,4 +52,3 @@ pub struct AttrListValue {
     pub left_paren_loc: SourceLoc,
     pub right_paren_loc: SourceLoc
 }
-
