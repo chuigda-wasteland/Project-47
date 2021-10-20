@@ -1,4 +1,8 @@
-use crate::util::mem::FatPointer;
+pub mod default_alloc;
+pub mod no_gc_alloc;
+
+use xjbutil::fat_ptr::FatPointer;
+
 use crate::vm::al31f::stack::Stack;
 
 /// Abstract memory manager of `AL31F` engine
@@ -17,6 +21,3 @@ pub trait Alloc: 'static + Send + Sync {
     /// Allow or disallow garbage collection
     fn set_gc_allowed(&mut self, allowed: bool);
 }
-
-pub mod default_alloc;
-pub mod no_gc_alloc;

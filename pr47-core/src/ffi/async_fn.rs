@@ -1,6 +1,8 @@
 use std::future::Future;
 use std::pin::Pin;
 
+use xjbutil::void::Void;
+
 use crate::data::Value;
 use crate::data::container::ContainerRef;
 use crate::data::exception::UncheckedException;
@@ -12,7 +14,6 @@ use crate::data::wrapper::{
 };
 use crate::ffi::{FFIException, Signature};
 use crate::util::serializer::Serializer;
-use crate::util::void::Void;
 
 pub trait AsyncVMContext: 'static + Sized + Send + Sync {
     type SharedData;

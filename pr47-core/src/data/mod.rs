@@ -9,16 +9,16 @@ use std::marker::PhantomData;
 use std::mem::{MaybeUninit, transmute};
 
 use unchecked_unwrap::UncheckedUnwrap;
+use xjbutil::fat_ptr::FatPointer;
+use xjbutil::mem::move_to_heap;
+use xjbutil::std_ext::BoxedExt;
+use xjbutil::unchecked::UnsafeFrom;
+use xjbutil::void::Void;
 
 use crate::data::container::{CONTAINER_MASK, ContainerVT};
 use crate::data::traits::StaticBase;
 use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
 use crate::data::wrapper::{DynBase, OwnershipInfo, Wrapper};
-use crate::util::mem::{FatPointer, move_to_heap};
-use crate::util::std_ext::BoxedExt;
-use crate::util::unsafe_from::UnsafeFrom;
-use crate::util::void::Void;
-use crate::util::zvec::ZeroInit;
 
 #[cfg(any(test, feature = "bench"))]
 use std::fmt::{Debug, Formatter};
@@ -428,8 +428,6 @@ impl Debug for Value {
         }
     }
 }
-
-unsafe impl ZeroInit for Value {}
 
 #[repr(transparent)]
 pub struct TypedValue<T: 'static> {

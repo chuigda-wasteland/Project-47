@@ -1,4 +1,4 @@
-use crate::util::unsafe_from::UnsafeFrom;
+use xjbutil::unchecked::UnsafeFrom;
 
 pub const VALUE_TYPE_MASK: u8     = 0b00_000_001;
 pub const VALUE_TYPE_TAG_MASK: u8 = 0b00_111_000;

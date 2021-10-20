@@ -1,6 +1,6 @@
 [package]
 name = "pr47"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["ICEY <icey@icey.tech>"]
 edition = "2018"
 description = "A semi-experimental programming language. Still working in progress."
@@ -13,7 +13,19 @@ resolver = "2"
 
 [dependencies]
 pollster = "0.2"
+pr47-codegen = "0.0.2"
 unchecked_unwrap = "3"
+xjbutil = { version = "0.1", default-features = false, features = [
+    "defer",
+    "either",
+    "fat_ptr",
+    "korobka",
+    "makro",
+    "mem",
+    "std-ext",
+    "unchecked",
+    "void"
+] }
 
 async-std = { optional = true, version = "1" }
 futures = { optional = true, version = "0.3" }
@@ -22,14 +34,13 @@ smallvec = { optional = true, version = "1" }
 tokio = { optional = true, version = "1", features = ["rt", "sync", "time"] }
 unicode-width = { optional = true, version = "0.1" }
 
-pr47-codegen = { path = "../pr47-codegen" }
-
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread"] }
 variant_count = "1"
 
 [features]
 default = ["async-tokio", "compiler", "compiler-pretty-diag", "optimized-rtlc", "std47"]
+
 compiler = ["phf", "smallvec"]
 compiler-pretty-diag = ["unicode-width"]
 no-rtlc = []
@@ -38,9 +49,9 @@ bench = []
 huge-align = []
 std47 = []
 
-async-tokio = ["async", "tokio"]
-async-astd = ["async", "async-std"]
-async = ["futures"]
+async-tokio = ["async", "tokio", "xjbutil/async-tokio"]
+async-astd = ["async", "async-std", "xjbutil/async-astd"]
+async = ["futures", "xjbutil/async"]
 
 # Compiler testing binaries
 [[bin]]

@@ -1,10 +1,11 @@
-use crate::boxed_slice;
+use xjbutil::boxed_slice;
+use xjbutil::void::Void;
+
 use crate::collections::object::Object;
 use crate::data::Value;
 use crate::data::traits::StaticBase;
 use crate::ffi::{FFIException, Signature};
 use crate::ffi::sync_fn::{Function, FunctionBase, OwnershipGuard, VMContext, value_into_ref};
-use crate::util::void::Void;
 use crate::vm::al31f::Combustor;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};

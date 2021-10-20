@@ -2,11 +2,12 @@ use std::any::TypeId;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
+use xjbutil::void::Void;
+
 use crate::data::Value;
 use crate::data::container::ContainerVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool, ContainerTyckInfo};
-use crate::util::void::Void;
 
 pub enum UncheckedException {
     ArgCountMismatch { func_id: usize, expected: usize, got: usize },

@@ -6,8 +6,8 @@ use std::hint::unreachable_unchecked;
 use std::mem::forget;
 use std::ptr::NonNull;
 
-use crate::util::mem::Korobka;
-use crate::util::std_ext::{BoxedExt, VecExt};
+use xjbutil::korobka::Korobka;
+use xjbutil::std_ext::{BoxedExt, VecExt};
 
 pub struct ContainerTyckInfo {
     pub type_id: TypeId,

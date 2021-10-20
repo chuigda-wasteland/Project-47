@@ -3,11 +3,12 @@ use std::marker::PhantomData;
 use std::mem::transmute;
 use std::ptr::NonNull;
 
+use xjbutil::fat_ptr::FatPointer;
+use xjbutil::void::Void;
+
 use crate::data::container::ContainerVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{ContainerTyckInfo, TyckInfo, TyckInfoPool};
-use crate::util::mem::FatPointer;
-use crate::util::void::Void;
 
 pub struct GenericTestContainer {
     pub elements: Vec<FatPointer>,

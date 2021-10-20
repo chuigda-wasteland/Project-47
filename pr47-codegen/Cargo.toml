@@ -1,6 +1,6 @@
 [package]
 name = "pr47-codegen"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["ICEY <icey@icey.tech>"]
 edition = "2018"
 resolver = "2"

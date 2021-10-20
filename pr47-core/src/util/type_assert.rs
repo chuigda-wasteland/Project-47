@@ -4,8 +4,9 @@
 //! diagnostics information shorter and clearer. If the desired property of one type is not
 //! satisfied, compilation will fail then, with error information indicated.
 
+use xjbutil::void::Void;
+
 use crate::data::traits::StaticBase;
-use crate::util::void::Void;
 
 /// Contains traits used by type assertions.
 ///
@@ -13,7 +14,7 @@ use crate::util::void::Void;
 /// Implementing any of these traits will *NOT* magically make your own `Result` or `Option` or so
 /// work, but will create bugs that are really hard to troubleshoot. Simply don't do that.
 pub mod helper_traits {
-    use crate::util::void::Void;
+    use xjbutil::void::Void;
 
     /// Trait used to assert that one type is cloneable.
     pub unsafe trait AssertClone<T> {}
@@ -46,7 +47,14 @@ pub mod helper_traits {
     unsafe impl<T> AssertOption<core::option::Option<T>> for Void {}
 }
 
-use crate::util::type_assert::helper_traits::{AssertClone, AssertMutRef, AssertOption, AssertRef, AssertResult, AssertConstRef};
+use crate::util::type_assert::helper_traits::{
+    AssertClone,
+    AssertConstRef,
+    AssertMutRef,
+    AssertOption,
+    AssertRef,
+    AssertResult
+};
 
 /// Assert that the type parameter `T` is cloneable.
 ///

@@ -2,9 +2,10 @@ use std::any::TypeId;
 use std::iter::Iterator;
 use std::ptr::NonNull;
 
+use xjbutil::fat_ptr::FatPointer;
+use xjbutil::void::Void;
+
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
-use crate::util::mem::FatPointer;
-use crate::util::void::Void;
 
 pub type ChildrenType = Option<Box<dyn Iterator<Item=FatPointer> + 'static>>;
 

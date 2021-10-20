@@ -2,11 +2,11 @@ use std::collections::VecDeque;
 use std::mem::transmute;
 
 use unchecked_unwrap::UncheckedUnwrap;
+use xjbutil::fat_ptr::FatPointer;
 
 use crate::data::PTR_BITS_MASK_USIZE;
 use crate::data::container::{CONTAINER_MASK, ContainerVT};
 use crate::data::wrapper::{DynBase, OWN_INFO_COLLECT_MASK, Wrapper};
-use crate::util::mem::FatPointer;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::stack::Stack;
 

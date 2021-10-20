@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
+use xjbutil::void::Void;
+
 use crate::data::Value;
 use crate::data::traits::{ChildrenType, StaticBase};
-use crate::util::void::Void;
 
 pub struct Object {
     fields: HashMap<String, Value>

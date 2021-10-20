@@ -2,14 +2,14 @@ use std::any::TypeId;
 use std::ptr::NonNull;
 
 use unchecked_unwrap::UncheckedUnwrap;
+use xjbutil::either::Either;
+use xjbutil::fat_ptr::FatPointer;
 
 use crate::collections::object::Object;
 use crate::data::Value;
 use crate::data::exception::{CheckedException, Exception, UncheckedException};
 use crate::data::value_typed::INT_TYPE_TAG;
 use crate::ffi::sync_fn::Function as FFIFunction;
-use crate::util::either::Either;
-use crate::util::mem::FatPointer;
 use crate::vm::al31f::{AL31F, Combustor};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
@@ -52,8 +52,8 @@ use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
 #[cfg(feature = "async")] use crate::util::serializer::Serializer;
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
-#[cfg(feature = "bench")] use crate::defer;
-#[cfg(feature = "bench")] use crate::util::defer::Defer;
+#[cfg(feature = "bench")] use xjbutil::defer::Defer;
+#[cfg(feature = "bench")] use xjbutil::defer;
 
 include!("get_vm_makro.rs");
 include!("impl_makro.rs");

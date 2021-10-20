@@ -80,9 +80,10 @@ pub struct ContainerPtr {
 pub mod gen_impls {
     use std::mem::{MaybeUninit, ManuallyDrop};
 
+    use xjbutil::void::Void;
+
     use crate::data::traits::{ChildrenType, StaticBase};
     use crate::data::wrapper::{OwnershipInfo, Wrapper};
-    use crate::util::void::Void;
 
     #[cfg(debug_assertions)] use std::any::TypeId;
 

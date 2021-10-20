@@ -1,4 +1,5 @@
-use crate::util::mem::FatPointer;
+use xjbutil::fat_ptr::FatPointer;
+
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::stack::Stack;
 

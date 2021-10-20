@@ -1,7 +1,7 @@
-use crate::data::traits::StaticBase;
-use crate::util::void::Void;
-
 use pr47_codegen::pr47_function_bind;
+use xjbutil::void::Void;
+
+use crate::data::traits::StaticBase;
 
 pub struct Vec2(f64, f64);
 pub struct Vec3(f64, f64, f64);

@@ -2,6 +2,9 @@ use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::ptr::{NonNull, addr_of, null_mut};
 
+use xjbutil::fat_ptr::FatPointer;
+use xjbutil::void::Void;
+
 use crate::collections::test_container::{
     GenericTestContainer,
     TestContainer,
@@ -12,8 +15,6 @@ use crate::data::container::ContainerVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::data::wrapper::{Wrapper, WrapperData, DynBase, OwnershipInfo};
-use crate::util::mem::FatPointer;
-use crate::util::void::Void;
 
 #[allow(dead_code)]
 struct TestStruct {

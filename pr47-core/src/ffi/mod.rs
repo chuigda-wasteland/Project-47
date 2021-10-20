@@ -1,7 +1,8 @@
 use std::any::TypeId;
 
+use xjbutil::either::Either;
+
 use crate::data::tyck::TyckInfo;
-use crate::util::either::Either;
 use crate::data::exception::{CheckedException, UncheckedException};
 
 pub mod sync_fn;

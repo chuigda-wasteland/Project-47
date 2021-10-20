@@ -3,11 +3,11 @@ use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::addr_of;
 
 use unchecked_unwrap::UncheckedUnwrap;
+use xjbutil::unchecked::UnsafeFrom;
+use xjbutil::void::Void;
 
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::TyckInfo;
-use crate::util::unsafe_from::UnsafeFrom;
-use crate::util::void::Void;
 
 pub const OWN_INFO_READ_MASK: u8    = 0b000_1_0_0_0_0;
 pub const OWN_INFO_WRITE_MASK: u8   = 0b000_0_1_0_0_0;

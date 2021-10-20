@@ -1,8 +1,10 @@
 use std::ptr::NonNull;
 
-#[cfg(feature = "async")] use crate::ffi::async_fn::AsyncVMContext;
+use xjbutil::fat_ptr::FatPointer;
+
 use crate::ffi::sync_fn::VMContext;
-use crate::util::mem::FatPointer;
+
+#[cfg(feature = "async")] use crate::ffi::async_fn::AsyncVMContext;
 #[cfg(feature = "async")] use crate::util::serializer::Serializer;
 use crate::vm::al31f::alloc::Alloc;
 

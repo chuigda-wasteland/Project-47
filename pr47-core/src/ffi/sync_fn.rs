@@ -1,3 +1,6 @@
+use xjbutil::fat_ptr::FatPointer;
+use xjbutil::void::Void;
+
 use crate::data::Value;
 use crate::data::container::ContainerRef;
 use crate::data::exception::{UncheckedException};
@@ -9,8 +12,6 @@ use crate::data::wrapper::{
     OWN_INFO_WRITE_MASK
 };
 use crate::ffi::{FFIException, Signature};
-use crate::util::mem::FatPointer;
-use crate::util::void::Void;
 
 pub trait VMContext: 'static + Sized {
     fn allocate(&mut self, fat_ptr: FatPointer);
