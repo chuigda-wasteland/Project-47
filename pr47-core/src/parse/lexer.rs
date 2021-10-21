@@ -9,8 +9,6 @@ use crate::diag::diag_data;
 use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::token::{Token, TokenInner};
 
-#[cfg(feature = "compiler-pretty-diag")] use unicode_width::UnicodeWidthChar;
-
 #[derive(Clone, Copy, Eq, PartialEq)]
 #[repr(u8)]
 pub enum LexerMode {
@@ -111,6 +109,10 @@ impl<'a, 'b> Lexer<'a, 'b> {
 
     pub fn next_char(&mut self) {
         if let Some((idx, ch) /*: (usize, char)*/) = self.char_indices.next() {
+            if ch.is_control() {
+                self.diag_unexpected_control_char(ch, SourceLoc::new(self.file_id, idx as u32));
+                return self.next_char();
+            }
             self.cur_ch_idx = Some((ch, idx));
         } else {
             self.cur_ch_idx = None;
@@ -129,17 +131,8 @@ impl<'a, 'b> Lexer<'a, 'b> {
         *self.mode.last().unwrap()
     }
 
-    fn maybe_diag_non_ascii_whitespace(&mut self, ch: char, location: SourceLoc) {
-        if ch.is_whitespace() && !ch.is_ascii_whitespace() {
-            self.diag.diag(self.current_loc(), diag_data::warn_space_character_0_ignored)
-                .add_mark(DiagMark::from(location).add_comment("non_ascii whitespace"))
-                .add_arg(format!("\\{:x}", ch as u32))
-                .build();
-        }
-    }
-
     fn diag_unexpected_control_char(&mut self, ch: char, location: SourceLoc) {
-        self.diag.diag(self.current_loc(), diag_data::err_unexpected_control_char_0)
+        self.diag.diag(location, diag_data::err_unexpected_control_char_0)
             .add_mark(location.into())
             .add_arg(format!("\\{:x}", ch as u32))
             .build();
@@ -343,8 +336,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
         token: TokenInner<'a>,
         ch: char
     ) -> Token<'a> {
-        self.diag.diag(self.file, diag_data::err_reserved_symbol_0)
-            .add_location(location)
+        self.diag.diag(location, diag_data::err_reserved_symbol_0)
             .add_mark(DiagMark::from(location))
             .add_arg(ch.to_string())
             .build();
@@ -361,9 +353,9 @@ impl<'a, 'b> Lexer<'a, 'b> {
         end_loc: SourceLoc
     ) {
         if keyword.is_reserved() {
-            self.diag.diag(self.file, diag_data::err_reserved_identifier_0)
+            self.diag.diag(start_loc, diag_data::err_reserved_identifier_0)
                 .add_mark(
-                    DiagMark::new(start_loc.line, start_loc.col, end_loc.col)
+                    DiagMark::from(SourceRange::from_loc_pair(start_loc, end_loc))
                         .add_comment("reserved identifier")
                 )
                 .add_arg(id)
@@ -373,8 +365,8 @@ impl<'a, 'b> Lexer<'a, 'b> {
 
     fn maybe_diag_underscored_id(&mut self, id: &str, start_loc: SourceLoc, end_loc: SourceLoc) {
         if id.starts_with('_') {
-            self.diag.diag(self.file, diag_data::warn_underscored_id_reserved)
-                .add_mark(DiagMark::new(start_loc.line, start_loc.col, end_loc.col))
+            self.diag.diag(start_loc, diag_data::warn_underscored_id_reserved)
+                .add_mark(DiagMark::from(SourceRange::from_loc_pair(start_loc, end_loc)))
                 .build();
         }
     }

@@ -133,8 +133,6 @@ impl<'a> Token<'a> {
 
 impl<'a> Display for Token<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let SourceRange { offset_begin, offset_end, .. } = self.range;
-
         use TokenInner::*;
         match self.token_inner {
             Ident(id) => write!(f, "⟨id, {}⟩", id),

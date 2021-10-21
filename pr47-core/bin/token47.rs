@@ -1,12 +1,5 @@
-use std::fs::read_to_string;
-
-use pr47::parse::lexer::Lexer;
-use pr47::util::diag::DiagContext;
-use pr47::util::diag::pretty::prettify_diag;
-use pr47::util::source_map::SourceMap;
-use pr47::syntax::token::Token;
-
 fn main() {
+    /*
     let args: Vec<String> = std::env::args()
         .into_iter()
         .map(|arg| arg.to_string())
@@ -39,4 +32,6 @@ fn main() {
     eprintln!("{:?}", tokens);
 
     drop(diag);
+    */
+    todo!()
 }
