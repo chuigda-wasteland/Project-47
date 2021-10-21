@@ -4,9 +4,10 @@ use std::str::CharIndices;
 use phf::phf_map;
 use unchecked_unwrap::UncheckedUnwrap;
 
+use crate::diag::{DiagContext, DiagMark};
+use crate::diag::diag_data;
+use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::token::{Token, TokenInner};
-use crate::util::diag::{DiagContext, messages, DiagMark};
-use crate::util::location::{SourceLoc, SourceRange};
 
 #[cfg(feature = "compiler-pretty-diag")] use unicode_width::UnicodeWidthChar;
 
@@ -53,17 +54,15 @@ static DEFAULT_KEYWORDS_MAP: phf::Map<&'static str, TokenInner<'static>> = phf_m
 };
 
 pub struct Lexer<'a, 'b> {
-    file: &'a str,
+    file_id: u32,
 
     mode: Vec<LexerMode>,
     source: &'a str,
     char_indices: Peekable<CharIndices<'a>>,
 
     cur_ch_idx: Option<(char, usize)>,
-    line: u32,
-    col: u32,
 
-    diag: &'b mut DiagContext<'a>
+    diag: &'b mut DiagContext
 }
 
 pub fn is_special(ch: char) -> bool {
@@ -82,17 +81,15 @@ pub fn part_of_identifier(ch: char) -> bool {
 }
 
 impl<'a, 'b> Lexer<'a, 'b> {
-    pub fn new(file: &'a str, source: &'a str, diag: &'b mut DiagContext<'a>) -> Self {
+    pub fn new(file_id: u32, source: &'a str, diag: &'b mut DiagContext) -> Self {
         let mut ret: Self = Self {
-            file,
+            file_id,
 
             mode: vec![LexerMode::LexExpr],
             source,
             char_indices: source.char_indices().peekable(),
 
             cur_ch_idx: None,
-            line: 1,
-            col: 1,
 
             diag
         };
@@ -109,39 +106,11 @@ impl<'a, 'b> Lexer<'a, 'b> {
     }
 
     pub fn current_loc(&mut self) -> SourceLoc {
-        SourceLoc::new(self.line, self.col)
+        todo!()
     }
 
     pub fn next_char(&mut self) {
         if let Some((idx, ch) /*: (usize, char)*/) = self.char_indices.next() {
-            match ch {
-                '\n' => {
-                    self.line += 1;
-                    self.col = 0;
-                },
-                '\t' => self.col += 4,
-                '\r' => {},
-                ' ' => self.col += 1,
-                ch => {
-                    let location: SourceLoc = self.current_loc();
-
-                    self.maybe_diag_non_ascii_whitespace(ch, location);
-
-                    #[cfg(feature = "compiler-pretty-diag")]
-                    if let Some(width /*: usize*/) = ch.width() {
-                        self.col += width as u32;
-                    } else {
-                        self.diag_unexpected_control_char(ch, location);
-                        return self.next_char();
-                    }
-
-                    #[cfg(not(feature = "compiler-pretty-diag"))]
-                    if ch.is_control() {
-                        self.diag_unexpected_control_char(ch, location);
-                        return self.next_char();
-                    }
-                }
-            }
             self.cur_ch_idx = Some((ch, idx));
         } else {
             self.cur_ch_idx = None;
@@ -162,8 +131,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
 
     fn maybe_diag_non_ascii_whitespace(&mut self, ch: char, location: SourceLoc) {
         if ch.is_whitespace() && !ch.is_ascii_whitespace() {
-            self.diag.diag(self.file, messages::warn_space_character_0_ignored)
-                .add_location(location)
+            self.diag.diag(self.current_loc(), diag_data::warn_space_character_0_ignored)
                 .add_mark(DiagMark::from(location).add_comment("non_ascii whitespace"))
                 .add_arg(format!("\\{:x}", ch as u32))
                 .build();
@@ -171,8 +139,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
     }
 
     fn diag_unexpected_control_char(&mut self, ch: char, location: SourceLoc) {
-        self.diag.diag(self.file, messages::err_unexpected_control_char_0)
-            .add_location(location)
+        self.diag.diag(self.current_loc(), diag_data::err_unexpected_control_char_0)
             .add_mark(location.into())
             .add_arg(format!("\\{:x}", ch as u32))
             .build();
@@ -227,12 +194,13 @@ impl<'a, 'b> Lexer<'a, 'b> {
             } else {
                 let end_loc: SourceLoc = self.current_loc();
                 let id: &'a str = unsafe { self.source.get_unchecked(start_idx..idx) };
+                let range: SourceRange = SourceRange::from_loc_pair(start_loc, end_loc);
                 return if let Some(keyword /*: TokenInner*/) = DEFAULT_KEYWORDS_MAP.get(id) {
                     self.maybe_diag_reserved_keyword(keyword, id, start_loc, end_loc);
-                    Token::new(*keyword, start_loc, end_loc)
+                    Token::new(*keyword, range)
                 } else {
                     self.maybe_diag_underscored_id(id, start_loc, end_loc);
-                    Token::new_id(id, start_loc, end_loc)
+                    Token::new_id(id, range)
                 }
             }
         }
@@ -252,7 +220,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
                 let end_loc: SourceLoc = self.current_loc();
                 let id: &'a str = unsafe { self.source.get_unchecked(start_idx..idx) };
 
-                return Token::new_id(id, start_loc, end_loc);
+                return Token::new_id(id, SourceRange::from_loc_pair(start_loc, end_loc));
             }
         }
 
@@ -323,7 +291,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
 
     fn lex_single_char_sym(&mut self, location: SourceLoc, token: TokenInner<'a>) -> Token<'a> {
         self.next_char();
-        Token::new(token, location, SourceLoc::unknown())
+        Token::new(token, SourceRange::from(location))
     }
 
     fn lex_maybe_consecutive(
@@ -338,11 +306,11 @@ impl<'a, 'b> Lexer<'a, 'b> {
         if let Some((got_ch, _) /*: (char, usize)*/) = self.cur_char() {
             if got_ch == ch {
                 self.next_char();
-                return Token::new(consecutive, location, SourceLoc::unknown())
+                return Token::new(consecutive, SourceRange::from(location))
             }
         }
 
-        Token::new(otherwise, location, SourceLoc::unknown())
+        Token::new(otherwise, SourceRange::from(location))
     }
 
     fn lex_maybe_consecutive2(
@@ -359,14 +327,14 @@ impl<'a, 'b> Lexer<'a, 'b> {
         if let Some((got_ch, _) /*: (char, usize)*/) = self.cur_char() {
             if got_ch == ch1 {
                 self.next_char();
-                return Token::new(consecutive1, location, SourceLoc::unknown())
+                return Token::new(consecutive1, SourceRange::from(location))
             } else if got_ch == ch2 {
                 self.next_char();
-                return Token::new(consecutive2, location, SourceLoc::unknown())
+                return Token::new(consecutive2, SourceRange::from(location))
             }
         }
 
-        Token::new(otherwise, location, SourceLoc::unknown())
+        Token::new(otherwise, SourceRange::from(location))
     }
 
     fn lex_reserved_sym(
@@ -375,13 +343,13 @@ impl<'a, 'b> Lexer<'a, 'b> {
         token: TokenInner<'a>,
         ch: char
     ) -> Token<'a> {
-        self.diag.diag(self.file, messages::err_reserved_symbol_0)
+        self.diag.diag(self.file, diag_data::err_reserved_symbol_0)
             .add_location(location)
             .add_mark(DiagMark::from(location))
             .add_arg(ch.to_string())
             .build();
         self.next_char();
-        Token::new(token, location, SourceLoc::unknown())
+        Token::new(token, SourceRange::from(location))
     }
 
     fn maybe_diag_reserved_keyword(
@@ -393,8 +361,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
         end_loc: SourceLoc
     ) {
         if keyword.is_reserved() {
-            self.diag.diag(self.file, messages::err_reserved_identifier_0)
-                .add_location(start_loc)
+            self.diag.diag(self.file, diag_data::err_reserved_identifier_0)
                 .add_mark(
                     DiagMark::new(start_loc.line, start_loc.col, end_loc.col)
                         .add_comment("reserved identifier")
@@ -406,8 +373,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
 
     fn maybe_diag_underscored_id(&mut self, id: &str, start_loc: SourceLoc, end_loc: SourceLoc) {
         if id.starts_with('_') {
-            self.diag.diag(self.file, messages::warn_underscored_id_reserved)
-                .add_location(start_loc)
+            self.diag.diag(self.file, diag_data::warn_underscored_id_reserved)
                 .add_mark(DiagMark::new(start_loc.line, start_loc.col, end_loc.col))
                 .build();
         }
