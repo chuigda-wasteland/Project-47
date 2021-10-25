@@ -1,6 +1,6 @@
+use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::id::Identifier;
 use crate::syntax::ty::ConcreteType;
-use crate::util::location::{SingleLineRange, SourceLoc};
 
 pub enum ConcreteExpr {
     LiteralExpr(ConcreteLiteralExpr),
@@ -18,7 +18,7 @@ pub enum ConcreteExpr {
 
 pub struct ConcreteLiteralExpr {
     pub content: LiteralExprContent,
-    pub range: SingleLineRange
+    pub range: SourceRange
 }
 
 pub enum LiteralExprContent {
@@ -35,7 +35,7 @@ pub struct ConcreteIdRefExpr {
 
 pub struct ConcreteStringLiteralExpr {
     pub value: String,
-    pub range: SingleLineRange
+    pub range: SourceRange
 }
 
 pub enum UnaryOp {
@@ -100,7 +100,7 @@ pub struct ConcreteBinaryExpr {
     pub lhs: Box<ConcreteExpr>,
     pub rhs: Box<ConcreteExpr>,
 
-    pub op_loc: SingleLineRange
+    pub op_loc: SourceRange
 }
 
 pub struct ConcreteAssignExpr {
@@ -147,5 +147,5 @@ pub struct ConcreteAsExpr {
     pub operand: Box<ConcreteExpr>,
     pub dest_type: ConcreteType,
 
-    pub as_range: SingleLineRange
+    pub as_range: SourceRange
 }

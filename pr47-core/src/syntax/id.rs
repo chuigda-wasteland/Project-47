@@ -1,4 +1,6 @@
-use crate::util::location::{SingleLineRange, SourceLoc};
+use smallvec::SmallVec;
+
+use crate::diag::location::{SourceLoc, SourceRange};
 
 pub enum Identifier {
     Unqual(UnqualIdentifier),
@@ -7,12 +9,12 @@ pub enum Identifier {
 
 pub struct UnqualIdentifier {
     pub id: String,
-    pub range: SingleLineRange
+    pub range: SourceRange
 }
 
 pub struct QualIdentifier {
-    pub parts: Vec<String>,
-    pub part_ranges: Vec<SingleLineRange>,
+    pub parts: SmallVec<[String; 2]>,
+    pub part_ranges: SmallVec<[SourceRange; 2]>,
     pub colon_locs: Vec<SourceLoc>
 }
 

@@ -1,8 +1,8 @@
+use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::attr::AttrList;
 use crate::syntax::expr::ConcreteExpr;
 use crate::syntax::stmt::ConcreteCompoundStmt;
 use crate::syntax::ty::ConcreteType;
-use crate::util::location::{SourceLoc, SingleLineRange};
 
 pub enum ConcreteDecl {
     VarDecl(ConcreteObjectDecl),
@@ -17,15 +17,15 @@ pub struct ConcreteObjectDecl {
     pub obj_type: Option<ConcreteType>,
     pub init_expr: Option<ConcreteExpr>,
 
-    pub kwd_range: SingleLineRange,
-    pub name_range: SingleLineRange
+    pub kwd_range: SourceRange,
+    pub name_range: SourceRange
 }
 
 pub struct FunctionParam {
     pub param_name: String,
     pub param_type: Option<ConcreteType>,
 
-    pub param_name_range: SingleLineRange
+    pub param_name_range: SourceRange
 }
 
 pub struct ConcreteFuncDecl {
@@ -36,8 +36,8 @@ pub struct ConcreteFuncDecl {
     pub func_return_type: Option<ConcreteType>,
     pub func_body: Option<ConcreteCompoundStmt>,
 
-    pub func_kwd_range: SingleLineRange,
-    pub func_name_range: SingleLineRange,
+    pub func_kwd_range: SourceRange,
+    pub func_name_range: SourceRange,
     pub param_open_paren_loc: SourceLoc,
     pub param_close_paren_loc: SourceLoc
 }

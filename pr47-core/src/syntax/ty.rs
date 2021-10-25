@@ -1,4 +1,4 @@
-use crate::util::location::{SingleLineRange, SourceLoc};
+use crate::diag::location::{SourceLoc, SourceRange};
 
 pub enum ConcreteType {
     SimpleType(ConcreteSimpleType),
@@ -7,7 +7,7 @@ pub enum ConcreteType {
 
 pub struct ConcreteSimpleType {
     pub content: ConcreteSimpleTypeContent,
-    pub range: SingleLineRange
+    pub range: SourceRange
 }
 
 pub enum ConcreteSimpleTypeContent {

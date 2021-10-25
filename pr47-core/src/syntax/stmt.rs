@@ -1,7 +1,7 @@
+use crate::diag::location::SourceLoc;
+
 use crate::syntax::decl::ConcreteDecl;
 use crate::syntax::expr::ConcreteExpr;
-
-use crate::util::location::SourceLoc;
 
 pub enum ConcreteStmt {
     CompoundStmt(ConcreteCompoundStmt),
