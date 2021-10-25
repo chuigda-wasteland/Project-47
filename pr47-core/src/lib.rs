@@ -8,14 +8,14 @@
 
 pub mod collections;
 pub mod data;
-pub mod diag;
 pub mod ffi;
-pub mod parse;
-pub mod sema;
-pub mod syntax;
 pub mod util;
 pub mod vm;
 
+#[cfg(feature = "compiler")] pub mod diag;
+#[cfg(feature = "compiler")] pub mod parse;
+#[cfg(feature = "compiler")] pub mod syntax;
+#[cfg(feature = "compiler")] pub mod sema;
 #[cfg(feature = "std47")] pub mod std47;
 
 #[cfg(all(feature = "compiler-pretty-diag", not(feature = "compiler")))]
