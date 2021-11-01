@@ -129,11 +129,13 @@ pub struct Promise {
     pub guard: PromiseGuard
 }
 
-impl Promise {
-    pub async fn await_promise(self) -> AsyncReturnType {
-        let fut: Pin<Box<dyn Future<Output=AsyncReturnType> + Send + 'static>> = self.fut;
-        let result: AsyncReturnType = fut.await;
-        result
+impl Unpin for Promise {}
+
+impl Future for Promise {
+    type Output = AsyncReturnType;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        Pin::into_inner(self).fut.poll_unpin(cx)
     }
 }
 
@@ -151,6 +153,8 @@ pub use crate::ffi::sync_fn::{
     value_move_out_check,
     value_move_out_check_norm
 };
+use std::task::{Context, Poll};
+use futures::FutureExt;
 
 #[inline] pub unsafe fn value_into_ref<'a, T>(
     value: Value

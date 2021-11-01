@@ -594,7 +594,7 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 let promise: Promise = promise.move_out::<Promise>();
                 (*wrapper).ownership_info = OwnershipInfo::MovedToRust as u8;
 
-                let AsyncReturnType(result) = thread.vm.co_await(promise.await_promise()).await;
+                let AsyncReturnType(result) = thread.vm.co_await(promise).await;
                 match result {
                     Ok(values) => {
                         debug_assert_eq!(values.len(), dests.len());
