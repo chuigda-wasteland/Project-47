@@ -19,14 +19,17 @@ use crate::vm::al31f::test_program::{
     ffi_call_program,
     ffi_call_program2
 };
+use xjbutil::unchecked::UncheckedSendSync;
 
 async fn basic_program_eval() {
     let program: CompiledProgram<DefaultAlloc> = basic_program::<>();
     let alloc: DefaultAlloc = DefaultAlloc::new();
 
     let mut vm_thread: Box<VMThread<DefaultAlloc>> = create_vm_main_thread(alloc, &program).await;
+    let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value])
+        = (&mut vm_thread, 0, &[Value::new_int(114), Value::new_int(514)]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(&mut vm_thread, 0, &[Value::new_int(114), Value::new_int(514)]).await
+        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).await
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
@@ -47,8 +50,9 @@ async fn basic_fn_call() {
     let alloc: DefaultAlloc = DefaultAlloc::new();
 
     let mut vm_thread: Box<VMThread<DefaultAlloc>> = create_vm_main_thread(alloc, &program).await;
+    let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) = (&mut vm_thread, 0, &[]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(&mut vm_thread, 0, &[]).await
+        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).await
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
@@ -69,8 +73,10 @@ async fn fibonacci_call() {
 
     let mut vm_thread: Box<VMThread<DefaultAlloc>> =
         create_vm_main_thread(alloc, &fib_program).await;
+    let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) =
+        (&mut vm_thread, 0, &[Value::new_int(7)]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(&mut vm_thread, 0, &[Value::new_int(7)]).await
+        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).await
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
@@ -91,8 +97,9 @@ async fn exception_no_eh_call() {
 
     let mut vm_thread: Box<VMThread<DefaultAlloc>> =
         create_vm_main_thread(alloc, &exception_no_eh_program).await;
+    let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) = (&mut vm_thread, 0, &[]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(&mut vm_thread, 0, &[]).await
+        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).await
     };
 
     if let Err(e /*: Exception*/) = result {
@@ -115,9 +122,11 @@ async fn exception_call() {
 
     let mut vm_thread: Box<VMThread<DefaultAlloc>> =
         create_vm_main_thread(alloc, &exception_program).await;
+    let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) = (&mut vm_thread, 0, &[]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(&mut vm_thread, 0, &[]).await
+        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).await
     };
+
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
         assert!(result[0].is_value());
@@ -137,8 +146,9 @@ async fn ffi_call() {
 
     let mut vm_thread: Box<VMThread<DefaultAlloc>> =
         create_vm_main_thread(alloc, &ffi_call_program).await;
+    let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) = (&mut vm_thread, 0, &[]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(&mut vm_thread, 0, &[]).await
+        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).await
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 0);
@@ -153,12 +163,10 @@ async fn ffi_call2() {
 
     let mut vm_thread: Box<VMThread<DefaultAlloc>> =
         create_vm_main_thread(alloc, &ffi_call_program).await;
+    let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) =
+        (&mut vm_thread, 0, &[Value::new_int(114), Value::new_int(514)]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(
-            &mut vm_thread,
-            0,
-            &[Value::new_int(114), Value::new_int(514)]
-        ).await
+        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).await
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
