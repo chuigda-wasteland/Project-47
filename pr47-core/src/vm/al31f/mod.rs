@@ -9,7 +9,7 @@ pub mod stack;
 
 use std::ptr::NonNull;
 
-use xjbutil::fat_ptr::FatPointer;
+use xjbutil::wide_ptr::WidePointer;
 
 use crate::ffi::sync_fn::VMContext;
 use crate::vm::al31f::alloc::Alloc;
@@ -38,12 +38,12 @@ impl<A: Alloc> Combustor<A> {
 }
 
 impl<A: Alloc> VMContext for Combustor<A> {
-    fn allocate(&mut self, fat_ptr: FatPointer) {
-        unsafe { self.vm.as_mut().alloc.add_managed(fat_ptr); }
+    fn allocate(&mut self, wide_ptr: WidePointer) {
+        unsafe { self.vm.as_mut().alloc.add_managed(wide_ptr); }
     }
 
-    fn mark(&mut self, fat_ptr: FatPointer) {
-        unsafe { self.vm.as_mut().alloc.mark_object(fat_ptr); }
+    fn mark(&mut self, wide_ptr: WidePointer) {
+        unsafe { self.vm.as_mut().alloc.mark_object(wide_ptr); }
     }
 }
 

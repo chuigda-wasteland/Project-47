@@ -1,4 +1,4 @@
-use xjbutil::fat_ptr::FatPointer;
+use xjbutil::wide_ptr::WidePointer;
 use xjbutil::void::Void;
 
 use crate::data::Value;
@@ -14,8 +14,8 @@ use crate::data::wrapper::{
 use crate::ffi::{FFIException, Signature};
 
 pub trait VMContext: 'static + Sized {
-    fn allocate(&mut self, fat_ptr: FatPointer);
-    fn mark(&mut self, fat_ptr: FatPointer);
+    fn allocate(&mut self, wide_ptr: WidePointer);
+    fn mark(&mut self, wide_ptr: WidePointer);
 }
 
 pub trait FunctionBase: 'static {

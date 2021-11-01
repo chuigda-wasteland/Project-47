@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::mem::transmute;
 
 use unchecked_unwrap::UncheckedUnwrap;
-use xjbutil::fat_ptr::FatPointer;
+use xjbutil::wide_ptr::WidePointer;
 
 use crate::data::PTR_BITS_MASK_USIZE;
 use crate::data::container::{CONTAINER_MASK, ContainerVT};
@@ -13,7 +13,7 @@ use crate::vm::al31f::stack::Stack;
 /// Default allocator for `AL31F`, with STW GC.
 pub struct DefaultAlloc {
     stacks: Vec<*const Stack>,
-    managed: Vec<FatPointer>,
+    managed: Vec<WidePointer>,
     debt: usize,
     max_debt: usize,
     gc_allowed: bool
@@ -43,7 +43,7 @@ impl DefaultAlloc {
     }
 
     #[cfg(test)]
-    pub fn contains_ptr(&self, ptr: FatPointer) -> bool {
+    pub fn contains_ptr(&self, ptr: WidePointer) -> bool {
         self.managed.contains(&ptr)
     }
 }
@@ -57,7 +57,7 @@ impl Default for DefaultAlloc {
 impl Drop for DefaultAlloc {
     fn drop(&mut self) {
         // TODO should we extract this out? Or we use `Value` or so instead?
-        for ptr /*: &FatPointer*/ in self.managed.iter() {
+        for ptr /*: &WidePointer*/ in self.managed.iter() {
             let raw_ptr: usize = (ptr.ptr & PTR_BITS_MASK_USIZE) as _;
             let wrapper: *mut Wrapper<()> = raw_ptr as _;
 
@@ -71,7 +71,7 @@ impl Drop for DefaultAlloc {
                 unsafe { ((*vt).drop_fn)(container) };
             } else {
                 let dyn_base: *mut dyn DynBase = unsafe {
-                    transmute::<FatPointer, *mut dyn DynBase>(*ptr)
+                    transmute::<WidePointer, *mut dyn DynBase>(*ptr)
                 };
                 let boxed: Box<dyn DynBase> = unsafe { Box::from_raw(dyn_base) };
                 drop(boxed);
@@ -93,7 +93,7 @@ impl Alloc for DefaultAlloc {
         let _removed = self.stacks.remove(self.stacks.binary_search(&stack).unchecked_unwrap());
     }
 
-    unsafe fn add_managed(&mut self, data: FatPointer) {
+    unsafe fn add_managed(&mut self, data: WidePointer) {
         if self.max_debt < self.debt && self.gc_allowed {
             self.collect();
         }
@@ -101,19 +101,19 @@ impl Alloc for DefaultAlloc {
         self.debt += 1;
     }
 
-    #[inline(always)] unsafe fn mark_object(&mut self, _data: FatPointer) {
+    #[inline(always)] unsafe fn mark_object(&mut self, _data: WidePointer) {
         // do nothing
     }
 
     unsafe fn collect(&mut self) {
         self.debt = 0;
 
-        for ptr /*: &FatPointer*/ in self.managed.iter() {
+        for ptr /*: &WidePointer*/ in self.managed.iter() {
             let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
             (*wrapper).gc_info = DefaultGCStatus::Unmarked as u8;
         }
 
-        let mut to_scan: VecDeque<FatPointer> = VecDeque::new();
+        let mut to_scan: VecDeque<WidePointer> = VecDeque::new();
 
         for stack /*: &*const Stack*/ in self.stacks.iter() {
             #[cfg(debug_assertions)]
@@ -134,7 +134,7 @@ impl Alloc for DefaultAlloc {
         }
 
         while !to_scan.is_empty() {
-            let ptr: FatPointer = to_scan.pop_front().unwrap();
+            let ptr: WidePointer = to_scan.pop_front().unwrap();
             let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
 
             if (*wrapper).gc_info == (DefaultGCStatus::Marked as u8) {
@@ -145,7 +145,7 @@ impl Alloc for DefaultAlloc {
             if ptr.ptr & (CONTAINER_MASK as usize) == 0 {
                 let dyn_base: *mut dyn DynBase = transmute::<>(ptr);
                 if let Some(children /*: Box<dyn Iterator>*/) = (*dyn_base).children() {
-                    for child /*: FatPointer*/ in children {
+                    for child /*: WidePointer*/ in children {
                         to_scan.push_back(child);
                     }
                 }
@@ -154,14 +154,14 @@ impl Alloc for DefaultAlloc {
                 if let Some(children /*: Box<dyn Iterator> */)
                     = ((*container_vt).children_fn)(&(*wrapper).data as *const _ as *const ())
                 {
-                    for child /*: FatPointer*/ in children {
+                    for child /*: WidePointer*/ in children {
                         to_scan.push_back(child);
                     }
                 }
             }
         }
 
-        self.managed.retain(|ptr: &FatPointer| {
+        self.managed.retain(|ptr: &WidePointer| {
             let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
             if (*wrapper).gc_info == DefaultGCStatus::Unmarked as u8
                 && (*wrapper).ownership_info & OWN_INFO_COLLECT_MASK != 0
@@ -172,7 +172,7 @@ impl Alloc for DefaultAlloc {
                     ((*vt).drop_fn)(container);
                 } else {
                     let dyn_base: *mut dyn DynBase =
-                        transmute::<FatPointer, *mut dyn DynBase>(*ptr);
+                        transmute::<WidePointer, *mut dyn DynBase>(*ptr);
                     let boxed: Box<dyn DynBase> = Box::from_raw(dyn_base);
                     drop(boxed);
                 }

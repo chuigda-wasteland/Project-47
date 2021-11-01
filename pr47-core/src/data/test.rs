@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::ptr::{NonNull, addr_of, null_mut};
 
-use xjbutil::fat_ptr::FatPointer;
+use xjbutil::wide_ptr::WidePointer;
 use xjbutil::void::Void;
 
 use crate::collections::test_container::{
@@ -270,7 +270,7 @@ impl StaticBase<TestStruct2> for Void {
             <Void as StaticBase<TestContainer<TestStruct2>>>::tyck_info(&mut tyck_info_pool);
         assert!(dyn_base.dyn_tyck(tyck_info.as_ref()));
 
-        let children: Vec<FatPointer> = dyn_base.children().unwrap().collect::<Vec<_>>();
+        let children: Vec<WidePointer> = dyn_base.children().unwrap().collect::<Vec<_>>();
         assert_eq!(children.len(), 2);
         assert_eq!(children[0], value1.ptr_repr);
         assert_eq!(children[1], value2.ptr_repr);

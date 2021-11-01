@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use std::mem::transmute;
 use std::ptr::NonNull;
 
-use xjbutil::fat_ptr::FatPointer;
+use xjbutil::wide_ptr::WidePointer;
 use xjbutil::void::Void;
 
 use crate::data::container::ContainerVT;
@@ -11,7 +11,7 @@ use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{ContainerTyckInfo, TyckInfo, TyckInfoPool};
 
 pub struct GenericTestContainer {
-    pub elements: Vec<FatPointer>,
+    pub elements: Vec<WidePointer>,
 }
 
 impl GenericTestContainer {
@@ -43,9 +43,9 @@ impl StaticBase<GenericTestContainer> for Void {
 
     fn children(vself: *const GenericTestContainer) -> ChildrenType {
         let vself: &GenericTestContainer = unsafe { &*vself };
-        let iter: Box<dyn Iterator<Item=FatPointer> + '_> =
-            Box::new(vself.elements.iter().map(|x: &FatPointer| *x));
-        let iter: Box<dyn Iterator<Item=FatPointer> + 'static> = unsafe { transmute::<>(iter) };
+        let iter: Box<dyn Iterator<Item=WidePointer> + '_> =
+            Box::new(vself.elements.iter().map(|x: &WidePointer| *x));
+        let iter: Box<dyn Iterator<Item=WidePointer> + 'static> = unsafe { transmute::<>(iter) };
         Some(iter)
     }
 }

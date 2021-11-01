@@ -3,7 +3,7 @@ use std::ptr::NonNull;
 
 use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::either::Either;
-use xjbutil::fat_ptr::FatPointer;
+use xjbutil::wide_ptr::WidePointer;
 
 use crate::collections::object::Object;
 use crate::data::Value;
@@ -246,8 +246,8 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 slice.set_value(*dst, Value::new_bool(src1 == src2));
             },
             Insc::EqAny(src1, src2, dst) => {
-                let src1: FatPointer = slice.get_value(*src1).ptr_repr;
-                let src2: FatPointer = slice.get_value(*src2).ptr_repr;
+                let src1: WidePointer = slice.get_value(*src1).ptr_repr;
+                let src2: WidePointer = slice.get_value(*src2).ptr_repr;
                 slice.set_value(*dst, Value::new_bool(src1 == src2));
             },
             Insc::NeValue(src1, src2, dst) => {
@@ -263,8 +263,8 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
                 slice.set_value(*dst, Value::new_bool(src1 != src2));
             },
             Insc::NeAny(src1, src2, dst) => {
-                let src1: FatPointer = slice.get_value(*src1).ptr_repr;
-                let src2: FatPointer = slice.get_value(*src2).ptr_repr;
+                let src1: WidePointer = slice.get_value(*src1).ptr_repr;
+                let src2: WidePointer = slice.get_value(*src2).ptr_repr;
                 slice.set_value(*dst, Value::new_bool(src1 != src2));
             },
             Insc::LtInt(src1, src2, dst) =>

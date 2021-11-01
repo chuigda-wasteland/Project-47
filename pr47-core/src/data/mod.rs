@@ -9,10 +9,10 @@ use std::marker::PhantomData;
 use std::mem::{MaybeUninit, transmute};
 
 use unchecked_unwrap::UncheckedUnwrap;
-use xjbutil::fat_ptr::FatPointer;
 use xjbutil::mem::move_to_heap;
 use xjbutil::std_ext::BoxedExt;
 use xjbutil::unchecked::UnsafeFrom;
+use xjbutil::wide_ptr::WidePointer;
 use xjbutil::void::Void;
 
 use crate::data::container::{CONTAINER_MASK, ContainerVT};
@@ -45,7 +45,7 @@ pub const PTR_BITS_MASK_USIZE: usize = !TAG_BITS_MASK_USIZE;
 ///
 /// ```text
 /// +-----------------------------+
-/// |          FatPointer         |
+/// |         WidePointer         |
 /// +--------------+--------------+
 /// |      ptr     |    trivia    |
 /// +-------|------+--------------+
@@ -67,7 +67,7 @@ pub const PTR_BITS_MASK_USIZE: usize = !TAG_BITS_MASK_USIZE;
 #[derive(Clone, Copy)]
 pub union Value {
     pub ptr: *mut dyn DynBase,
-    pub ptr_repr: FatPointer,
+    pub ptr_repr: WidePointer,
     pub vt_data: ValueTypedData,
 }
 
@@ -92,7 +92,7 @@ impl Value {
         let trivia: usize = vt as _;
 
         Self {
-            ptr_repr: FatPointer {
+            ptr_repr: WidePointer {
                 ptr, trivia
             }
         }
@@ -155,7 +155,7 @@ impl Value {
     /// Create a new `null` `Value`
     #[inline(always)] pub fn new_null() -> Self {
         Self {
-            ptr_repr: FatPointer::new(0, 0)
+            ptr_repr: WidePointer::new(0, 0)
         }
     }
 
@@ -304,7 +304,7 @@ impl Value {
     pub unsafe fn get_as_dyn_base(&self) -> *mut dyn DynBase {
         debug_assert!(self.is_ref());
         debug_assert!(!self.is_container());
-        transmute::<FatPointer, &mut dyn DynBase>(self.ptr_repr)
+        transmute::<WidePointer, &mut dyn DynBase>(self.ptr_repr)
     }
 
     /// Given that `self` **MUST** be a reference, assuming that `self` may be a custom pointer,

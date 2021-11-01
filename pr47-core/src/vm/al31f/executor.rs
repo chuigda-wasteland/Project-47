@@ -12,5 +12,4 @@ pub mod sync_executor;
 pub use sync_executor::*;
 
 pub mod async_executor;
-
 pub use async_executor::*;

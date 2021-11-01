@@ -1,7 +1,7 @@
 pub mod default_alloc;
 pub mod no_gc_alloc;
 
-use xjbutil::fat_ptr::FatPointer;
+use xjbutil::wide_ptr::WidePointer;
 
 use crate::vm::al31f::stack::Stack;
 
@@ -12,10 +12,10 @@ pub trait Alloc: 'static + Send + Sync {
     /// Remove one stack from `Alloc` management
     unsafe fn remove_stack(&mut self, stack: *const Stack);
     /// Make the object denoted by `data` pointer managed
-    unsafe fn add_managed(&mut self, data: FatPointer);
+    unsafe fn add_managed(&mut self, data: WidePointer);
     /// Mark the object denoted by `data` as useful when it gets added into some container. This
     /// method is used by tri-color GC.
-    unsafe fn mark_object(&mut self, data: FatPointer);
+    unsafe fn mark_object(&mut self, data: WidePointer);
     /// Perform garbage collection
     unsafe fn collect(&mut self);
     /// Allow or disallow garbage collection
