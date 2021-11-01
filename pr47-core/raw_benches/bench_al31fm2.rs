@@ -1,7 +1,7 @@
 use std::env;
-use std::future::Future;
 
 use xjbutil::async_utils::block_on_future;
+use xjbutil::unchecked::UncheckedSendSync;
 
 use pr47::data::Value;
 use pr47::data::exception::Exception;
@@ -23,7 +23,7 @@ async fn run_program(program: CompiledProgram<DefaultAlloc>, args: Vec<Value>) {
             create_vm_main_thread(alloc, &program).await;
 
         let result: Result<Vec<Value>, Exception> = unsafe {
-            vm_thread_run_function(&mut vm_thread, 0, &args).await
+            vm_thread_run_function(UncheckedSendSync::new((&mut vm_thread, 0, &args))).await
         };
         if let Err(_) = result {
             panic!("");

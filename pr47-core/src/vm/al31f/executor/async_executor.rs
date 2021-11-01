@@ -1,8 +1,10 @@
 use std::any::TypeId;
+use std::future::Future;
 use std::ptr::NonNull;
 
 use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::either::Either;
+use xjbutil::unchecked::{UncheckedSendFut, UncheckedSendSync};
 use xjbutil::wide_ptr::WidePointer;
 
 use crate::collections::object::Object;
@@ -149,7 +151,7 @@ unsafe fn checked_exception_unwind_stack<A: Alloc>(
     Err(exception)
 }
 
-pub async unsafe fn vm_thread_run_function<A: Alloc>(
+async unsafe fn vm_thread_run_function_impl<A: Alloc>(
     thread: &mut VMThread<A>,
     func_id: usize,
     args: &[Value]
@@ -679,4 +681,11 @@ pub async unsafe fn vm_thread_run_function<A: Alloc>(
             Insc::ObjectPutDyn(_, _, _) => {}
         }
     }
+}
+
+pub unsafe fn vm_thread_run_function<'a, A: Alloc>(
+    arg_pack: UncheckedSendSync<(&'a mut VMThread<A>, usize, &'a [Value])>
+) -> impl Future<Output=Result<Vec<Value>, Exception>> + Send + Unpin + 'a {
+    let (thread, func_id, args): (&mut VMThread<A>, usize, &[Value]) = arg_pack.into_inner();
+    UncheckedSendFut::new(vm_thread_run_function_impl(thread, func_id, args))
 }

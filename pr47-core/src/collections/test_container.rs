@@ -3,8 +3,8 @@ use std::marker::PhantomData;
 use std::mem::transmute;
 use std::ptr::NonNull;
 
-use xjbutil::wide_ptr::WidePointer;
 use xjbutil::void::Void;
+use xjbutil::wide_ptr::WidePointer;
 
 use crate::data::container::ContainerVT;
 use crate::data::traits::{ChildrenType, StaticBase};

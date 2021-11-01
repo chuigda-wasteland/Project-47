@@ -12,8 +12,8 @@ use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::mem::move_to_heap;
 use xjbutil::std_ext::BoxedExt;
 use xjbutil::unchecked::UnsafeFrom;
-use xjbutil::wide_ptr::WidePointer;
 use xjbutil::void::Void;
+use xjbutil::wide_ptr::WidePointer;
 
 use crate::data::container::{CONTAINER_MASK, ContainerVT};
 use crate::data::traits::StaticBase;
@@ -47,7 +47,7 @@ pub const PTR_BITS_MASK_USIZE: usize = !TAG_BITS_MASK_USIZE;
 /// +-----------------------------+
 /// |         WidePointer         |
 /// +--------------+--------------+
-/// |      ptr     |    trivia    |
+/// |      ptr     |  vtable/len  |
 /// +-------|------+--------------+
 ///         |
 ///         |

@@ -10,14 +10,14 @@ use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool, ContainerTyckInfo};
 
 pub enum UncheckedException {
+    AlreadyAwaited { promise: Value },
     ArgCountMismatch { func_id: usize, expected: usize, got: usize },
-    InvalidUnaryOp { unary_op: char, src: Value },
+    DivideByZero,
     InvalidBinaryOp { bin_op: char, lhs: Value, rhs: Value },
     InvalidCastOp { dest_type: &'static str, src: Value },
+    InvalidUnaryOp { unary_op: char, src: Value },
     OwnershipCheckFailure { object: Value, expected_mask: u8 },
-    AlreadyAwaited { promise: Value },
-    UnexpectedNull { value: Value },
-    DivideByZero,
+    UnexpectedNull { value: Value }
 }
 
 pub type CheckedException = Value;

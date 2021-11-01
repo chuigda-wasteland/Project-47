@@ -2,8 +2,8 @@ use std::any::TypeId;
 use std::iter::Iterator;
 use std::ptr::NonNull;
 
-use xjbutil::wide_ptr::WidePointer;
 use xjbutil::void::Void;
+use xjbutil::wide_ptr::WidePointer;
 
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 
@@ -30,10 +30,7 @@ pub trait StaticBase<T: 'static> {
         std::any::type_name::<T>().into()
     }
 
-    // TODO: should we mark this as unsafe?
-    #[inline] fn children(_vself: *const T) -> ChildrenType {
-        None
-    }
+    #[inline] fn children(_vself: *const T) -> ChildrenType { None }
 }
 
 // impl !StaticBase<i64> for Void {}

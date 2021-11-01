@@ -1,5 +1,5 @@
-use xjbutil::wide_ptr::WidePointer;
 use xjbutil::void::Void;
+use xjbutil::wide_ptr::WidePointer;
 
 use crate::data::Value;
 use crate::data::container::ContainerRef;

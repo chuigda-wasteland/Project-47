@@ -1,5 +1,7 @@
 use std::ptr::NonNull;
 
+use xjbutil::unchecked::UncheckedSendSync;
+
 use crate::data::Value;
 use crate::data::exception::Exception;
 use crate::vm::al31f::AL31F;
@@ -27,7 +29,7 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
             program: NonNull::new_unchecked(program as *mut _),
             stack: Stack::new()
         };
-        vm_thread_run_function(&mut thread, func_id, args).await
+        vm_thread_run_function(UncheckedSendSync::new((&mut thread, func_id, args))).await
     });
 
     #[cfg(not(feature = "async"))]
@@ -37,6 +39,6 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
             program: NonNull::new_unchecked(program as *mut _),
             stack: Stack::new()
         };
-        vm_thread_run_function(&mut thread, func_id, args).await
+        vm_thread_run_function(UncheckedSendSync::new((&mut thread, func_id, args))).await
     });
 }
