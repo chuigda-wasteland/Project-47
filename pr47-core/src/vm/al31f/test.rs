@@ -1,6 +1,7 @@
 use std::any::TypeId;
 
 use xjbutil::async_utils::block_on_future;
+use xjbutil::unchecked::UncheckedSendSync;
 
 use crate::collections::object::Object;
 use crate::data::Value;
@@ -19,7 +20,6 @@ use crate::vm::al31f::test_program::{
     ffi_call_program,
     ffi_call_program2
 };
-use xjbutil::unchecked::UncheckedSendSync;
 
 async fn basic_program_eval() {
     let program: CompiledProgram<DefaultAlloc> = basic_program::<>();
@@ -46,7 +46,6 @@ async fn basic_program_eval() {
 
 async fn basic_fn_call() {
     let program: CompiledProgram<DefaultAlloc> = basic_fn_call_program::<>();
-
     let alloc: DefaultAlloc = DefaultAlloc::new();
 
     let mut vm_thread: Box<VMThread<DefaultAlloc>> = create_vm_main_thread(alloc, &program).await;
