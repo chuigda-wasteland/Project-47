@@ -15,7 +15,7 @@ resolver = "2"
 pollster = "0.2"
 pr47-codegen = "0.0.2"
 unchecked_unwrap = "3"
-xjbutil = { version = "0.2", default-features = false, features = [
+xjbutil = { version = "0.3", default-features = false, features = [
     "defer",
     "either",
     "korobka",
