@@ -32,7 +32,7 @@ impl SourceLoc {
         self.file_id == u32::MAX
     }
 
-    pub fn compute_coord<'b>(&self, source_mgr: &'b mut SourceManager) -> (&'b str, SourceCoord) {
+    pub fn compute_coord<'b>(&self, source_mgr: &'b SourceManager) -> (&'b str, SourceCoord) {
         source_mgr.compute_coord(self.file_id, self.offset)
     }
 }
@@ -68,7 +68,7 @@ impl SourceRange {
 
     pub fn compute_coord_pair<'b>(
         &self,
-        source_mgr: &'b mut SourceManager
+        source_mgr: &'b SourceManager
     ) -> ((&'b str, SourceCoord), (&'b str, SourceCoord)) {
         let (begin_line, begin_coord): (&'b str, SourceCoord)
             = source_mgr.compute_coord(self.file_id, self.offset_begin);

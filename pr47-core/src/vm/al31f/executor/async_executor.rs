@@ -54,7 +54,6 @@ use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
 #[cfg(feature = "async")] use crate::util::serializer::Serializer;
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
-#[cfg(feature = "bench")] use xjbutil::defer::Defer;
 #[cfg(feature = "bench")] use xjbutil::defer;
 
 include!("get_vm_makro.rs");

@@ -348,8 +348,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
         &mut self,
         keyword: &TokenInner,
         id: &str,
-        start_loc:
-        SourceLoc,
+        start_loc: SourceLoc,
         end_loc: SourceLoc
     ) {
         if keyword.is_reserved() {
