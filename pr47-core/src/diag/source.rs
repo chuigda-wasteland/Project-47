@@ -56,7 +56,7 @@ impl SourceManager {
         let col: usize = file_offset - line_offset;
 
         let file_content: &str = &self.file_contents[file_id];
-        let next_line_offset: usize = if source_map.line_offsets.len() >= line + 1 {
+        let next_line_offset: usize = if source_map.line_offsets.len() > line + 1 {
             source_map.line_offsets[line + 1]
         } else {
             file_content.len()

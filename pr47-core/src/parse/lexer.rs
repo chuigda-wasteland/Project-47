@@ -104,12 +104,18 @@ impl<'a, 'b> Lexer<'a, 'b> {
     }
 
     pub fn current_loc(&mut self) -> SourceLoc {
-        todo!()
+        let file_offset: usize = if let Some((_, idx) /*: (char, usize)*/) = self.cur_ch_idx {
+            idx
+        } else {
+            self.source.len()
+        };
+        assert!(file_offset <= (u32::MAX as usize));
+        SourceLoc::new(self.file_id, file_offset as u32)
     }
 
     pub fn next_char(&mut self) {
         if let Some((idx, ch) /*: (usize, char)*/) = self.char_indices.next() {
-            if ch.is_control() {
+            if ch.is_control() && !ch.is_whitespace() {
                 self.diag_unexpected_control_char(ch, SourceLoc::new(self.file_id, idx as u32));
                 return self.next_char();
             }
@@ -143,6 +149,13 @@ impl<'a, 'b> Lexer<'a, 'b> {
     pub fn next_token(&mut self) -> Option<Token<'a>> {
         if let Some((ch, _) /*: (char, usize)*/) = self.cur_char() {
             match ch {
+                '/' => {
+                    if let Some(token) = self.maybe_lex_comment() {
+                        return Some(token);
+                    } else {
+                        self.next_token()
+                    }
+                },
                 'a'..='z' => {
                     Some(self.lex_id_or_keyword())
                 },
@@ -163,6 +176,52 @@ impl<'a, 'b> Lexer<'a, 'b> {
             }
         } else {
             None
+        }
+    }
+
+    pub fn maybe_lex_comment(&mut self) -> Option<Token<'a>> {
+        let (_, offset): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
+        if let Some(ch) = self.peek_char() {
+            if ch == '/' {
+                self.next_char();
+                self.next_char();
+                while let Some(ch) = self.peek_char() {
+                    if ch == '\n' {
+                        self.next_char();
+                        self.next_char();
+                        break;
+                    } else {
+                        self.next_char();
+                    }
+                }
+                None
+            } else if ch == '*' {
+                self.next_char();
+                self.next_char();
+                while let Some(ch) = self.peek_char() {
+                    if ch == '*' {
+                        self.next_char();
+                        if let Some('/') = self.peek_char() {
+                            self.next_char();
+                            self.next_char();
+                            break;
+                        }
+                    } else {
+                        self.next_char();
+                    }
+                }
+                None
+            } else {
+                Some(self.lex_single_char_sym(
+                    SourceLoc::new(self.file_id, offset as u32),
+                    TokenInner::SymSlash
+                ))
+            }
+        } else {
+            Some(self.lex_single_char_sym(
+                SourceLoc::new(self.file_id, offset as u32),
+                TokenInner::SymSlash
+            ))
         }
     }
 

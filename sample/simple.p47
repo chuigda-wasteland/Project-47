@@ -1,4 +1,8 @@
+/*
+ * multiline comment
+ * */
+
 func application_start(args vector<int>) int {
-    var x refl(烫烫烫).commonTypeWith(refl(锟斤拷)) = getSomeInt();
-    return @EXIT_SUCCESS;
+    var x refl(烫烫烫).commonTypeWith(refl(锟斤拷)) = getSomeInt(); // test
+    /* comment */ return @EXIT_SUCCESS;
 }

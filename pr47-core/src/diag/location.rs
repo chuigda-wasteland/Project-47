@@ -14,8 +14,8 @@ impl SourceCoord {
 
 #[derive(Clone, Copy)]
 pub struct SourceLoc {
-    file_id: u32,
-    offset: u32
+    pub file_id: u32,
+    pub offset: u32
 }
 
 impl SourceLoc {
