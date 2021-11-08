@@ -9,7 +9,6 @@ use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::insc::Insc;
 
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
-#[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
 pub struct ExceptionHandlingBlock {
     pub insc_ptr_range: (usize, usize),
@@ -87,5 +86,5 @@ pub struct CompiledProgram<A: Alloc> {
 
     pub ffi_funcs: Box<[Box<dyn FFIFunction<Combustor<A>>>]>,
     #[cfg(feature = "async")]
-    pub async_ffi_funcs: Box<[Box<dyn FFIAsyncFunction<AsyncCombustor<A>>>]>
+    pub async_ffi_funcs: Box<[Box<dyn FFIAsyncFunction<Combustor<A>>>]>
 }

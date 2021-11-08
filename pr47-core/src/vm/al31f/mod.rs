@@ -27,16 +27,19 @@ impl<A: Alloc> AL31F<A> {
     }
 }
 
+#[cfg(not(feature = "async"))]
 pub struct Combustor<A: Alloc> {
     vm: NonNull<AL31F<A>>
 }
 
+#[cfg(not(feature = "async"))]
 impl<A: Alloc> Combustor<A> {
     pub fn new(vm: NonNull<AL31F<A>>) -> Self {
         Self { vm }
     }
 }
 
+#[cfg(not(feature = "async"))]
 impl<A: Alloc> VMContext for Combustor<A> {
     fn allocate(&mut self, wide_ptr: WidePointer) {
         unsafe { self.vm.as_mut().alloc.add_managed(wide_ptr); }
@@ -48,25 +51,36 @@ impl<A: Alloc> VMContext for Combustor<A> {
 }
 
 #[cfg(feature = "async")]
-pub struct AsyncCombustor<A: Alloc> {
+pub struct Combustor<A: Alloc> {
     vm: NonNull<Serializer<AL31F<A>>>
 }
 
 #[cfg(feature = "async")]
-impl<A: Alloc> AsyncCombustor<A> {
+impl<A: Alloc> Combustor<A> {
     pub fn new(vm: NonNull<Serializer<AL31F<A>>>) -> Self {
         Self { vm }
     }
 }
 
 #[cfg(feature = "async")]
-unsafe impl<A: Alloc> Send for AsyncCombustor<A> {}
+unsafe impl<A: Alloc> Send for Combustor<A> {}
 
 #[cfg(feature = "async")]
-unsafe impl<A: Alloc> Sync for AsyncCombustor<A> {}
+unsafe impl<A: Alloc> Sync for Combustor<A> {}
 
 #[cfg(feature = "async")]
-impl<A: Alloc> AsyncVMContext for AsyncCombustor<A> {
+impl<A: Alloc> VMContext for Combustor<A> {
+    fn allocate(&mut self, wide_ptr: WidePointer) {
+        unsafe { self.vm.as_mut().get_shared_data_mut().alloc.add_managed(wide_ptr); }
+    }
+
+    fn mark(&mut self, wide_ptr: WidePointer) {
+        unsafe { self.vm.as_mut().get_shared_data_mut().alloc.mark_object(wide_ptr); }
+    }
+}
+
+#[cfg(feature = "async")]
+impl<A: Alloc> AsyncVMContext for Combustor<A> {
     type SharedData = AL31F<A>;
 
     fn serializer(&self) -> &Serializer<Self::SharedData> {

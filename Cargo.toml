@@ -3,7 +3,6 @@ members = [
     "pr47-core",
     "pr47-codegen"
 ]
-resolver = "2"
 
 [profile.release]
 debug = true
