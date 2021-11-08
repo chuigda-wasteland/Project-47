@@ -17,4 +17,3 @@ pub struct QualIdentifier {
     pub part_ranges: SmallVec<[SourceRange; 2]>,
     pub colon_locs: Vec<SourceLoc>
 }
-

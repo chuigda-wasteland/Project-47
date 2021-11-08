@@ -19,7 +19,6 @@ pub enum LexerMode {
 static DEFAULT_KEYWORDS_MAP: phf::Map<&'static str, TokenInner<'static>> = phf_map! {
     "any" => TokenInner::KwdAny,
     "as" => TokenInner::KwdAs,
-    "async" => TokenInner::KwdAsync,
     "auto" => TokenInner::KwdAuto,
     "await" => TokenInner::KwdAwait,
     "bool" => TokenInner::KwdBool,
@@ -34,6 +33,7 @@ static DEFAULT_KEYWORDS_MAP: phf::Map<&'static str, TokenInner<'static>> = phf_m
     "import" => TokenInner::KwdImport,
     "int" => TokenInner::KwdInt,
     "object" => TokenInner::KwdObject,
+    "open" => TokenInner::KwdOpen,
     "return" => TokenInner::KwdReturn,
     "spawn" => TokenInner::KwdSpawn,
     "throw" => TokenInner::KwdThrow,
@@ -48,7 +48,8 @@ static DEFAULT_KEYWORDS_MAP: phf::Map<&'static str, TokenInner<'static>> = phf_m
     "asm" => TokenInner::RsvAsm,
     "attribute" => TokenInner::RsvAttribute,
     "ckx" => TokenInner::RsvCkx,
-    "refl" => TokenInner::RsvRefl
+    "refl" => TokenInner::RsvRefl,
+    "require" => TokenInner::RsvRequire
 };
 
 pub struct Lexer<'a, 'b> {

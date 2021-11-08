@@ -1,13 +1,16 @@
 use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::attr::AttrList;
 use crate::syntax::expr::ConcreteExpr;
+use crate::syntax::id::Identifier;
 use crate::syntax::stmt::ConcreteCompoundStmt;
 use crate::syntax::ty::ConcreteType;
 
 pub enum ConcreteDecl {
-    VarDecl(ConcreteObjectDecl),
     ConstDecl(ConcreteObjectDecl),
-    FuncDecl(ConcreteFuncDecl)
+    FuncDecl(ConcreteFuncDecl),
+    ImportDecl(ConcreteImportDecl),
+    OpenImportDecl(ConcreteOpenImportDecl),
+    VarDecl(ConcreteObjectDecl)
 }
 
 pub struct ConcreteObjectDecl {
@@ -40,4 +43,15 @@ pub struct ConcreteFuncDecl {
     pub func_name_range: SourceRange,
     pub param_open_paren_loc: SourceLoc,
     pub param_close_paren_loc: SourceLoc
+}
+
+pub struct ConcreteImportDecl {
+    pub import_path: Identifier,
+    pub import_kwd_range: SourceRange
+}
+
+pub struct ConcreteOpenImportDecl {
+    pub import_path: Identifier,
+    pub open_kwd_range: SourceRange,
+    pub import_kwd_range: SourceRange
 }

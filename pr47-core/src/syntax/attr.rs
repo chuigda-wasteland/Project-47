@@ -4,6 +4,7 @@ pub struct AttrList {
     pub attributes: Vec<Attribute>,
 
     pub sharp_loc: SourceLoc,
+    pub exclaim_loc: SourceLoc,
     pub left_bracket_loc: SourceLoc,
     pub right_bracket_loc: SourceLoc
 }

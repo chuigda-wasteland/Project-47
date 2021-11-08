@@ -10,7 +10,6 @@ pub enum TokenInner<'a> {
 
     KwdAny,
     KwdAs,
-    KwdAsync,
     KwdAuto,
     KwdAwait,
     KwdBool,
@@ -26,6 +25,7 @@ pub enum TokenInner<'a> {
     KwdImport,
     KwdInt,
     KwdObject,
+    KwdOpen,
     KwdReturn,
     KwdSpawn,
     KwdThrow,
@@ -46,6 +46,7 @@ pub enum TokenInner<'a> {
     RsvAttribute,
     RsvCkx,
     RsvRefl,
+    RsvRequire,
 
     RsymAt,
     RsymDollar,
@@ -139,7 +140,6 @@ impl<'a> Display for Token<'a> {
 
             KwdAny => write!(f, "⟨any⟩"),
             KwdAs => write!(f, "⟨as⟩"),
-            KwdAsync => write!(f, "⟨async⟩"),
             KwdAuto => write!(f, "⟨auto⟩"),
             KwdAwait => write!(f, "⟨await⟩"),
             KwdBool => write!(f, "⟨bool⟩"),
@@ -155,6 +155,7 @@ impl<'a> Display for Token<'a> {
             KwdImport => write!(f, "⟨import⟩"),
             KwdInt => write!(f, "⟨int⟩"),
             KwdObject => write!(f, "⟨object⟩"),
+            KwdOpen => write!(f, "⟨open⟩"),
             KwdReturn => write!(f, "⟨return⟩"),
             KwdSpawn => write!(f, "⟨spawn⟩"),
             KwdThrow => write!(f, "⟨throw⟩"),
@@ -175,6 +176,7 @@ impl<'a> Display for Token<'a> {
             RsvAttribute => write!(f, "⟨attribute⟩"),
             RsvCkx => write!(f, "⟨ckx⟩"),
             RsvRefl => write!(f, "⟨refl⟩"),
+            RsvRequire => write!(f, "⟨require⟩"),
             RsymAt => write!(f, "⟨@⟩"),
             RsymDollar => write!(f, "⟨$⟩"),
 
