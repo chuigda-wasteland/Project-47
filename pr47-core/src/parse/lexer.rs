@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::iter::Peekable;
 use std::str::CharIndices;
 
@@ -12,6 +13,8 @@ use crate::syntax::token::{Token, TokenInner};
 #[derive(Clone, Copy, Eq, PartialEq)]
 #[repr(u8)]
 pub enum LexerMode {
+    LexTopDecl,
+    LexDecl,
     LexExpr,
     LexType
 }
@@ -61,7 +64,7 @@ pub struct Lexer<'a, 'b> {
 
     cur_ch_idx: Option<(char, usize)>,
 
-    diag: &'b mut DiagContext
+    diag: &'b RefCell<DiagContext>
 }
 
 pub fn is_special(ch: char) -> bool {
@@ -80,7 +83,7 @@ pub fn part_of_identifier(ch: char) -> bool {
 }
 
 impl<'a, 'b> Lexer<'a, 'b> {
-    pub fn new(file_id: u32, source: &'a str, diag: &'b mut DiagContext) -> Self {
+    pub fn new(file_id: u32, source: &'a str, diag: &'b RefCell<DiagContext>) -> Self {
         let mut ret: Self = Self {
             file_id,
 
@@ -138,8 +141,13 @@ impl<'a, 'b> Lexer<'a, 'b> {
         *self.mode.last().unwrap()
     }
 
+    pub fn eoi_range(&self) -> SourceRange {
+        SourceRange::new(self.file_id, self.source.len() as u32, self.source.len() as u32)
+    }
+
     fn diag_unexpected_control_char(&mut self, ch: char, location: SourceLoc) {
-        self.diag.diag(location, diag_data::err_unexpected_control_char_0)
+        self.diag.borrow_mut()
+            .diag(location, diag_data::err_unexpected_control_char_0)
             .add_mark(location.into())
             .add_arg(format!("\\{:x}", ch as u32))
             .build();
@@ -246,7 +254,12 @@ impl<'a, 'b> Lexer<'a, 'b> {
                 let range: SourceRange = SourceRange::from_loc_pair(start_loc, end_loc);
                 return if let Some(keyword /*: TokenInner*/) = DEFAULT_KEYWORDS_MAP.get(id) {
                     self.maybe_diag_reserved_keyword(keyword, id, start_loc, end_loc);
-                    Token::new(*keyword, range)
+                    if self.current_mode() != LexerMode::LexTopDecl &&
+                       *keyword == TokenInner::KwdOpen {
+                        Token::new_id("open", range)
+                    } else {
+                        Token::new(*keyword, range)
+                    }
                 } else {
                     self.maybe_diag_underscored_id(id, start_loc, end_loc);
                     Token::new_id(id, range)
@@ -392,7 +405,8 @@ impl<'a, 'b> Lexer<'a, 'b> {
         token: TokenInner<'a>,
         ch: char
     ) -> Token<'a> {
-        self.diag.diag(location, diag_data::err_reserved_symbol_0)
+        self.diag.borrow_mut()
+            .diag(location, diag_data::err_reserved_symbol_0)
             .add_mark(DiagMark::from(location))
             .add_arg(ch.to_string())
             .build();
@@ -408,7 +422,8 @@ impl<'a, 'b> Lexer<'a, 'b> {
         end_loc: SourceLoc
     ) {
         if keyword.is_reserved() {
-            self.diag.diag(start_loc, diag_data::err_reserved_identifier_0)
+            self.diag.borrow_mut()
+                .diag(start_loc, diag_data::err_reserved_identifier_0)
                 .add_mark(
                     DiagMark::from(SourceRange::from_loc_pair(start_loc, end_loc))
                         .add_comment("reserved identifier")
@@ -420,13 +435,10 @@ impl<'a, 'b> Lexer<'a, 'b> {
 
     fn maybe_diag_underscored_id(&mut self, id: &str, start_loc: SourceLoc, end_loc: SourceLoc) {
         if id.starts_with('_') {
-            self.diag.diag(start_loc, diag_data::warn_underscored_id_reserved)
+            self.diag.borrow_mut()
+                .diag(start_loc, diag_data::warn_underscored_id_reserved)
                 .add_mark(DiagMark::from(SourceRange::from_loc_pair(start_loc, end_loc)))
                 .build();
         }
-    }
-
-    fn eoi_range(&self) -> SourceRange {
-        SourceRange::new(self.file_id, self.source.len() as u32, self.source.len() as u32)
     }
 }

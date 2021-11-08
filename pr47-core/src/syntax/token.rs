@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use std::mem::discriminant;
 
 use smallvec::alloc::fmt::Debug;
 
@@ -100,6 +101,12 @@ impl<'a> TokenInner<'a> {
             RsvAsm | RsvAttribute | RsvCkx | RsvRefl | RsymAt | RsymDollar => true,
             _ => false
         }
+    }
+}
+
+impl<'a> PartialEq for TokenInner<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        discriminant(self) == discriminant(other)
     }
 }
 
