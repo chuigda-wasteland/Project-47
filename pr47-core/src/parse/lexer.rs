@@ -147,40 +147,36 @@ impl<'a, 'b> Lexer<'a, 'b> {
 }
 
 impl<'a, 'b> Lexer<'a, 'b> {
-    pub fn next_token(&mut self) -> Option<Token<'a>> {
+    pub fn next_token(&mut self) -> Token<'a> {
         if let Some((ch, _) /*: (char, usize)*/) = self.cur_char() {
             match ch {
                 '/' => {
-                    if let Some(token) = self.maybe_lex_comment() {
-                        return Some(token);
-                    } else {
-                        self.next_token()
-                    }
+                    self.maybe_lex_comment()
                 },
                 'a'..='z' => {
-                    Some(self.lex_id_or_keyword())
+                    self.lex_id_or_keyword()
                 },
-                '0'..='9' => Some(self.lex_number_lit()),
-                '\'' => Some(self.lex_char_lit()),
-                '\"' => Some(self.lex_string_lit()),
-                '`' => Some(self.lex_raw_string_lit()),
+                '0'..='9' => self.lex_number_lit(),
+                '\'' => self.lex_char_lit(),
+                '\"' => self.lex_string_lit(),
+                '`' => self.lex_raw_string_lit(),
                 ch if ch.is_whitespace() => {
                     self.skip_whitespace();
                     self.next_token()
                 },
                 ch if is_special(ch) => {
-                    Some(self.lex_symbol())
+                    self.lex_symbol()
                 }
                 _ => {
-                    Some(self.lex_id())
+                    self.lex_id()
                 }
             }
         } else {
-            None
+            Token::new_eoi(self.eoi_range())
         }
     }
 
-    pub fn maybe_lex_comment(&mut self) -> Option<Token<'a>> {
+    pub fn maybe_lex_comment(&mut self) -> Token<'a> {
         let (_, offset): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
         if let Some(ch) = self.peek_char() {
             if ch == '/' {
@@ -195,7 +191,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
                         self.next_char();
                     }
                 }
-                None
+                self.next_token()
             } else if ch == '*' {
                 self.next_char();
                 self.next_char();
@@ -211,18 +207,18 @@ impl<'a, 'b> Lexer<'a, 'b> {
                         self.next_char();
                     }
                 }
-                None
+                self.next_token()
             } else {
-                Some(self.lex_single_char_sym(
+                self.lex_single_char_sym(
                     SourceLoc::new(self.file_id, offset as u32),
                     TokenInner::SymSlash
-                ))
+                )
             }
         } else {
-            Some(self.lex_single_char_sym(
+            self.lex_single_char_sym(
                 SourceLoc::new(self.file_id, offset as u32),
                 TokenInner::SymSlash
-            ))
+            )
         }
     }
 
@@ -428,5 +424,9 @@ impl<'a, 'b> Lexer<'a, 'b> {
                 .add_mark(DiagMark::from(SourceRange::from_loc_pair(start_loc, end_loc)))
                 .build();
         }
+    }
+
+    fn eoi_range(&self) -> SourceRange {
+        SourceRange::new(self.file_id, self.source.len() as u32, self.source.len() as u32)
     }
 }

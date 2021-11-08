@@ -88,7 +88,9 @@ pub enum TokenInner<'a> {
     SymSemicolon,
     SymSharp,
     SymSlash,
-    SymTilde
+    SymTilde,
+
+    EndOfInput
 }
 
 impl<'a> TokenInner<'a> {
@@ -109,6 +111,10 @@ pub struct Token<'a> {
 impl<'a> Token<'a> {
     pub fn new(token_inner: TokenInner<'a>, range: SourceRange) -> Self {
         Self { token_inner, range }
+    }
+
+    pub fn new_eoi(range: SourceRange) -> Self {
+        Self::new(TokenInner::EndOfInput, range)
     }
 
     pub fn new_lit_int(lit: i64, range: SourceRange) -> Self {
@@ -217,7 +223,9 @@ impl<'a> Display for Token<'a> {
             SymSemicolon => write!(f, "⟨`;`⟩"),
             SymSharp => write!(f, "⟨#⟩"),
             SymSlash => write!(f, "⟨`/`⟩"),
-            SymTilde => write!(f, "⟨~⟩")
+            SymTilde => write!(f, "⟨~⟩"),
+
+            EndOfInput => write!(f, "♦")
         }
     }
 }
