@@ -102,13 +102,11 @@ impl<SD: 'static> Serializer<SD> {
         }
     }
 
-    /// Given the fact that the permit is held, retrieve the shared data. I'm not sure if this
-    /// is safe or unsafe.
-    pub fn get_shared_data_mut(&self) -> &mut SD {
-        unsafe {
-            let permit: &mut UncheckedOption<Permit<SD>> = self.permit.get_mut_ref_unchecked();
-            &mut permit.get_mut().1
-        }
+    /// Assume the fact that the permit is held, and there's not another mutable reference to the
+    /// shared data, retrieve the shared data.
+    pub unsafe fn get_shared_data_mut(&self) -> &mut SD {
+        let permit: &mut UncheckedOption<Permit<SD>> = self.permit.get_mut_ref_unchecked();
+        &mut permit.get_mut().1
     }
 
     /// Interrupt current `task`, yield execution to one of other `task`s.
@@ -177,6 +175,14 @@ impl<SD: 'static> Serializer<SD> {
             shared,
             permit: UnsafeCell::new(UncheckedOption::new(permit)),
             task_id
+        }
+    }
+
+    pub unsafe fn derive_child_serializer_no_task(&self) -> Serializer<SD> {
+        Serializer {
+            shared: self.shared.clone(),
+            permit: UnsafeCell::new(UncheckedOption::new_none()),
+            task_id: self.task_id
         }
     }
 

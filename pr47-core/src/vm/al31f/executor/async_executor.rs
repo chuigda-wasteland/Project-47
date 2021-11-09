@@ -542,7 +542,7 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 ffi_args.set_len(args.len());
 
                 let mut combustor: AsyncCombustor<A> = AsyncCombustor::new(
-                    NonNull::from(&thread.vm)
+                    thread.vm.derive_child_serializer_no_task()
                 );
 
                 match async_ffi_function.call_rtlc(&mut combustor, &ffi_args) {

@@ -49,12 +49,12 @@ impl<A: Alloc> VMContext for Combustor<A> {
 
 #[cfg(feature = "async")]
 pub struct AsyncCombustor<A: Alloc> {
-    vm: NonNull<Serializer<AL31F<A>>>
+    vm: Serializer<AL31F<A>>
 }
 
 #[cfg(feature = "async")]
 impl<A: Alloc> AsyncCombustor<A> {
-    pub fn new(vm: NonNull<Serializer<AL31F<A>>>) -> Self {
+    pub fn new(vm: Serializer<AL31F<A>>) -> Self {
         Self { vm }
     }
 }
@@ -70,6 +70,6 @@ impl<A: Alloc> AsyncVMContext for AsyncCombustor<A> {
     type SharedData = AL31F<A>;
 
     fn serializer(&self) -> &Serializer<Self::SharedData> {
-        unsafe { self.vm.as_ref() }
+        &self.vm
     }
 }
