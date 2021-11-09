@@ -52,6 +52,8 @@ use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
 #[cfg(feature = "async")] use crate::ffi::async_fn::{AsyncReturnType, Promise};
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
 #[cfg(feature = "async")] use crate::util::serializer::Serializer;
+#[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
+
 #[cfg(feature = "bench")] use xjbutil::defer;
 
 include!("get_vm_makro.rs");
@@ -460,7 +462,7 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 }
                 ffi_rets.set_len(ret_value_locs.len());
 
-                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(&mut thread.vm));
+                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
                 if let Err(e /*: FFIException*/) =
                     ffi_function.call_rtlc(&mut combustor, &ffi_args, &mut ffi_rets)
@@ -502,7 +504,7 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 }
                 ffi_rets.set_len(ret_value_locs.len());
 
-                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(&mut thread.vm));
+                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
                 if let Err(e /*: FFIException*/) =
                     ffi_function.call_unchecked(&mut combustor, &ffi_args, &mut ffi_rets)
@@ -530,7 +532,7 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
             },
             #[cfg(all(feature = "optimized-rtlc", feature = "async"))]
             Insc::FFICallAsync(async_ffi_func_id, args, ret) => {
-                let async_ffi_function: &Box<dyn FFIAsyncFunction<Combustor<A>>>
+                let async_ffi_function: &Box<dyn FFIAsyncFunction<AsyncCombustor<A>>>
                     = &program.async_ffi_funcs[*async_ffi_func_id];
 
                 for i /*: usize*/ in 0..args.len() {
@@ -539,7 +541,7 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 }
                 ffi_args.set_len(args.len());
 
-                let mut combustor: Combustor<A> = Combustor::new(
+                let mut combustor: AsyncCombustor<A> = AsyncCombustor::new(
                     NonNull::from(&thread.vm)
                 );
 

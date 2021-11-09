@@ -12,8 +12,7 @@ license = "MIT"
 pollster = "0.2"
 pr47-codegen = "0.0.2"
 unchecked_unwrap = "3"
-xjbutil = { version = "0.4", default-features = false, features = [
-    "async",
+xjbutil = { version = "0.3", default-features = false, features = [
     "defer",
     "either",
     "korobka",
@@ -39,17 +38,17 @@ variant_count = "1"
 [features]
 default = ["async-tokio", "compiler", "compiler-pretty-diag", "optimized-rtlc", "std47"]
 
-async = ["futures"]
-async-astd = ["async", "async-std", "xjbutil/async-astd"]
-async-tokio = ["async", "tokio", "xjbutil/async-tokio"]
-bench = []
 compiler = ["phf", "smallvec"]
 compiler-pretty-diag = ["unicode-width"]
-huge-align = []
 no-rtlc = []
 optimized-rtlc = []
+bench = []
+huge-align = []
 std47 = []
 
+async-tokio = ["async", "tokio", "xjbutil/async-tokio"]
+async-astd = ["async", "async-std", "xjbutil/async-astd"]
+async = ["futures", "xjbutil/async"]
 
 # Compiler testing binaries
 [[bin]]

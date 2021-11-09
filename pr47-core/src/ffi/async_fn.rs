@@ -15,7 +15,7 @@ use crate::data::wrapper::{
 use crate::ffi::{FFIException, Signature};
 use crate::util::serializer::Serializer;
 
-pub trait AsyncVMContext: VMContext + Send + Sync {
+pub trait AsyncVMContext: 'static + Sized + Send + Sync {
     type SharedData;
 
     fn serializer(&self) -> &Serializer<Self::SharedData>;
@@ -155,7 +155,6 @@ pub use crate::ffi::sync_fn::{
 };
 use std::task::{Context, Poll};
 use futures::FutureExt;
-use crate::ffi::sync_fn::VMContext;
 
 #[inline] pub unsafe fn value_into_ref<'a, T>(
     value: Value
