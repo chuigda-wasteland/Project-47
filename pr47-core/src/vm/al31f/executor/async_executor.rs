@@ -407,9 +407,7 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 );
                 insc_ptr = compiled.start_addr;
             },
-            Insc::CallTyck(_, _, _) => {}
             Insc::CallPtr(_, _, _) => {}
-            Insc::CallPtrTyck(_, _, _) => {}
             Insc::CallOverload(_, _, _) => {}
             Insc::ReturnNothing => {
                 if let Some((prev_stack_slice, ret_addr)) =
@@ -443,48 +441,6 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                         ret_vec.push(slice.get_value(*ret_value_loc));
                     }
                     return Ok(ret_vec);
-                }
-            },
-            Insc::FFICallTyck(ffi_func_id, args, ret_value_locs) => {
-                let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
-                    = &program.ffi_funcs[*ffi_func_id];
-
-                for i /*: usize*/ in 0..args.len() {
-                    let arg_idx: usize = *args.get_unchecked(i);
-                    *ffi_args.get_unchecked_mut(i) = slice.get_value(arg_idx);
-                }
-                ffi_args.set_len(args.len());
-
-                for i /*: usize*/ in 0..ret_value_locs.len() {
-                    let ret_value_loc_idx: usize = *ret_value_locs.get_unchecked(i);
-                    *ffi_rets.get_unchecked_mut(i) = slice.get_value_mut_ref(ret_value_loc_idx);
-                }
-                ffi_rets.set_len(ret_value_locs.len());
-
-                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(&mut thread.vm));
-
-                if let Err(e /*: FFIException*/) =
-                    ffi_function.call_tyck(&mut combustor, &ffi_args, &mut ffi_rets)
-                {
-                    match e {
-                        Either::Left(checked) => {
-                            let (new_slice, insc_ptr_next): (StackSlice, usize) =
-                                checked_exception_unwind_stack(
-                                    get_vm!(thread),
-                                    &program,
-                                    checked,
-                                    &mut thread.stack,
-                                    insc_ptr
-                                )?;
-                            slice = new_slice;
-                            insc_ptr = insc_ptr_next;
-                        },
-                        Either::Right(unchecked) => {
-                            return Err(unchecked_exception_unwind_stack(
-                                unchecked, &mut thread.stack, insc_ptr
-                            ));
-                        }
-                    }
                 }
             },
             #[cfg(feature = "optimized-rtlc")]
@@ -530,8 +486,48 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                     }
                 }
             },
-            Insc::FFICall(_, _, _) => {}
-            Insc::FFICallAsyncTyck(_, _, _) => {}
+            Insc::FFICall(ffi_func_id, args, ret_value_locs) => {
+                let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
+                    = &program.ffi_funcs[*ffi_func_id];
+
+                for i /*: usize*/ in 0..args.len() {
+                    let arg_idx: usize = *args.get_unchecked(i);
+                    *ffi_args.get_unchecked_mut(i) = slice.get_value(arg_idx);
+                }
+                ffi_args.set_len(args.len());
+
+                for i /*: usize*/ in 0..ret_value_locs.len() {
+                    let ret_value_loc_idx: usize = *ret_value_locs.get_unchecked(i);
+                    *ffi_rets.get_unchecked_mut(i) = slice.get_value_mut_ref(ret_value_loc_idx);
+                }
+                ffi_rets.set_len(ret_value_locs.len());
+
+                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(&mut thread.vm));
+
+                if let Err(e /*: FFIException*/) =
+                    ffi_function.call_unchecked(&mut combustor, &ffi_args, &mut ffi_rets)
+                {
+                    match e {
+                        Either::Left(checked) => {
+                            let (new_slice, insc_ptr_next): (StackSlice, usize) =
+                                checked_exception_unwind_stack(
+                                    get_vm!(thread),
+                                    &program,
+                                    checked,
+                                    &mut thread.stack,
+                                    insc_ptr
+                                )?;
+                            slice = new_slice;
+                            insc_ptr = insc_ptr_next;
+                        },
+                        Either::Right(unchecked) => {
+                            return Err(unchecked_exception_unwind_stack(
+                                unchecked, &mut thread.stack, insc_ptr
+                            ));
+                        }
+                    }
+                }
+            },
             #[cfg(all(feature = "optimized-rtlc", feature = "async"))]
             Insc::FFICallAsync(async_ffi_func_id, args, ret) => {
                 let async_ffi_function: &Box<dyn FFIAsyncFunction<Combustor<A>>>
@@ -576,8 +572,6 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                     }
                 }
             },
-            #[cfg(feature = "no-rtlc")]
-            Insc::FFICallAsyncUnchecked(_, _, _) => {}
             #[cfg(feature = "async")]
             Insc::Await(promise, dests) => {
                 let promise: Value = slice.get_value(*promise);
@@ -654,24 +648,48 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
             Insc::Jump(dest) => {
                 insc_ptr = *dest;
             },
+            Insc::CreateString(dest) => {
+                let string: String = String::new();
+                let string: Value = Value::new_owned(string);
+                get_vm!(thread).alloc.add_managed(string.ptr_repr);
+                slice.set_value(*dest, string);
+            },
             Insc::CreateObject(dest) => {
                 let object: Object = Object::new();
                 let object: Value = Value::new_owned(object);
                 get_vm!(thread).alloc.add_managed(object.ptr_repr);
                 slice.set_value(*dest, object);
             },
-            Insc::CreateContainer(_, _, _) => {}
+            Insc::CreateContainer(_, _) => {}
             Insc::VecIndex(_, _, _) => {}
             Insc::VecIndexPut(_, _, _) => {}
-            Insc::VecPush(_, _) => {}
-            Insc::VecPop(_, _) => {}
-            Insc::VecFirst(_, _) => {}
-            Insc::VecLast(_, _) => {}
-            Insc::VecLen(_, _) => {}
-            Insc::StrConcat(_, _, _) => {}
-            Insc::StrAppend(_, _) => {}
-            Insc::StrIndex(_, _, _) => {}
+            Insc::VecInsert(_, _, _) => {}
+            Insc::VecRemove(_, _, _) => {}
+            Insc::VecLen(_) => {}
+            Insc::VecClear(_) => {}
+
+            Insc::DenseVecIndex(_, _, _) => {}
+            Insc::DenseVecIndexPut(_, _, _) => {}
+            Insc::DenseVecInsert(_, _, _) => {}
+            Insc::DenseVecRemove(_, _, _) => {}
+            Insc::DenseVecLen(_) => {}
+            Insc::DenseVecClear(_) => {}
+
+            Insc::StrConcat(src1, src2, dest) => {
+                let src1: *const String = slice.get_value(*src1).ptr as *mut _ as *const String;
+                let src2: *const String = slice.get_value(*src2).ptr as *mut _ as *const String;
+                let mut buffer: String = (*src1).clone();
+                buffer.push_str(&*src2);
+
+                let dest_value: Value = Value::new_owned(buffer);
+                get_vm!(thread).alloc.add_managed(dest_value.ptr_repr);
+                slice.set_value(*dest, dest_value);
+            },
+            Insc::StrFormat(_, _, _) => {}
             Insc::StrLen(_, _) => {}
+            Insc::StrSlice(_, _, _, _) => {}
+            Insc::StrEquals(_, _) => {}
+
             Insc::ObjectGet(_, _, _) => {}
             Insc::ObjectGetDyn(_, _, _) => {}
             Insc::ObjectPut(_, _, _) => {}

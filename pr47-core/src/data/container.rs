@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use std::ptr::NonNull;
 
 use crate::data::Value;
@@ -68,6 +69,12 @@ impl ContainerVT {
             children_fn,
             drop_fn
         }
+    }
+}
+
+impl Debug for ContainerVT {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ContainerVT({})", self.type_name)
     }
 }
 

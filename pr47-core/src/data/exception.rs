@@ -17,7 +17,8 @@ pub enum UncheckedException {
     InvalidCastOp { dest_type: &'static str, src: Value },
     InvalidUnaryOp { unary_op: char, src: Value },
     OwnershipCheckFailure { object: Value, expected_mask: u8 },
-    UnexpectedNull { value: Value }
+    UnexpectedNull { value: Value },
+    IndexOutOfBound { indexed: Value, index: i64, len: usize }
 }
 
 pub type CheckedException = Value;

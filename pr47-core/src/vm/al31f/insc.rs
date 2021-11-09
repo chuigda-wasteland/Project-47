@@ -2,7 +2,7 @@
 
 use std::ptr::NonNull;
 
-use crate::data::container::ContainerCtor;
+use crate::data::container::ContainerVT;
 use crate::data::tyck::TyckInfo;
 
 /// An VM instruction
@@ -423,21 +423,11 @@ pub enum Insc {
     /// **No type checking**.
     Call(usize, Box<[usize]>, Box<[usize]>),
 
-    /// `CALL-TYCK [FUNC-ID] [ARGS..] [RETS..]`
-    ///
-    /// Similar to `CALL-TYCK`, but **performs type checking**.
-    CallTyck(usize, Box<[usize]>, Box<[usize]>),
-
     /// `CALL-PTR [SRC] [ARGS..] [RETS..]`
     ///
     /// Call the function stored in function pointer `SRC` with given `ARGS`, store the return
     /// values to `RETS`. **No type checking**.
     CallPtr(usize, Box<[usize]>, Box<[usize]>),
-
-    /// `CALL-PTR-TYCK [SRC] [ARGS..] [RETS..]`
-    ///
-    /// Similar to `CALL-PTR`, but **performs type checking**.
-    CallPtrTyck(usize, Box<[usize]>, Box<[usize]>),
 
     /// `CALL-OVERLOAD [OVERLOAD-TBL] [ARGS..] [RETS..]`
     CallOverload(usize, Box<[usize]>, Box<[usize]>),
@@ -451,21 +441,12 @@ pub enum Insc {
     /// `RETURN [RETURN-VALUE-LOCS...]`
     Return(Box<[usize]>),
 
-    /// `FFI-CALL-TYCK [FFI-FUNC-ID] [ARGS..] [RETS..]`
-    FFICallTyck(usize, Box<[usize]>, Box<[usize]>),
-
     /// `FFI-CALL-RTLC [FFI-FUNC-ID] [ARGS..] [RETS..]`
     #[cfg(feature = "optimized-rtlc")]
     FFICallRtlc(usize, Box<[usize]>, Box<[usize]>),
 
     /// `FFI-CALL [FFI-FUNC-ID] [ARGS..] [RETS..]`
     FFICall(usize, Box<[usize]>, Box<[usize]>),
-
-    /// `FFI-CALL-ASYNC-TYCK [FUNC-ID] [ARGS..] [RET]`
-    ///
-    /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned promise
-    /// to `RET`. *Performs type checking**.
-    FFICallAsyncTyck(usize, Box<[usize]>, usize),
 
     /// `FFI-CALL-ASYNC [FUNC-ID] [ARGS..] [RET]`
     ///
@@ -474,13 +455,6 @@ pub enum Insc {
     /// is enabled, all async FFI calls have RTLC.
     #[cfg(all(feature = "async", feature = "optimized-rtlc"))]
     FFICallAsync(usize, Box<[usize]>, usize),
-
-    /// `FFI-CALL-ASYNC-UNCHECKED [FUNC-ID] [ARGS..] [RET]`
-    ///
-    /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned promise
-    /// to `RET`. *No type checking and no RTLC*.
-    #[cfg(all(feature = "async", feature = "no-rtlc"))]
-    FFICallAsyncUnchecked(usize, Box<[usize]>, usize),
 
     /// `AWAIT [FUT] [RETS..]`
     ///
@@ -495,21 +469,29 @@ pub enum Insc {
     JumpIfFalse(usize, usize),
     Jump(usize),
 
+    CreateString(usize),
     CreateObject(usize),
-    CreateContainer(ContainerCtor, NonNull<TyckInfo>, usize),
+    CreateContainer(ContainerVT, usize),
 
     VecIndex(usize, usize, usize),
     VecIndexPut(usize, usize, usize),
-    VecPush(usize, usize),
-    VecPop(usize, usize),
-    VecFirst(usize, usize),
-    VecLast(usize, usize),
-    VecLen(usize, usize),
+    VecInsert(usize, usize, usize),
+    VecRemove(usize, usize, usize),
+    VecLen(usize),
+    VecClear(usize),
+
+    DenseVecIndex(usize, usize, usize),
+    DenseVecIndexPut(usize, usize, usize),
+    DenseVecInsert(usize, usize, usize),
+    DenseVecRemove(usize, usize, usize),
+    DenseVecLen(usize),
+    DenseVecClear(usize),
 
     StrConcat(usize, usize, usize),
-    StrAppend(usize, usize),
-    StrIndex(usize, usize, usize),
+    StrFormat(usize, Box<[usize]>, usize),
     StrLen(usize, usize),
+    StrSlice(usize, usize, usize, usize),
+    StrEquals(usize, usize),
 
     ObjectGet(usize, NonNull<str>, usize),
     ObjectGetDyn(usize, usize, usize),
