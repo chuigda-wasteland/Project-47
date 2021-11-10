@@ -11,7 +11,7 @@ use crate::vm::al31f::stack::Stack;
 use crate::vm::al31f::executor::{vm_thread_run_function, VMThread};
 
 #[cfg(feature = "async")]
-use crate::util::serializer::Serializer;
+use crate::util::serializer::CoroutineContext;
 
 pub unsafe fn vm_run_function_sync<A: Alloc>(
     alloc: A,
@@ -23,7 +23,7 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
 
     #[cfg(feature = "async")]
     return pollster::block_on(async {
-        let vm: Serializer<AL31F<A>> = Serializer::new(vm).await;
+        let vm: CoroutineContext<AL31F<A>> = CoroutineContext::main_context(vm).await;
         let mut thread: VMThread<A> = VMThread {
             vm,
             program: NonNull::new_unchecked(program as *mut _),

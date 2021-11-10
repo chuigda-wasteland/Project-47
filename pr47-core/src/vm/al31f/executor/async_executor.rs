@@ -51,7 +51,8 @@ use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
 #[cfg(feature = "async")] use crate::data::wrapper::{Wrapper, OwnershipInfo};
 #[cfg(feature = "async")] use crate::ffi::async_fn::{AsyncReturnType, Promise};
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
-#[cfg(feature = "async")] use crate::util::serializer::Serializer;
+#[cfg(feature = "async")] use crate::util::serializer::CoroutineContext;
+#[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 #[cfg(feature = "bench")] use xjbutil::defer;
 
 include!("get_vm_makro.rs");
@@ -59,7 +60,7 @@ include!("impl_makro.rs");
 
 pub struct VMThread<A: Alloc> {
     #[cfg(feature = "async")]
-    pub vm: Serializer<AL31F<A>>,
+    pub vm: CoroutineContext<AL31F<A>>,
     #[cfg(not(feature = "async"))]
     pub vm: AL31F<A>,
 
@@ -73,8 +74,8 @@ pub async fn create_vm_main_thread<A: Alloc>(
     alloc: A,
     program: &CompiledProgram<A>
 ) -> Box<VMThread<A>> {
-    let ret = Box::new(VMThread {
-        vm: Serializer::new(AL31F::new(alloc)).await,
+    let mut ret = Box::new(VMThread {
+        vm: CoroutineContext::main_context(AL31F::new(alloc)).await,
         program: NonNull::from(program),
         stack: Stack::new()
     });
@@ -460,7 +461,7 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 }
                 ffi_rets.set_len(ret_value_locs.len());
 
-                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(&mut thread.vm));
+                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
                 if let Err(e /*: FFIException*/) =
                     ffi_function.call_rtlc(&mut combustor, &ffi_args, &mut ffi_rets)
@@ -502,7 +503,7 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 }
                 ffi_rets.set_len(ret_value_locs.len());
 
-                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(&mut thread.vm));
+                let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
                 if let Err(e /*: FFIException*/) =
                     ffi_function.call_unchecked(&mut combustor, &ffi_args, &mut ffi_rets)
@@ -530,7 +531,7 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
             },
             #[cfg(all(feature = "optimized-rtlc", feature = "async"))]
             Insc::FFICallAsync(async_ffi_func_id, args, ret) => {
-                let async_ffi_function: &Box<dyn FFIAsyncFunction<Combustor<A>>>
+                let async_ffi_function: &Box<dyn FFIAsyncFunction<AsyncCombustor<A>>>
                     = &program.async_ffi_funcs[*async_ffi_func_id];
 
                 for i /*: usize*/ in 0..args.len() {
@@ -539,9 +540,8 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 }
                 ffi_args.set_len(args.len());
 
-                let mut combustor: Combustor<A> = Combustor::new(
-                    NonNull::from(&thread.vm)
-                );
+                let mut combustor: AsyncCombustor<A> =
+                    AsyncCombustor::new(thread.vm.serializer.clone());
 
                 match async_ffi_function.call_rtlc(&mut combustor, &ffi_args) {
                     Ok(promise /*: Promise*/) => {
@@ -702,5 +702,9 @@ pub unsafe fn vm_thread_run_function<'a, A: Alloc>(
     arg_pack: UncheckedSendSync<(&'a mut VMThread<A>, usize, &'a [Value])>
 ) -> impl Future<Output=Result<Vec<Value>, Exception>> + Send + Unpin + 'a {
     let (thread, func_id, args): (&mut VMThread<A>, usize, &[Value]) = arg_pack.into_inner();
-    UncheckedSendFut::new(vm_thread_run_function_impl(thread, func_id, args))
+    UncheckedSendFut::new(async move {
+        let ret = vm_thread_run_function_impl(thread, func_id, args).await;
+        thread.vm.finish().await;
+        ret
+    })
 }
