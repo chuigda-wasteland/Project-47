@@ -21,11 +21,11 @@ use xjbutil::async_utils::{Mutex, MutexGuard, join_all, oneshot, task, yield_now
 use xjbutil::async_utils::oneshot::{Receiver, Sender};
 use xjbutil::unchecked::{UncheckedCellOps, UncheckedOption};
 
-/// Shared data core
+/// A `Arc<Mutex>` is basically a "serializer" context, serializing accesses to `Data`.
 pub type Serializer<Data> = Arc<Mutex<Data>>;
 
-/// A `MutexGuard` guarding unique access to `SharedContext` and `SerializedData`. Logically, this
-/// structure serves as a "running permission" for tasks.
+/// A `MutexGuard` guards unique access to `Data`. Logically, this structure serves as a
+/// "running permission" for coroutines/tasks.
 pub type SerializerLock<'a, Data> = MutexGuard<'a, Data>;
 
 pub async fn co_yield<'a, D>(
@@ -47,7 +47,6 @@ pub async fn co_await<'a, D, FUT, T>(
     where D: 'static,
           FUT: Future<Output=T>,
           T: Send + Sync
-
 {
     drop(lock);
     let ret: T = fut.await;
@@ -73,6 +72,7 @@ pub async fn co_spawn<'a, 'b, D, FN, ARGS, FUT, RET>(
     (join_handle, lock)
 }
 
+/// Context shared by all coroutines in the same serialization group
 pub struct CoroutineSharedData {
     /// Tracks the task ID allocation status.
     next_task_id: u32,
@@ -110,7 +110,7 @@ impl CoroutineSharedData {
 
     /// Retrieve all tasks and their "completion signal receiver", cleaning internal storage of
     /// `SharedContext`. This is used by main task to `await` for all running child tasks.
-    pub fn get_all_tasks(&mut self) -> HashMap<u32, Receiver<()>> {
+    pub fn retrieve_all_tasks(&mut self) -> HashMap<u32, Receiver<()>> {
         replace(&mut self.running_tasks, HashMap::new())
     }
 
@@ -124,10 +124,13 @@ impl CoroutineSharedData {
 
 /// Context of one coroutine/task
 pub struct CoroutineContext<SerializedData: 'static + Send> {
-    /// Context shared by all tasks in the same serialization group.
+    /// Data shared by all tasks in the same serialization group.
     pub serializer: Serializer<(CoroutineSharedData, SerializedData)>,
-    /// Running permission of the current task.
-    permit: UnsafeCell<UncheckedOption<SerializerLock<'static, (CoroutineSharedData, SerializedData)>>>,
+    /// Running permission of the current task. The `UncheckedOption` is here just for
+    /// temporarily dropping and re-claiming permissions.
+    permit: UnsafeCell<UncheckedOption<
+        SerializerLock<'static, (CoroutineSharedData, SerializedData)>
+    >>,
     /// Task ID of the current task. `0` implies main task, while other values are used for
     /// children tasks.
     pub task_id: u32
@@ -169,7 +172,7 @@ impl<SD: 'static + Send> CoroutineContext<SD> {
         }
     }
 
-    /// Interrupt current `task`, yield execution to one of other `task`s.
+    /// Interrupt current `task`, allowing other `task` to run.
     pub async fn co_yield(&self) {
         let permit: SerializerLock<'static, (CoroutineSharedData, SD)>
             = unsafe { self.release_permit() };
@@ -231,7 +234,7 @@ impl<SD: 'static + Send> CoroutineContext<SD> {
         loop {
             unsafe {
                 let running_tasks: HashMap<u32, Receiver<()>> =
-                    self.permit.get_mut_ref_unchecked().get_mut().0.get_all_tasks();
+                    self.permit.get_mut_ref_unchecked().get_mut().0.retrieve_all_tasks();
                 if running_tasks.len() == 0 {
                     break;
                 }
@@ -265,6 +268,7 @@ impl<SD: 'static + Send> Drop for CoroutineContext<SD> {
         } else {
             permit.0.remove_task(self.task_id);
         }
+        drop(permit);
     }
 }
 
