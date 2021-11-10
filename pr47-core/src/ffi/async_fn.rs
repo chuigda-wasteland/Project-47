@@ -13,12 +13,12 @@ use crate::data::wrapper::{
     OWN_INFO_WRITE_MASK
 };
 use crate::ffi::{FFIException, Signature};
-use crate::util::serializer::Serializer;
+use crate::util::serializer::{CoroutineSharedData, Serializer};
 
 pub trait AsyncVMContext: 'static + Sized + Send + Sync {
-    type SharedData;
+    type VMData;
 
-    fn serializer(&self) -> &Serializer<Self::SharedData>;
+    fn serializer(&self) -> &Serializer<(CoroutineSharedData, Self::VMData)>;
 }
 
 pub trait AsyncFunctionBase: 'static {
