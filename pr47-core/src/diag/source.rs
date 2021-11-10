@@ -71,8 +71,8 @@ impl SourceManager {
             let file_content: &str = &self.file_contents[file_id as usize];
             let mut line_offsets: SmallVec<[usize; 128]> = SmallVec::new();
             line_offsets.push(0);
-            for (i, c) in file_content.chars().enumerate() {
-                if c == '\n' {
+            for (i, &byte) /*: (usize, &u8)*/ in file_content.as_bytes().iter().enumerate() {
+                if byte == b'\n' {
                     line_offsets.push(i + 1);
                 }
             }
