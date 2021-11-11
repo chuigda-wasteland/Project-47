@@ -28,7 +28,6 @@ use crate::vm::al31f::executor::checked_bin_ops::{
     checked_le,
     checked_logic_and,
     checked_logic_or,
-    checked_logic_xor,
     checked_lt,
     checked_mod,
     checked_mul,
@@ -322,9 +321,6 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
             Insc::OrBool(src1, src2, dst) => impl_bool_binop![slice, src1, src2, dst, |],
             Insc::OrAny(src1, src2, dst) =>
                 impl_checked_bin_op![slice, src1, src2, dst, checked_logic_or, thread, insc_ptr],
-            Insc::XorBool(src1, src2, dst) => impl_bool_binop![slice, src1, src2, dst, ^],
-            Insc::XorAny(src1, src2, dst) =>
-                impl_checked_bin_op![slice, src1, src2, dst, checked_logic_xor, thread, insc_ptr],
             Insc::NotBool(src, dst) => {
                 let src: bool = slice.get_value(*src).vt_data.inner.bool_value;
                 slice.set_value(*dst, Value::new_bool(!src));

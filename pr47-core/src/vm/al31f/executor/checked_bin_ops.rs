@@ -272,4 +272,3 @@ macro_rules! impl_checked_logic_op {
 
 impl_checked_logic_op![checked_logic_and, '∧', &];
 impl_checked_logic_op![checked_logic_or, '∨', |];
-impl_checked_logic_op![checked_logic_xor, '⊻', ^];

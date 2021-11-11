@@ -292,18 +292,6 @@ pub enum Insc {
     /// and put result to register `DEST`.
     OrAny(usize, usize, usize),
 
-    /// `XOR-BOOL [SRC1] [SRC2] [DEST]`
-    ///
-    /// Logic-xor booleans in registers `SRC1` and `SRC2`, put result into register `DEST`.
-    /// **No type checking.**
-    XorBool(usize, usize, usize),
-
-    /// `XOR-ANY [SRC1] [SRC2] [DEST]`
-    ///
-    /// **Check data in both `SRC1` and `SRC2` to be boolean**, perform boolean logic-xor operation,
-    /// and put result to register `DEST`.
-    XorAny(usize, usize, usize),
-
     /// `NOT-BOOL [SRC] [DEST]`
     ///
     /// Logic negate the float in register `SRC`, put the result to register `DEST`.
