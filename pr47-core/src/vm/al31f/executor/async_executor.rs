@@ -701,6 +701,7 @@ pub unsafe fn vm_thread_run_function<'a, A: Alloc>(
     UncheckedSendFut::new(async move {
         let ret = vm_thread_run_function_impl(thread, func_id, args).await;
         thread.vm.finish().await;
+        get_vm!(thread).alloc.set_gc_allowed(false);
         ret
     })
 }
