@@ -19,6 +19,7 @@ pub enum TokenInner<'a> {
     KwdConst,
     KwdDo,
     KwdElse,
+    KwdExport,
     KwdFalse,
     KwdFloat,
     KwdFunc,
@@ -72,6 +73,7 @@ pub enum TokenInner<'a> {
     SymExclaim,
     SymGe,
     SymGt,
+    SymHash,
     SymLBrace,
     SymLBracket,
     SymLParen,
@@ -87,7 +89,6 @@ pub enum TokenInner<'a> {
     SymRBracket,
     SymRParen,
     SymSemicolon,
-    SymSharp,
     SymSlash,
     SymTilde,
 
@@ -143,6 +144,10 @@ impl<'a> Token<'a> {
     pub fn new_id(id: &'a str, range: SourceRange) -> Self {
         Self::new(TokenInner::Ident(id), range)
     }
+
+    pub fn is_eoi(&self) -> bool {
+        self.token_inner == TokenInner::EndOfInput
+    }
 }
 
 impl<'a> Display for Token<'a> {
@@ -161,6 +166,7 @@ impl<'a> Display for Token<'a> {
             KwdConst => write!(f, "⟨const⟩"),
             KwdDo => write!(f, "⟨do⟩"),
             KwdElse => write!(f, "⟨else⟩"),
+            KwdExport => write!(f, "⟨export⟩"),
             KwdFalse => write!(f, "⟨false⟩"),
             KwdFloat => write!(f, "⟨float⟩"),
             KwdFunc => write!(f, "⟨func⟩"),
@@ -213,6 +219,7 @@ impl<'a> Display for Token<'a> {
             SymExclaim => write!(f, "⟨!⟩"),
             SymGe => write!(f, "⟨`≥`⟩"),
             SymGt => write!(f, "⟨`>`⟩"),
+            SymHash => write!(f, "⟨#⟩"),
             SymLBrace => write!(f, "⟨`{{`⟩"),
             SymLBracket => write!(f, "⟨`[`⟩"),
             SymLParen => write!(f, "⟨`(`⟩"),
@@ -228,7 +235,6 @@ impl<'a> Display for Token<'a> {
             SymRBracket => write!(f, "⟨`]`⟩"),
             SymRParen => write!(f, "⟨`)`⟩"),
             SymSemicolon => write!(f, "⟨`;`⟩"),
-            SymSharp => write!(f, "⟨#⟩"),
             SymSlash => write!(f, "⟨`/`⟩"),
             SymTilde => write!(f, "⟨~⟩"),
 

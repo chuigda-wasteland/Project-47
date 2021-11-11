@@ -1,7 +1,9 @@
+use smallvec::SmallVec;
+
 use crate::diag::location::{SourceLoc, SourceRange};
 
 pub struct AttrList {
-    pub attributes: Vec<Attribute>,
+    pub attributes: SmallVec<[Attribute; 4]>,
 
     pub sharp_loc: SourceLoc,
     pub exclaim_loc: SourceLoc,
@@ -29,7 +31,7 @@ pub enum AttrValue {
     IntValue(AttrIntValue),
     IdentifierValue(AttrIdentifierValue),
     StrValue(AttrStrValue),
-    List(AttrListValue)
+    CallAlikeValue(CallAlikeValue)
 }
 
 pub struct AttrIntValue {
@@ -47,9 +49,11 @@ pub struct AttrStrValue {
     pub value_range: SourceRange
 }
 
-pub struct AttrListValue {
+pub struct CallAlikeValue {
+    pub func_alike: String,
     pub value: Vec<Attribute>,
 
+    pub func_alike_range: SourceRange,
     pub left_paren_loc: SourceLoc,
     pub right_paren_loc: SourceLoc
 }

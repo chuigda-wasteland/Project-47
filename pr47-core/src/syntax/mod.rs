@@ -7,6 +7,15 @@ pub mod token;
 pub mod ty;
 
 pub struct ConcreteProgram {
-    pub global_attrs: Vec<attr::Attribute>,
+    pub global_attrs: Vec<attr::AttrList>,
     pub decls: Vec<decl::ConcreteDecl>
+}
+
+impl ConcreteProgram {
+    pub fn new() -> Self {
+        Self {
+            global_attrs: vec![],
+            decls: vec![]
+        }
+    }
 }

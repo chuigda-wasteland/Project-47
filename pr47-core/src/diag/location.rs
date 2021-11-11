@@ -66,6 +66,14 @@ impl SourceRange {
         self.file_id == u32::MAX
     }
 
+    pub fn left(&self) -> SourceLoc {
+        SourceLoc::new(self.file_id, self.offset_begin)
+    }
+
+    pub fn right(&self) -> SourceLoc {
+        SourceLoc::new(self.file_id, self.offset_end)
+    }
+
     pub fn compute_coord_pair<'b>(
         &self,
         source_mgr: &'b SourceManager
