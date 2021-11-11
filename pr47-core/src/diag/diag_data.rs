@@ -11,6 +11,10 @@ pub const err_reserved_identifier_0: u32 = 2003;
 pub const err_reserved_symbol_0: u32 = 2004;
 pub const err_expected_token_0_got_1: u32 = 2005;
 pub const err_unexpected_eoi: u32 = 2006;
+pub const err_import_decl_disallow_attr: u32 = 2007;
+pub const err_export_decl_disallow_attr: u32 = 2008;
+pub const err_expected_any_of_0_got_1: u32 = 2009;
+pub const err_no_top_level_var_decl: u32 = 2010;
 
 // warnings
 pub const warn_commence_placeholder: u32 = 4000;
@@ -35,7 +39,12 @@ pub const fn diag_message(code: u32) -> &'static str {
             err_unclosed_string_literal => "unclosed string literal",
             err_reserved_identifier_0 => "unexpected use of reserved identifier `?0`",
             err_reserved_symbol_0 => "unexpected use of reserved symbol `?0`",
-            err_expected_token_0_got_1 => "expected token ?0, got ?1",
+            err_expected_token_0_got_1 => "expected ?0, got ?1",
+            err_unexpected_eoi => "unexpected end of input",
+            err_import_decl_disallow_attr => "cannot add attribute to `import`s",
+            err_export_decl_disallow_attr => "cannot add attribute to `export`s",
+            err_expected_any_of_0_got_1 => "expected any of ?0, got ?1",
+            err_no_top_level_var_decl => "variable declaration cannot appear at top level",
             _ => "INVALID_ERROR_CODE"
         }
     } else /* if code > note_commence_placeholder */ {

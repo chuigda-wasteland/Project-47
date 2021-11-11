@@ -5,7 +5,7 @@ use crate::diag::location::{SourceLoc, SourceRange};
 pub struct AttrList {
     pub attributes: SmallVec<[Attribute; 4]>,
 
-    pub sharp_loc: SourceLoc,
+    pub hash_loc: SourceLoc,
     pub exclaim_loc: SourceLoc,
     pub left_bracket_loc: SourceLoc,
     pub right_bracket_loc: SourceLoc

@@ -7,6 +7,7 @@ use crate::syntax::ty::ConcreteType;
 
 pub enum ConcreteDecl {
     ConstDecl(ConcreteObjectDecl),
+    ExportDecl(ConcreteExportDecl),
     FuncDecl(ConcreteFuncDecl),
     ImportDecl(ConcreteImportDecl),
     OpenImportDecl(ConcreteOpenImportDecl),
@@ -14,7 +15,7 @@ pub enum ConcreteDecl {
 }
 
 pub struct ConcreteObjectDecl {
-    pub attrs: Option<AttrList>,
+    pub attr: Option<AttrList>,
 
     pub name: String,
     pub obj_type: Option<ConcreteType>,
@@ -25,6 +26,8 @@ pub struct ConcreteObjectDecl {
 }
 
 pub struct FunctionParam {
+    pub attr: Option<AttrList>,
+
     pub param_name: String,
     pub param_type: Option<ConcreteType>,
 
@@ -32,7 +35,7 @@ pub struct FunctionParam {
 }
 
 pub struct ConcreteFuncDecl {
-    pub attrs: Option<AttrList>,
+    pub attr: Option<AttrList>,
 
     pub func_name: String,
     pub func_param_list: Vec<FunctionParam>,
@@ -54,4 +57,9 @@ pub struct ConcreteOpenImportDecl {
     pub import_path: Identifier,
     pub open_kwd_range: SourceRange,
     pub import_kwd_range: SourceRange
+}
+
+pub struct ConcreteExportDecl {
+    pub export_path: Identifier,
+    pub export_kwd_range: SourceRange
 }
