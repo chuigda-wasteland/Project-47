@@ -6,8 +6,8 @@ use crate::diag::location::SourceRange;
 use crate::syntax::attr::{Attribute, AttrItem};
 use crate::syntax::token::TokenInner;
 
-impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_attribute(&mut self, is_global: bool) -> Option<Attribute<'a>> {
+impl<'s, 'd> Parser<'s, 'd> {
+    pub fn parse_attribute(&mut self, is_global: bool) -> Option<Attribute<'s>> {
         let hash_range: SourceRange = self.current_token().range;
         self.consume_token();
 
@@ -51,7 +51,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         })
     }
 
-    pub fn parse_attribute_item(&mut self) -> Option<AttrItem<'a>> {
+    pub fn parse_attribute_item(&mut self) -> Option<AttrItem<'s>> {
         todo!()
     }
 }

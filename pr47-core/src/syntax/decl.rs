@@ -1,3 +1,33 @@
+//! # Concrete syntax tree of declarations
+//!
+//! Declaration syntax:
+//! ```text
+//! declaration ::= maybe-attributed-declaration
+//!               | import-declaration
+//!               | export-declaration
+//!
+//! maybe-attributed-declaration ::= maybe-attribute attr-able-declaration
+//!
+//! maybe-attribute ::= attribute
+//!                   | NIL
+//!
+//! attr-able-declaration ::= const-declaration
+//!                         | func-declaration
+//!                         | var-declaration
+//!
+//! import-declaration ::= 'import' identifier ';'
+//!
+//! open-import-declaration ::= 'open' 'import' identifier 'using' '(' identifier-list ')';
+//!
+//! export-declaration ::= 'export' '(' non-empty-identifier-list ')' ';'
+//!
+//! identifier-list ::= non-empty-identifier-list
+//!                   | NIL
+//!
+//! non-empty-identifier-list ::= non-empty-identifier-list ',' identifier
+//!                             | identifier
+//! ```
+
 use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::attr::Attribute;
 use crate::syntax::expr::ConcreteExpr;

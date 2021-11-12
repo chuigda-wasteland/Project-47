@@ -1,4 +1,4 @@
-//! # attribute parsing
+//! # Concrete syntax tree of attributes
 //!
 //! Attribute syntax:
 //! ```text

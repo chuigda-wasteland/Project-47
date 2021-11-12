@@ -148,6 +148,14 @@ impl<'a> Token<'a> {
     pub fn is_eoi(&self) -> bool {
         self.token_inner == TokenInner::EndOfInput
     }
+
+    pub fn get_str_value(&self) -> &'a str {
+        match self.token_inner {
+            TokenInner::Ident(id) => id,
+            TokenInner::LitStr(s) => s,
+            _ => panic!("this token should be either identifier, or string literal")
+        }
+    }
 }
 
 impl<'a> Display for Token<'a> {
