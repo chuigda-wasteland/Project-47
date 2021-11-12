@@ -1,17 +1,17 @@
 use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::id::Identifier;
 
-pub enum ConcreteType {
-    SimpleType(ConcreteSimpleType),
-    GenericType(ConcreteGenericType)
+pub enum ConcreteType<'a> {
+    SimpleType(ConcreteSimpleType<'a>),
+    GenericType(ConcreteGenericType<'a>)
 }
 
-pub struct ConcreteSimpleType {
-    pub content: ConcreteSimpleTypeContent,
+pub struct ConcreteSimpleType<'a> {
+    pub content: ConcreteSimpleTypeContent<'a>,
     pub range: SourceRange
 }
 
-pub enum ConcreteSimpleTypeContent {
+pub enum ConcreteSimpleTypeContent<'a> {
     VoidType,
     ByteType,
     IntType,
@@ -19,12 +19,12 @@ pub enum ConcreteSimpleTypeContent {
     CharType,
     StringType,
     DeducedType,
-    UserType(Identifier)
+    UserType(Identifier<'a>)
 }
 
-pub struct ConcreteGenericType {
-    pub base: Identifier,
-    pub inner: Box<ConcreteType>,
+pub struct ConcreteGenericType<'a> {
+    pub base: Identifier<'a>,
+    pub inner: Box<ConcreteType<'a>>,
     pub left_angle: SourceLoc,
     pub right_angle: SourceLoc
 }

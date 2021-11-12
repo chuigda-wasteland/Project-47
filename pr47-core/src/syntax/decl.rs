@@ -1,46 +1,46 @@
 use crate::diag::location::{SourceLoc, SourceRange};
-use crate::syntax::attr::AttrList;
+use crate::syntax::attr::Attribute;
 use crate::syntax::expr::ConcreteExpr;
 use crate::syntax::id::Identifier;
 use crate::syntax::stmt::ConcreteCompoundStmt;
 use crate::syntax::ty::ConcreteType;
 
-pub enum ConcreteDecl {
-    ConstDecl(ConcreteObjectDecl),
-    ExportDecl(ConcreteExportDecl),
-    FuncDecl(ConcreteFuncDecl),
-    ImportDecl(ConcreteImportDecl),
-    OpenImportDecl(ConcreteOpenImportDecl),
-    VarDecl(ConcreteObjectDecl)
+pub enum ConcreteDecl<'a> {
+    ConstDecl(ConcreteObjectDecl<'a>),
+    ExportDecl(ConcreteExportDecl<'a>),
+    FuncDecl(ConcreteFuncDecl<'a>),
+    ImportDecl(ConcreteImportDecl<'a>),
+    OpenImportDecl(ConcreteOpenImportDecl<'a>),
+    VarDecl(ConcreteObjectDecl<'a>)
 }
 
-pub struct ConcreteObjectDecl {
-    pub attr: Option<AttrList>,
+pub struct ConcreteObjectDecl<'a> {
+    pub attr: Option<Attribute<'a>>,
 
     pub name: String,
-    pub obj_type: Option<ConcreteType>,
-    pub init_expr: Option<ConcreteExpr>,
+    pub obj_type: Option<ConcreteType<'a>>,
+    pub init_expr: Option<ConcreteExpr<'a>>,
 
     pub kwd_range: SourceRange,
     pub name_range: SourceRange
 }
 
-pub struct FunctionParam {
-    pub attr: Option<AttrList>,
+pub struct FunctionParam<'a> {
+    pub attr: Option<Attribute<'a>>,
 
     pub param_name: String,
-    pub param_type: Option<ConcreteType>,
+    pub param_type: Option<ConcreteType<'a>>,
 
     pub param_name_range: SourceRange
 }
 
-pub struct ConcreteFuncDecl {
-    pub attr: Option<AttrList>,
+pub struct ConcreteFuncDecl<'a> {
+    pub attr: Option<Attribute<'a>>,
 
     pub func_name: String,
-    pub func_param_list: Vec<FunctionParam>,
-    pub func_return_type: Option<ConcreteType>,
-    pub func_body: Option<ConcreteCompoundStmt>,
+    pub func_param_list: Vec<FunctionParam<'a>>,
+    pub func_return_type: Option<ConcreteType<'a>>,
+    pub func_body: Option<ConcreteCompoundStmt<'a>>,
 
     pub func_kwd_range: SourceRange,
     pub func_name_range: SourceRange,
@@ -48,18 +48,18 @@ pub struct ConcreteFuncDecl {
     pub param_close_paren_loc: SourceLoc
 }
 
-pub struct ConcreteImportDecl {
-    pub import_path: Identifier,
+pub struct ConcreteImportDecl<'a> {
+    pub import_path: Identifier<'a>,
     pub import_kwd_range: SourceRange
 }
 
-pub struct ConcreteOpenImportDecl {
-    pub import_path: Identifier,
+pub struct ConcreteOpenImportDecl<'a> {
+    pub import_path: Identifier<'a>,
     pub open_kwd_range: SourceRange,
     pub import_kwd_range: SourceRange
 }
 
-pub struct ConcreteExportDecl {
-    pub export_path: Identifier,
+pub struct ConcreteExportDecl<'a> {
+    pub export_path: Identifier<'a>,
     pub export_kwd_range: SourceRange
 }

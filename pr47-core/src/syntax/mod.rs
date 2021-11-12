@@ -6,12 +6,12 @@ pub mod stmt;
 pub mod token;
 pub mod ty;
 
-pub struct ConcreteProgram {
-    pub global_attrs: Vec<attr::AttrList>,
-    pub decls: Vec<decl::ConcreteDecl>
+pub struct ConcreteProgram<'a> {
+    pub global_attrs: Vec<attr::Attribute<'a>>,
+    pub decls: Vec<decl::ConcreteDecl<'a>>
 }
 
-impl ConcreteProgram {
+impl<'a> ConcreteProgram<'a> {
     pub fn new() -> Self {
         Self {
             global_attrs: vec![],

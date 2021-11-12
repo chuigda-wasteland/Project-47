@@ -87,7 +87,7 @@ pub enum Insc {
     DivFloat(usize, usize, usize),
 
     /// `DIV-ANY [SRC1] [SRC2] [DEST]`
-    ///[SRC1] [SRC2] [DEST]`
+    ///
     /// Load numbers in register `SRC1` and `SRC2`, **check types at run time** and perform
     /// appropriate division calculation accordingly, and put result to register `DEST`.
     DivAny(usize, usize, usize),
