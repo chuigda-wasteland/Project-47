@@ -3,10 +3,10 @@ use std::fs::read_to_string;
 
 use pr47::diag::DiagContext;
 use pr47::diag::diag_data::diag_message;
+use pr47::diag::location::SourceCoord;
 use pr47::diag::source::SourceManager;
 use pr47::parse::lexer::Lexer;
 use pr47::syntax::token::{Token, TokenInner};
-use pr47::diag::location::SourceCoord;
 
 fn main() {
     let args: Vec<String> = std::env::args()

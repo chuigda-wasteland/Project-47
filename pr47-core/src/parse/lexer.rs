@@ -13,9 +13,10 @@ use crate::syntax::token::{Token, TokenInner};
 #[derive(Clone, Copy, Eq, PartialEq)]
 #[repr(u8)]
 pub enum LexerMode {
-    LexTopDecl,
+    LexAttr,
     LexDecl,
     LexExpr,
+    LexTopDecl,
     LexType
 }
 
@@ -88,7 +89,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
         let mut ret: Self = Self {
             file_id,
 
-            mode: vec![LexerMode::LexExpr],
+            mode: vec![],
             source,
             char_indices: source.char_indices().peekable(),
 
@@ -253,7 +254,9 @@ impl<'a, 'b> Lexer<'a, 'b> {
                 let end_loc: SourceLoc = self.current_loc();
                 let id: &'a str = unsafe { self.source.get_unchecked(start_idx..idx) };
                 let range: SourceRange = SourceRange::from_loc_pair(start_loc, end_loc);
-                return if let Some(keyword /*: TokenInner*/) = DEFAULT_KEYWORDS_MAP.get(id) {
+                return if self.current_mode() == LexerMode::LexAttr {
+                    Token::new_id(id, range)
+                } else if let Some(keyword /*: TokenInner*/) = DEFAULT_KEYWORDS_MAP.get(id) {
                     self.maybe_diag_reserved_keyword(keyword, id, start_loc, end_loc);
                     if self.current_mode() != LexerMode::LexTopDecl &&
                        *keyword == TokenInner::KwdOpen {

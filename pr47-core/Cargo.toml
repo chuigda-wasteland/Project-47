@@ -12,7 +12,7 @@ license = "MIT"
 pollster = "0.2"
 pr47-codegen = "0.0.2"
 unchecked_unwrap = "3"
-xjbutil = { version = "0.4", default-features = false, features = [
+xjbutil = { version = "0.4.1", default-features = false, features = [
     "async",
     "defer",
     "either",

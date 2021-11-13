@@ -5,6 +5,8 @@ use xjbutil::either::Either;
 
 use crate::diag::diag_data;
 use crate::diag::location::SourceRange;
+use crate::parse::lexer::LexerMode;
+use crate::parse::parser::TOP_LEVEL_FIRST;
 use crate::syntax::ConcreteProgram;
 use crate::syntax::attr::Attribute;
 use crate::syntax::decl::{ConcreteDecl, ConcreteObjectDecl};
@@ -12,6 +14,8 @@ use crate::syntax::token::TokenInner;
 
 impl<'s, 'd> Parser<'s, 'd> {
     pub fn parse(&mut self) -> ConcreteProgram<'s> {
+        self.lexer.push_lexer_mode(LexerMode::LexTopDecl);
+
         let mut program = ConcreteProgram::new();
         while !self.m_current_token.is_eoi() {
             if self.m_current_token.token_inner == TokenInner::SymHash {
@@ -40,7 +44,8 @@ impl<'s, 'd> Parser<'s, 'd> {
                     .map(|attributed_decl| Either::Left(attributed_decl))
             },
             TokenInner::SymExclaim => {
-                self.parse_attribute(true).map(|global_attr| Either::Right(global_attr))
+                self.parse_attribute(true, TOP_LEVEL_FIRST)
+                    .map(|global_attr| Either::Right(global_attr))
             },
             _ => {
                 todo!("error reporting")
@@ -49,7 +54,7 @@ impl<'s, 'd> Parser<'s, 'd> {
     }
 
     pub fn parse_attributed_top_level_decl(&mut self) -> Option<ConcreteDecl<'s>> {
-        let attr_list: Attribute = self.parse_attribute(false)?;
+        let attr_list: Attribute = self.parse_attribute(false, TOP_LEVEL_FIRST)?;
         let mut decl: ConcreteDecl = self.parse_top_level_decl()?;
 
         match &mut decl {

@@ -6,6 +6,7 @@ use smallvec::alloc::fmt::Debug;
 use crate::diag::location::SourceRange;
 
 #[derive(Clone, Copy)]
+#[cfg_attr(debug_assertions, derive(Debug))]
 pub enum TokenInner<'a> {
     Ident(&'a str),
 

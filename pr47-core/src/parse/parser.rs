@@ -72,8 +72,8 @@ impl<'s, 'd> Parser<'s, 'd> {
     #[must_use = "not using the return value is likely to be a mistake"]
     pub fn expect_token(
         &mut self,
-        token_kind: TokenInner<'static>,
-        skip_on_failure: &[&[TokenInner<'static>]]
+        token_kind: TokenInner<'_>,
+        skip_on_failure: &[&[TokenInner<'_>]]
     ) -> Option<&Token<'s>> {
         if self.current_token().token_inner != token_kind {
             self.diag.borrow_mut()
@@ -97,25 +97,13 @@ impl<'s, 'd> Parser<'s, 'd> {
     #[must_use = "not using the return value is likely to be a mistake"]
     pub fn expect_n_consume(
         &mut self,
-        token_kind: TokenInner<'static>,
-        skip_on_failure: &[&[TokenInner<'static>]]
+        token_kind: TokenInner<'_>,
+        skip_on_failure: &[&[TokenInner<'_>]]
     ) -> Option<Token<'s>> {
-        if self.current_token().token_inner != token_kind {
-            self.diag.borrow_mut()
-                .diag(self.current_token().range.left(), diag_data::err_expected_token_0_got_1)
-                // TODO: diagPrettyPrint : TokenInner -> String
-                .add_arg("todo")
-                .add_arg("todo")
-                .add_mark(
-                    DiagMark::from(self.current_token().range).add_comment("unexpected token")
-                )
-                .build();
-            if skip_on_failure.len() != 0 {
-                self.skip_to_any_of(skip_on_failure);
-            }
-            None
-        } else {
+        if let Some(_) = self.expect_token(token_kind, skip_on_failure) {
             Some(self.consume_token())
+        } else {
+            None
         }
     }
 
@@ -129,7 +117,18 @@ impl<'s, 'd> Parser<'s, 'd> {
         }
     }
 
-    fn skip_to_any_of(&mut self, skip_choices: &[&[TokenInner<'static>]]) {
+    #[allow(unused)]
+    fn skip_when(&mut self, skipped: &[&[TokenInner<'_>]]) {
+        while !self.current_token().is_eoi() {
+            if skipped.iter().any(|tokens| tokens.contains(&self.current_token().token_inner)) {
+                self.consume_token();
+            } else {
+                break;
+            }
+        }
+    }
+
+    fn skip_to_any_of(&mut self, skip_choices: &[&[TokenInner<'_>]]) {
         while !self.current_token().is_eoi() {
             for skip_choice in skip_choices {
                 if skip_choice.contains(&self.current_token().token_inner) {
@@ -157,5 +156,5 @@ const TOP_LEVEL_FIRST: &'static [&'static [TokenInner<'static>]] = &[
 ];
 
 const TOP_LEVEL_DECL_FAILSAFE: &'static [&'static [TokenInner<'static>]] = &[
-    TOP_LEVEL_DECL_FIRST,
+    TOP_LEVEL_DECL_FIRST
 ];
