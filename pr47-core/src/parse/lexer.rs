@@ -140,7 +140,19 @@ impl<'a, 'b> Lexer<'a, 'b> {
     }
 
     pub fn current_mode(&self) -> LexerMode {
-        *self.mode.last().unwrap()
+        *self.mode.last().expect("lexer does not have a mode")
+    }
+
+    pub fn prev_mode(&self) -> LexerMode {
+        if self.mode.len() == 0 {
+            unreachable!("lexer does not have a mode")
+        }
+
+        if self.mode.len() == 1 {
+            self.current_mode()
+        } else {
+            self.mode[self.mode.len() - 1]
+        }
     }
 
     pub fn eoi_range(&self) -> SourceRange {

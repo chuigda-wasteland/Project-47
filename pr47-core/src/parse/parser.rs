@@ -7,10 +7,11 @@ use std::cell::RefCell;
 use std::mem::swap;
 
 use unchecked_unwrap::UncheckedUnwrap;
+use xjbutil::defer;
 
 use crate::diag::{DiagContext, DiagMark};
 use crate::diag::diag_data;
-use crate::parse::lexer::Lexer;
+use crate::parse::lexer::{Lexer, LexerMode};
 use crate::syntax::token::{Token, TokenInner};
 
 pub struct Parser<'src, 'diag> {
@@ -119,23 +120,41 @@ impl<'s, 'd> Parser<'s, 'd> {
 
     #[allow(unused)]
     fn skip_when(&mut self, skipped: &[&[TokenInner<'_>]]) {
-        while !self.current_token().is_eoi() {
-            if skipped.iter().any(|tokens| tokens.contains(&self.current_token().token_inner)) {
-                self.consume_token();
-            } else {
-                break;
+        self.without_attr_mode(|this: &mut Self| {
+            while !this.current_token().is_eoi() {
+                if skipped.iter().any(|tokens| tokens.contains(&this.current_token().token_inner)) {
+                    this.consume_token();
+                } else {
+                    break;
+                }
             }
-        }
+        });
     }
 
     fn skip_to_any_of(&mut self, skip_choices: &[&[TokenInner<'_>]]) {
-        while !self.current_token().is_eoi() {
-            for skip_choice in skip_choices {
-                if skip_choice.contains(&self.current_token().token_inner) {
-                    return;
+        self.without_attr_mode(|this: &mut Self| {
+            while !this.current_token().is_eoi() {
+                for skip_choice in skip_choices {
+                    if skip_choice.contains(&this.current_token().token_inner) {
+                        return;
+                    }
                 }
+                this.consume_token();
             }
-            self.consume_token();
+        });
+    }
+
+    fn without_attr_mode<T>(&mut self, skip_operation: impl FnOnce(&mut Self) -> T) -> T{
+        if self.lexer.current_mode() == LexerMode::LexAttr {
+            let this: &mut Self = self;
+            this.lexer.push_lexer_mode(this.lexer.prev_mode());
+            defer!(|this: &mut Self| {
+                this.lexer.pop_lexer_mode();
+            }, this);
+
+            skip_operation(this)
+        } else {
+            skip_operation(self)
         }
     }
 }

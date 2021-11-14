@@ -171,7 +171,11 @@ mod test {
     #[test]
     fn test_parse_global_attribute() {
         let diag: RefCell<DiagContext> = RefCell::new(DiagContext::new());
-        let mut parser: Parser = Parser::new(0, "#![some::attribute, another = config, call(arg1, arg2, arg3 = arg4)]", &diag);
+        let mut parser: Parser = Parser::new(
+            0,
+            "#![some::attribute, another = config, call(arg1, arg2, arg3 = arg4)]",
+            &diag
+        );
 
         let attr: Attribute = parser.parse_attribute(true, &[]).unwrap();
         dbg!(attr);
