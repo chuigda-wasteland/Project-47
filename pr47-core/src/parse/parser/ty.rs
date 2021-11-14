@@ -1,12 +1,13 @@
 use super::Parser;
 
-use smallvec::{SmallVec, smallvec};
+use smallvec::SmallVec;
 use xjbutil::defer;
 
 use crate::diag::location::SourceRange;
 use crate::parse::lexer::LexerMode;
+use crate::syntax::id::Identifier;
 use crate::syntax::token::{Token, TokenInner};
-use crate::syntax::ty::ConcreteType;
+use crate::syntax::ty::{ConcreteGenericType, ConcreteType};
 
 impl<'s, 'd> Parser<'s, 'd> {
     pub fn parse_type(&mut self, failsafe_set: &[&[TokenInner<'_>]]) -> Option<ConcreteType<'s>> {
@@ -30,7 +31,17 @@ impl<'s, 'd> Parser<'s, 'd> {
             TokenInner::KwdVector => {
                 let container_type_token: Token<'s> = self.consume_token();
                 self.parse_generic_type(container_type_token, failsafe_set)
-            }
+            },
+            TokenInner::KwdAuto => {
+                Some(ConcreteType::DeducedType(self.consume_token().range))
+            },
+            TokenInner::Ident(_) => {
+                let ident: Identifier<'s> = self.parse_ident().or_else(|| {
+                    self.skip_to_any_of(failsafe_set);
+                    None
+                })?;
+                Some(ConcreteType::UserType(ident))
+            },
             _ => todo!()
         }
     }
@@ -42,12 +53,24 @@ impl<'s, 'd> Parser<'s, 'd> {
     ) -> Option<ConcreteType<'s>> {
         debug_assert_eq!(container_type_token.token_inner, TokenInner::KwdVector);
 
-        let _left_angle_range: SourceRange =
+        let left_angle_range: SourceRange =
             self.expect_n_consume(TokenInner::SymLt, failsafe_set)?.range;
+        let (type_param_list, right_angle_range): (SmallVec<[ConcreteType<'s>; 2]>, SourceRange) =
+            self.parse_list_alike_nonnull(
+                Self::parse_type,
+                failsafe_set,
+                TokenInner::SymComma,
+                TokenInner::SymGt,
+                failsafe_set
+            )?;
 
-        let first_type_param: ConcreteType = self.parse_type(failsafe_set)?;
-        let _type_parm_list: SmallVec<[ConcreteType<'s>; 2]> = smallvec![first_type_param];
-
-        todo!()
+        Some(ConcreteType::GenericType(Box::new(
+                ConcreteGenericType {
+                base: container_type_token,
+                inner: type_param_list,
+                left_angle: left_angle_range.left(),
+                right_angle: right_angle_range.right()
+            }
+        )))
     }
 }
