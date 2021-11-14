@@ -2,6 +2,7 @@ pub mod attr;
 pub mod base;
 pub mod decl;
 pub mod top_level;
+pub mod ty;
 
 use std::cell::RefCell;
 use std::mem::swap;
@@ -11,8 +12,10 @@ use xjbutil::defer;
 
 use crate::diag::{DiagContext, DiagMark};
 use crate::diag::diag_data;
+use crate::diag::location::SourceRange;
 use crate::parse::lexer::{Lexer, LexerMode};
 use crate::syntax::token::{Token, TokenInner};
+use crate::util::append::Appendable;
 
 pub struct Parser<'src, 'diag> {
     lexer: Lexer<'src, 'diag>,
@@ -41,6 +44,57 @@ impl<'s, 'd> Parser<'s, 'd> {
         }
     }
 
+    #[allow(unused)]
+    fn parse_list_alike<I, F, V>(
+        &mut self,
+        _parse_item_fn: F,
+        _item_skip_set: &[&[TokenInner<'_>]],
+        _separation: TokenInner<'_>,
+        _termination: TokenInner<'_>,
+        _skip_set: &[&[TokenInner<'_>]]
+    ) -> Option<(V, SourceRange)>
+        where I: 's,
+              F: for<'r> Fn(&mut Self, &[&[TokenInner<'r>]]) -> Option<I>,
+              V: Appendable<Item = I>
+    {
+        todo!()
+    }
+
+    fn parse_list_alike_nonnull<I, F, V>(
+        &mut self,
+        parse_item_fn: F,
+        item_skip_set: &[&[TokenInner<'_>]],
+        separation: TokenInner<'_>,
+        termination: TokenInner<'_>,
+        skip_set: &[&[TokenInner<'_>]]
+    ) -> Option<(V, SourceRange)>
+        where I: 's,
+              F: for<'r> Fn(&mut Self, &[&[TokenInner<'r>]]) -> Option<I>,
+              V: Appendable<Item = I> + Default
+    {
+        let mut items: V = V::default();
+        let termination_range: SourceRange = loop {
+            if self.current_token().is_eoi() {
+                self.diag_unexpected_eoi(self.current_token().range);
+                return None;
+            }
+
+            if let Some(item /*: I*/) = parse_item_fn(self, item_skip_set) {
+                items.push_back(item);
+            } else {
+                self.skip_to_any_of(skip_set);
+                return None;
+            }
+
+            if self.m_current_token.token_inner == separation {
+                self.consume_token();
+            } else {
+                break self.expect_n_consume(termination, skip_set)?.range;
+            }
+        };
+        Some((items, termination_range))
+    }
+
     fn consume_token(&mut self) -> Token<'s> {
         if self.m_current_token.is_eoi() {
             return Token::new_eoi(self.m_current_token.range);
@@ -59,6 +113,7 @@ impl<'s, 'd> Parser<'s, 'd> {
         &self.m_current_token
     }
 
+    #[allow(unused)]
     fn peek_token(&mut self) -> &Token<'s> {
         if self.m_current_token.is_eoi() {
             return &self.m_current_token;
@@ -151,11 +206,20 @@ impl<'s, 'd> Parser<'s, 'd> {
             defer!(|this: &mut Self| {
                 this.lexer.pop_lexer_mode();
             }, this);
-
             skip_operation(this)
         } else {
             skip_operation(self)
         }
+    }
+
+    #[cfg(test)]
+    pub fn push_lexer_mode(&mut self, lexer_mode: LexerMode) {
+        self.lexer.push_lexer_mode(lexer_mode);
+    }
+
+    #[cfg(test)]
+    pub fn pop_lexer_mode(&mut self) {
+        self.lexer.pop_lexer_mode();
     }
 }
 

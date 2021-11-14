@@ -31,6 +31,7 @@ pub enum TokenInner<'a> {
     KwdOpen,
     KwdReturn,
     KwdSpawn,
+    KwdString,
     KwdThrow,
     KwdTrue,
     KwdTry,
@@ -38,6 +39,7 @@ pub enum TokenInner<'a> {
     KwdTypeOf,
     KwdVar,
     KwdVector,
+    KwdVoid,
     KwdWhile,
 
     LitChar(char),
@@ -185,6 +187,7 @@ impl<'a> Display for Token<'a> {
             KwdObject => write!(f, "⟨object⟩"),
             KwdOpen => write!(f, "⟨open⟩"),
             KwdReturn => write!(f, "⟨return⟩"),
+            KwdString => write!(f, "⟨string⟩"),
             KwdSpawn => write!(f, "⟨spawn⟩"),
             KwdThrow => write!(f, "⟨throw⟩"),
             KwdTrue => write!(f, "⟨true⟩"),
@@ -192,6 +195,7 @@ impl<'a> Display for Token<'a> {
             KwdType => write!(f, "⟨type⟩"),
             KwdTypeOf => write!(f, "⟨typeof⟩"),
             KwdVar => write!(f, "⟨var⟩"),
+            KwdVoid => write!(f, "⟨void⟩"),
             KwdVector => write!(f, "⟨vector⟩"),
             KwdWhile => write!(f, "⟨while⟩"),
 

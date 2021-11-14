@@ -10,7 +10,7 @@ use crate::parse::parser::TOP_LEVEL_FIRST;
 use crate::syntax::ConcreteProgram;
 use crate::syntax::attr::Attribute;
 use crate::syntax::decl::{ConcreteDecl, ConcreteObjectDecl};
-use crate::syntax::token::TokenInner;
+use crate::syntax::token::{Token, TokenInner};
 
 impl<'s, 'd> Parser<'s, 'd> {
     pub fn parse(&mut self) -> ConcreteProgram<'s> {
@@ -19,7 +19,8 @@ impl<'s, 'd> Parser<'s, 'd> {
         let mut program = ConcreteProgram::new();
         while !self.m_current_token.is_eoi() {
             if self.m_current_token.token_inner == TokenInner::SymHash {
-                if let Some(item) = self.parse_global_attr_or_attributed_decl() {
+                let hash_token: Token<'s> = self.consume_token();
+                if let Some(item) = self.parse_global_attr_or_attributed_decl(hash_token) {
                     match item {
                         Either::Left(decl) => program.decls.push(decl),
                         Either::Right(global_attr) => program.global_attrs.push(global_attr)
@@ -35,16 +36,18 @@ impl<'s, 'd> Parser<'s, 'd> {
         program
     }
 
-    pub fn parse_global_attr_or_attributed_decl(&mut self)
+    pub fn parse_global_attr_or_attributed_decl(&mut self, hash_token: Token<'s>)
         -> Option<Either<ConcreteDecl<'s>, Attribute<'s>>>
     {
-        match self.peek_token().token_inner {
+        debug_assert_eq!(hash_token.token_inner, TokenInner::SymHash);
+
+        match self.current_token().token_inner {
             TokenInner::SymLBracket => {
-                self.parse_attributed_top_level_decl()
+                self.parse_attributed_top_level_decl(hash_token)
                     .map(|attributed_decl| Either::Left(attributed_decl))
             },
             TokenInner::SymExclaim => {
-                self.parse_attribute(true, TOP_LEVEL_FIRST)
+                self.parse_attribute(hash_token, true, TOP_LEVEL_FIRST)
                     .map(|global_attr| Either::Right(global_attr))
             },
             _ => {
@@ -53,8 +56,13 @@ impl<'s, 'd> Parser<'s, 'd> {
         }
     }
 
-    pub fn parse_attributed_top_level_decl(&mut self) -> Option<ConcreteDecl<'s>> {
-        let attr_list: Attribute = self.parse_attribute(false, TOP_LEVEL_FIRST)?;
+    pub fn parse_attributed_top_level_decl(
+        &mut self,
+        hash_token: Token<'s>
+    ) -> Option<ConcreteDecl<'s>> {
+        debug_assert_eq!(hash_token.token_inner, TokenInner::SymHash);
+
+        let attr_list: Attribute = self.parse_attribute(hash_token, false, TOP_LEVEL_FIRST)?;
         let mut decl: ConcreteDecl = self.parse_top_level_decl()?;
 
         match &mut decl {
@@ -95,7 +103,8 @@ impl<'s, 'd> Parser<'s, 'd> {
     pub fn parse_top_level_decl(&mut self) -> Option<ConcreteDecl<'s>> {
         match self.current_token().token_inner {
             TokenInner::KwdConst => {
-                self.parse_object_decl(TOP_LEVEL_DECL_FAILSAFE)
+                let const_token: Token<'s> = self.consume_token();
+                self.parse_object_decl(const_token, TOP_LEVEL_DECL_FAILSAFE)
                     .map(|const_decl: ConcreteObjectDecl| ConcreteDecl::ConstDecl(const_decl))
             },
             TokenInner::KwdVar => {

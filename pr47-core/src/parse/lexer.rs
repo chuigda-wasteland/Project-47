@@ -41,6 +41,7 @@ static DEFAULT_KEYWORDS_MAP: phf::Map<&'static str, TokenInner<'static>> = phf_m
     "open" => TokenInner::KwdOpen,
     "return" => TokenInner::KwdReturn,
     "spawn" => TokenInner::KwdSpawn,
+    "string" => TokenInner::KwdString,
     "throw" => TokenInner::KwdThrow,
     "true" => TokenInner::KwdTrue,
     "try" => TokenInner::KwdTry,
@@ -48,6 +49,7 @@ static DEFAULT_KEYWORDS_MAP: phf::Map<&'static str, TokenInner<'static>> = phf_m
     "typeof" => TokenInner::KwdTypeOf,
     "var" => TokenInner::KwdVar,
     "vector" => TokenInner::KwdVector,
+    "void" => TokenInner::KwdVoid,
     "while" => TokenInner::KwdWhile,
 
     "asm" => TokenInner::RsvAsm,
@@ -89,7 +91,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
         let mut ret: Self = Self {
             file_id,
 
-            mode: vec![],
+            mode: vec![LexerMode::LexTopDecl],
             source,
             char_indices: source.char_indices().peekable(),
 
@@ -258,32 +260,36 @@ impl<'a, 'b> Lexer<'a, 'b> {
         let start_loc: SourceLoc = self.current_loc();
         let (_, start_idx): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
         self.next_char();
-
-        while let Some((ch, idx) /*: (char, usize)*/) = self.cur_char() {
-            if part_of_identifier(ch) {
+        loop {
+            if let Some((ch, _) /*: (char, usize)*/) = self.cur_char() {
+                if !part_of_identifier(ch) {
+                    break;
+                }
                 self.next_char();
             } else {
-                let end_loc: SourceLoc = self.current_loc();
-                let id: &'a str = unsafe { self.source.get_unchecked(start_idx..idx) };
-                let range: SourceRange = SourceRange::from_loc_pair(start_loc, end_loc);
-                return if self.current_mode() == LexerMode::LexAttr {
-                    Token::new_id(id, range)
-                } else if let Some(keyword /*: TokenInner*/) = DEFAULT_KEYWORDS_MAP.get(id) {
-                    self.maybe_diag_reserved_keyword(keyword, id, start_loc, end_loc);
-                    if self.current_mode() != LexerMode::LexTopDecl &&
-                       *keyword == TokenInner::KwdOpen {
-                        Token::new_id("open", range)
-                    } else {
-                        Token::new(*keyword, range)
-                    }
-                } else {
-                    self.maybe_diag_underscored_id(id, start_loc, end_loc);
-                    Token::new_id(id, range)
-                }
+                break;
             }
         }
 
-        unreachable!()
+        let end_loc: SourceLoc = self.current_loc();
+        let end_idx: usize = end_loc.offset as usize;
+        let id: &'a str = unsafe { self.source.get_unchecked(start_idx..end_idx) };
+        let range: SourceRange = SourceRange::from_loc_pair(start_loc, end_loc);
+
+        return if self.current_mode() == LexerMode::LexAttr {
+            Token::new_id(id, range)
+        } else if let Some(keyword /*: TokenInner*/) = DEFAULT_KEYWORDS_MAP.get(id) {
+            self.maybe_diag_reserved_keyword(keyword, id, start_loc, end_loc);
+            if self.current_mode() != LexerMode::LexTopDecl &&
+                *keyword == TokenInner::KwdOpen {
+                Token::new_id("open", range)
+            } else {
+                Token::new(*keyword, range)
+            }
+        } else {
+            self.maybe_diag_underscored_id(id, start_loc, end_loc);
+            Token::new_id(id, range)
+        }
     }
 
     pub fn lex_id(&mut self) -> Token<'a> {

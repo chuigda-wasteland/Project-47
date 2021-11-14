@@ -1,30 +1,40 @@
+//! # Concrete syntax tree of types
+//!
+//! Type syntax:
+//! ```text
+//! type ::= primitive-type
+//!        | generic-type
+//!        | deduced-type
+//!        | user-type
+//!
+//! primitive-type ::= 'any' | 'char' | 'float' | 'int' | 'object' | 'string' | 'void'
+//!
+//! generic-type ::= 'vector' '<' generic-type-parameter '>'
+//!
+//! generic-type-parameter-list ::= generic-type-parameter-list ',' type
+//!                               | type
+//!
+//! deduced-type ::= 'auto'
+//!
+//! user-type ::= identifier
+//! ```
+
+use smallvec::SmallVec;
+
 use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::id::Identifier;
+use crate::syntax::token::Token;
 
 pub enum ConcreteType<'a> {
-    SimpleType(ConcreteSimpleType<'a>),
-    GenericType(ConcreteGenericType<'a>)
-}
-
-pub struct ConcreteSimpleType<'a> {
-    pub content: ConcreteSimpleTypeContent<'a>,
-    pub range: SourceRange
-}
-
-pub enum ConcreteSimpleTypeContent<'a> {
-    VoidType,
-    ByteType,
-    IntType,
-    FloatType,
-    CharType,
-    StringType,
-    DeducedType,
+    PrimitiveType(Token<'a>),
+    GenericType(Box<ConcreteGenericType<'a>>),
+    DeducedType(SourceRange),
     UserType(Identifier<'a>)
 }
 
 pub struct ConcreteGenericType<'a> {
-    pub base: Identifier<'a>,
-    pub inner: Box<ConcreteType<'a>>,
+    pub base: Token<'a>,
+    pub inner: SmallVec<[ConcreteType<'a>; 2]>,
     pub left_angle: SourceLoc,
     pub right_angle: SourceLoc
 }

@@ -1,6 +1,6 @@
 use super::Parser;
 
-use smallvec::{SmallVec, smallvec};
+use smallvec::SmallVec;
 use xjbutil::defer;
 
 use crate::diag::diag_data;
@@ -13,9 +13,12 @@ use crate::syntax::token::{Token, TokenInner};
 impl<'s, 'd> Parser<'s, 'd> {
     pub fn parse_attribute(
         &mut self,
+        hash_token: Token<'s>,
         is_global: bool,
         skip_set: &[&[TokenInner<'_>]]
     ) -> Option<Attribute<'s>> {
+        debug_assert_eq!(hash_token.token_inner, TokenInner::SymHash);
+
         let this: &mut Parser<'s, 'd> = self;
 
         defer!(|this: &mut Parser<'s, 'd>| {
@@ -23,16 +26,16 @@ impl<'s, 'd> Parser<'s, 'd> {
         }, this);
 
         this.lexer.push_lexer_mode(LexerMode::LexAttr);
-        this.parse_attribute_impl(is_global, skip_set)
+        this.parse_attribute_impl(hash_token, is_global, skip_set)
     }
 
     fn parse_attribute_impl(
         &mut self,
+        hash_token: Token<'s>,
         is_global: bool,
         skip_set: &[&[TokenInner<'_>]]
     ) -> Option<Attribute<'s>> {
-        let hash_range: SourceRange = self.current_token().range;
-        self.consume_token();
+        let hash_range: SourceRange = hash_token.range;
 
         let exclaim_range = if is_global {
             self.expect_n_consume(TokenInner::SymExclaim, skip_set)
@@ -62,23 +65,13 @@ impl<'s, 'd> Parser<'s, 'd> {
         termination: TokenInner<'_>,
         skip_set: &[&[TokenInner<'_>]]
     ) -> Option<(SmallVec<[AttrItem<'s>; 4]>, SourceRange)> {
-        let mut items: SmallVec<[AttrItem<'s>; 4]> = smallvec![];
-        let termination_range: SourceRange = loop {
-            if self.current_token().is_eoi() {
-                self.diag_unexpected_eoi(self.current_token().range);
-                return None;
-            }
-
-            let attr_item: AttrItem<'s> = self.parse_attribute_item(skip_set)?;
-            items.push(attr_item);
-
-            if self.m_current_token.token_inner == TokenInner::SymComma {
-                self.consume_token();
-            } else {
-                break self.expect_n_consume(termination, skip_set)?.range;
-            }
-        };
-        Some((items, termination_range))
+        self.parse_list_alike_nonnull(
+            Self::parse_attribute_item,
+            skip_set,
+            TokenInner::SymComma,
+            termination,
+            skip_set
+        )
     }
 
     pub fn parse_attribute_item(&mut self, skip_set: &[&[TokenInner<'_>]]) -> Option<AttrItem<'s>> {
@@ -164,20 +157,76 @@ impl<'s, 'd> Parser<'s, 'd> {
 #[cfg(test)]
 mod test {
     use std::cell::RefCell;
+
     use crate::diag::DiagContext;
     use crate::parse::parser::Parser;
-    use crate::syntax::attr::Attribute;
+    use crate::syntax::attr::{
+        AttrAssignLikeItem,
+        AttrCallLikeItem,
+        AttrItem,
+        AttrValue,
+        AttrValueInner,
+        Attribute
+    };
+    use crate::syntax::id::{assert_ident_unqual, assert_ident_qual};
+    use crate::syntax::token::Token;
 
     #[test]
     fn test_parse_global_attribute() {
+        let source: &str = "#![some::attribute, another = config, call(arg1, arg2, par3 = arg3)]";
+
         let diag: RefCell<DiagContext> = RefCell::new(DiagContext::new());
         let mut parser: Parser = Parser::new(
-            0,
-            "#![some::attribute, another = config, call(arg1, arg2, arg3 = arg4)]",
-            &diag
+            0, source, &diag
         );
 
-        let attr: Attribute = parser.parse_attribute(true, &[]).unwrap();
-        dbg!(attr);
+        let hash_token: Token = parser.consume_token();
+        let attr: Attribute = parser.parse_attribute(hash_token, true, &[]).unwrap();
+        assert_eq!(attr.items.len(), 3);
+
+        if let AttrItem::IdentifierItem(ident) = &attr.items[0] {
+            assert_ident_qual(ident, &["some", "attribute"]);
+        } else {
+            panic!("should be a identifier item");
+        }
+
+        if let AttrItem::AssignLikeItem(AttrAssignLikeItem { ident, value, .. }) = &attr.items[1] {
+            assert_ident_unqual(ident, "another");
+            if let AttrValue { inner: AttrValueInner::Identifier(ident), .. } = &value {
+                assert_ident_unqual(ident, "config");
+            } else {
+                panic!("should be a identifier value");
+            }
+        } else {
+            panic!("should be a assign like item");
+        }
+
+        if let AttrItem::CallLikeItem(AttrCallLikeItem { ident, args, .. }) = &attr.items[2] {
+            assert_ident_unqual(ident, "call");
+            assert_eq!(args.len(), 3);
+
+            if let AttrItem::IdentifierItem(ident) = &args[0] {
+                assert_ident_unqual(ident, "arg1");
+            } else {
+                panic!("should be a identifier item");
+            }
+
+            if let AttrItem::IdentifierItem(ident) = &args[1] {
+                assert_ident_unqual(ident, "arg2");
+            } else {
+                panic!("should be a identifier item");
+            }
+
+            if let AttrItem::AssignLikeItem(AttrAssignLikeItem { ident, value, .. }) = &args[2] {
+                assert_ident_unqual(ident, "par3");
+                if let AttrValue { inner: AttrValueInner::Identifier(ident), .. } = &value {
+                    assert_ident_unqual(ident, "arg3");
+                } else {
+                    panic!("should be a identifier value");
+                }
+            } else {
+                panic!("should be a assign like item");
+            }
+        }
     }
 }
