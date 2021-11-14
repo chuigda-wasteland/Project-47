@@ -13,3 +13,5 @@ Cargo.lock
 *.b47
 *.a47
 *.s47
+
+brute_force_proof

@@ -1,5 +1,3 @@
-use smallvec::{Array, SmallVec};
-
 pub trait Appendable {
     type Item;
 
@@ -13,6 +11,9 @@ impl<T> Appendable for Vec<T> {
         self.push(item)
     }
 }
+
+#[cfg(feature = "compiler")]
+use smallvec::{Array, SmallVec};
 
 #[cfg(feature = "compiler")]
 impl<A> Appendable for SmallVec<A>

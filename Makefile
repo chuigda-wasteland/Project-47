@@ -9,6 +9,11 @@ SYNC_BENCH_FEATURES = --no-default-features --features="bench optimized-rtlc"
 clean:
 	@echo "Nothing to be done for clean operation"
 
+.PHONY: run_brute_force_proof
+run_brute_force_proof:
+	@rustc brute_force_proof.rs -C opt-level=2
+	@./brute_force_proof
+
 .PHONY: bench_al31fm2_fib35
 bench_al31fm2_fib35:
 	@BENCH_ITEM="fib35" cargo run --release ${ASYNC_BENCH_FEATURES}  --bin bench_al31fm2

@@ -65,7 +65,7 @@ impl<'s, 'd> Parser<'s, 'd> {
             )?;
 
         Some(ConcreteType::GenericType(Box::new(
-                ConcreteGenericType {
+            ConcreteGenericType {
                 base: container_type_token,
                 inner: type_param_list,
                 left_angle: left_angle_range.left(),
