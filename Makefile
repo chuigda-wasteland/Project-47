@@ -12,7 +12,7 @@ clean:
 .PHONY: run_brute_force_proof
 run_brute_force_proof:
 	@rustc brute_force_proof.rs -C opt-level=2
-	@./brute_force_proof
+	@./brute_force_proof show-error show-unreachable
 
 .PHONY: bench_al31fm2_fib35
 bench_al31fm2_fib35:

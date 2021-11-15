@@ -4,6 +4,8 @@ Cargo.lock
 
 .idea
 
+*.txt
+*.dot
 *.svg
 *.data
 *.data.old
@@ -15,3 +17,5 @@ Cargo.lock
 *.s47
 
 brute_force_proof
+brute_force_proof.exe
+brute_force_proof.pdb

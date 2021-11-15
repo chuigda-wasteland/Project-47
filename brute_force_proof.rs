@@ -18,7 +18,6 @@ impl NextInt for isize {
 enum BorrowState {
     Own,
     Move,
-    AlreadyMoved,
     Borrow,
     BorrowAgain,
     BorrowMut,
@@ -33,18 +32,34 @@ enum ObjectOriginate {
     MutSharedFromRust
 }
 
-pub const READ: usize = 0;
-pub const WRITE: usize = 1;
-pub const MOVABLE: usize = 2;
-pub const COLLECT: usize = 3;
-pub const OWNED: usize = 5;
+const READ: usize = 0;
+const WRITE: usize = 1;
+const MOVABLE: usize = 2;
+// const COLLECT: usize = 3;
+// const OWNED: usize = 4;
 
 type StateFlags = [bool; 5];
+
+fn state_flags_to_dot_label(flags: StateFlags) -> String {
+    flags.iter().map(|b| if *b { '1' } else { '0' }).collect::<String>()
+}
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum BorrowMark {
     ReadBorrow(Option<StateFlags>),
     WriteBorrow(StateFlags)
+}
+
+impl BorrowMark {
+    fn to_dot_label(&self) -> String {
+        match self {
+            BorrowMark::ReadBorrow(None) => "R".to_string(),
+            BorrowMark::ReadBorrow(Some(flags)) =>
+                format!("R(\\\"{}\\\")", state_flags_to_dot_label(*flags)),
+            BorrowMark::WriteBorrow(flags) =>
+                format!("W(\\\"{}\\\")", state_flags_to_dot_label(*flags))
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -111,20 +126,45 @@ impl ObjectState {
                 self.borrow_stack.pop();
                 self.borrow_stack.pop();
                 self.borrow_stack.push(Borrow);
-            } else if self.borrow_stack[len - 1] == Move &&
-                self.borrow_stack[len - 2] == Own {
-                self.borrow_stack.pop();
-                self.borrow_stack.pop();
-                self.borrow_stack.push(AlreadyMoved);
             }
         }
     }
+
+    fn to_dot_label(&self) -> String {
+        let mut ret = format!("originate = {:?}\\n", self.originate);
+
+        ret.push_str("borrowStack = [#, ");
+        for (i, borrow_item) in self.borrow_stack.iter().enumerate() {
+            ret.push_str(&format!("{:?}", borrow_item));
+            if i != self.borrow_stack.len() - 1 {
+                ret.push_str(", ");
+            }
+        }
+        ret.push_str("]\\n\\n");
+
+        ret.push_str(
+            &format!("stateFlags = \\\"{}\\\"\\n", state_flags_to_dot_label(self.state_flags))
+        );
+        ret.push_str("borrowMarks = [");
+        for (i, borrow_mark) in self.borrow_marks.iter().enumerate() {
+            ret.push_str(&format!("{}", borrow_mark.to_dot_label()));
+            if i != self.borrow_marks.len() - 1 {
+                ret.push_str(", ");
+            }
+        }
+        ret.push_str("]\\n");
+
+        ret
+    }
 }
 
+const UNREACHABLE: i32 = -1;
+const ERROR: i32 = -2;
+
 impl ObjectState {
-    fn try_borrow(&self) -> Option<ObjectState> {
+    fn try_borrow(&self) -> Result<ObjectState, i32> {
         if !self.state_flags[READ] {
-            return None;
+            return Err(ERROR)
         }
 
         let mut self_clone: ObjectState = self.clone();
@@ -145,12 +185,12 @@ impl ObjectState {
 
         self_clone.borrow_stack.push(BorrowState::Borrow);
         self_clone.reduce_borrow_stack();
-        Some(self_clone)
+        Ok(self_clone)
     }
 
-    fn try_borrow_mut(&self) -> Option<ObjectState> {
+    fn try_borrow_mut(&self) -> Result<ObjectState, i32> {
         if !self.state_flags[WRITE] {
-            return None;
+            return Err(ERROR);
         }
 
         let mut self_clone: ObjectState = self.clone();
@@ -160,24 +200,24 @@ impl ObjectState {
         self_clone.borrow_marks.push(BorrowMark::WriteBorrow(self.state_flags));
         self_clone.borrow_stack.push(BorrowState::BorrowMut);
         self_clone.reduce_borrow_stack();
-        Some(self_clone)
+        Ok(self_clone)
     }
 
-    fn try_move(&self) -> Option<ObjectState> {
+    fn try_move(&self) -> Result<ObjectState, i32> {
         if !self.state_flags[MOVABLE] || !self.state_flags[READ] || !self.state_flags[WRITE] {
-            return None;
+            return Err(ERROR);
         }
 
         let mut self_clone: ObjectState = self.clone();
         self_clone.state_flags = [false, false, false, true, false];
         self_clone.borrow_stack.push(BorrowState::Move);
         self_clone.reduce_borrow_stack();
-        Some(self_clone)
+        Ok(self_clone)
     }
 
-    fn try_unborrow(&self) -> Option<ObjectState> {
+    fn try_unborrow(&self) -> Result<ObjectState, i32> {
         if self.borrow_marks.len() == 0 {
-            return None;
+            return Err(UNREACHABLE);
         }
 
         let mut self_clone: ObjectState = self.clone();
@@ -187,15 +227,15 @@ impl ObjectState {
             }
             self_clone.borrow_stack.push(BorrowState::UnBorrow);
             self_clone.reduce_borrow_stack();
-            Some(self_clone)
+            Ok(self_clone)
         } else {
-            None
+            return Err(UNREACHABLE);
         }
     }
 
-    fn try_unborrow_mut(&self) -> Option<ObjectState> {
+    fn try_unborrow_mut(&self) -> Result<ObjectState, i32> {
         if self.borrow_marks.len() == 0 {
-            return None;
+            return Err(UNREACHABLE);
         }
 
         let mut self_clone: ObjectState = self.clone();
@@ -203,9 +243,9 @@ impl ObjectState {
             self_clone.state_flags = state_flags;
             self_clone.borrow_stack.push(BorrowState::UnBorrowMut);
             self_clone.reduce_borrow_stack();
-            Some(self_clone)
+            Ok(self_clone)
         } else {
-            None
+            Err(UNREACHABLE)
         }
     }
 }
@@ -222,7 +262,7 @@ fn breath_first_search<'a, I, S, F>(
 ) -> BFSResult<'a, S>
     where I: IntoIterator<Item = S>,
           S: Clone + Debug + Eq + Hash,
-          F: Fn(&S) -> Option<S>
+          F: Fn(&S) -> Result<S, i32>
 {
     let mut searched_states: HashMap<S, isize> = HashMap::new();
     let mut transformations: HashSet<(isize, isize, &'a str)> = HashSet::new();
@@ -239,15 +279,20 @@ fn breath_first_search<'a, I, S, F>(
 
     while let Some((idx, state)) = search_queue.pop_front() {
         for (transformer, name) in transformers.iter() {
-            if let Some(new_state) = transformer(&state) {
-                if !searched_states.contains_key(&new_state) {
-                    let new_state_idx: isize = state_idx.next_int();
-                    searched_states.insert(new_state.clone(), new_state_idx);
-                    search_queue.push_back((new_state_idx, new_state));
-                    transformations.insert((idx, new_state_idx, name));
+            match transformer(&state) {
+                Ok(new_state) => {
+                    if let Some(existing_state_idx) = searched_states.get(&new_state) {
+                        transformations.insert((idx, *existing_state_idx, name));
+                    } else {
+                        let new_state_idx: isize = state_idx.next_int();
+                        search_queue.push_back((new_state_idx, new_state.clone()));
+                        searched_states.insert(new_state.clone(), new_state_idx);
+                        transformations.insert((idx, new_state_idx, name));
+                    }
+                },
+                Err(dest) => {
+                    transformations.insert((idx, dest as isize, name));
                 }
-            } else {
-                transformations.insert((idx, -1, name));
             }
         }
     }
@@ -258,9 +303,13 @@ fn breath_first_search<'a, I, S, F>(
     }
 }
 
-type SuperFn = for<'r> fn(&'r ObjectState) -> Option<ObjectState>;
+type SuperFn = for<'r> fn(&'r ObjectState) -> Result<ObjectState, i32>;
 
 fn main() {
+    let args: HashSet<String> = std::env::args().collect::<HashSet<_>>();
+    let show_error: bool = args.contains("show-error");
+    let show_unreachable: bool = args.contains("show-unreachable");
+
     let result = breath_first_search(
         [
             ObjectState::owned_by_vm(),
@@ -276,13 +325,42 @@ fn main() {
         ]
     );
 
-    println!("searched states:");
-    for (k, v) in result.searched_states {
-        println!("  state[{}] = {:?}", v, k)
+    println!("digraph {{");
+    println!("  rankdir=LR");
+    println!("  layout=dot");
+    println!("  spline=curved");
+    println!("  compound=true");
+    if show_error {
+        println!("  stateE [shape = \"circle\", label = \"error\"]");
+    }
+    if show_unreachable {
+        println!("  stateU [shape = \"circle\", label = \"unreachable\"]");
+    }
+    for (state, idx) in result.searched_states {
+        println!("  state{} [shape = \"box\" label=\"{}\"]",
+                 idx,
+                 state.to_dot_label());
     }
 
-    println!("\ntransformations:");
     for transformation in result.transformations {
-        println!("  {} |-> {} via {}", transformation.0, transformation.1, transformation.2)
+        if transformation.1 == ERROR as isize {
+            if show_error {
+                println!("  state{} -> stateE [label = \"{}\"]",
+                         transformation.0,
+                         transformation.2);
+            }
+        } else if transformation.1 == UNREACHABLE as isize {
+            if show_unreachable {
+                println!("  state{} -> stateU [label = \"{}\" style=\"dashed\"]",
+                         transformation.0,
+                         transformation.2);
+            }
+        } else {
+            println!("  state{} -> state{} [label = \"{}\"]",
+                     transformation.0,
+                     transformation.1,
+                     transformation.2)
+        }
     }
+    println!("}}");
 }
