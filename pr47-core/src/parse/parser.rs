@@ -1,6 +1,7 @@
 pub mod attr;
 pub mod base;
 pub mod decl;
+pub mod expr;
 pub mod top_level;
 pub mod ty;
 

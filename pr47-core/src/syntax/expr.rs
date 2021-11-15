@@ -1,10 +1,78 @@
+//! # Concrete syntax tree of expressions
+//!
+//! Expression syntax:
+//! ```text
+//! expression ::= assignment-expression
+//!
+//! assignment-expression ::= binary-expression assign-op assignment-expression
+//!                         | binary-expression
+//!
+//! binary-expression ::= binary-expression logic-op comparison-expression
+//!                       | comparison-expression
+//!
+//! comparison-expression ::= comparison-expression compare-op bit-or-expression
+//!                         | bit-or-expression
+//!
+//! bit-or-expression ::= bit-or-expression '|' bit-xor-expression
+//!                     | bit-xor-expression
+//!
+//! bit-xor-expression ::= bit-xor-expression '^' bit-and-expression
+//!                      | bit-and-expression
+//!
+//! bit-and-expression ::= bit-and-expression '&' bit-shift-expression
+//!                      | bit-shift-expression
+//!
+//! bit-shift-expression ::= bit-shift-expression bit-shift-op additive-expression
+//!                        | additive-expression
+//!
+//! additive-expression ::= additive-expression add-op multiplicative-expression
+//!                       | multiplicative-expression
+//!
+//! multiplicative-expression ::= multiplicative-expression mul-op unary-expression
+//!                             | unary-expression
+//!
+//! unary-expression ::= unary-op unary-expression
+//!                    | postfix-expression
+//!
+//! postfix-expression ::= postfix-expression '[' expression ']'
+//!                      | postfix-expression '.' ID
+//!                      | postfix-expression '.' ID '(' expression-list ')'
+//!                      | postfix-expression '.' 'await'
+//!                      | atomic-expression
+//!
+//! atomic-expression ::= identifier
+//!                     | identifier '(' expression-list ')'
+//!                     | literal
+//!                     | '(' expression-list ')'
+//!                     | intrinsic-op '(' expression-list ')'
+//!
+//! expression-list ::= expression-list ',' expression
+//!                   | expression
+//!                   | NIL
+//!
+//! assign-op ::= '=' | '+=' | '-=' | '*=' | '/=' | '%='
+//!
+//! logic-op ::= '&&' | '||' | '^^'
+//!
+//! compare-op ::= '==' | '!=' | '<' | '>' | '<=' | '>='
+//!
+//! bit-shift-op ::= '<<' | '>>'
+//!
+//! add-op ::= '+' | '-'
+//!
+//! mul-op ::= '*' | '/' | '%'
+//!
+//! unary-op ::= '+' | '-'
+//!
+//! intrinsic-op ::= TODO
+//! ```
+
 use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::id::Identifier;
 use crate::syntax::ty::ConcreteType;
 
 pub enum ConcreteExpr<'a> {
-    LiteralExpr(ConcreteLiteralExpr),
-    StringLiteralExpr(ConcreteStringLiteralExpr<'a>),
+    LiteralExpr(ConcreteLiteralExpr<'a>),
     IdRefExpr(ConcreteIdRefExpr<'a>),
     UnaryExpr(ConcreteUnaryExpr<'a>),
     BinaryExpr(ConcreteBinaryExpr<'a>),
@@ -16,16 +84,16 @@ pub enum ConcreteExpr<'a> {
     AsExpr(ConcreteAsExpr<'a>)
 }
 
-pub struct ConcreteLiteralExpr {
-    pub content: LiteralExprContent,
+pub struct ConcreteLiteralExpr<'a> {
+    pub content: LiteralExprContent<'a>,
     pub range: SourceRange
 }
 
-pub enum LiteralExprContent {
-    Byte(u8),
+pub enum LiteralExprContent<'a> {
     Int(i64),
     Float(f64),
     Char(char),
+    String(&'a str),
     Boolean(bool)
 }
 
