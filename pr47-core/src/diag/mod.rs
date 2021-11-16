@@ -4,9 +4,12 @@ pub mod source;
 
 #[cfg(feature = "compiler-pretty-diag")] pub mod prettier;
 
+use std::fmt::Formatter;
 use std::mem::replace;
 
 use smallvec::SmallVec;
+use xjbutil::display2;
+use xjbutil::display2::Display2;
 
 use crate::diag::location::{SourceLoc, SourceRange};
 
@@ -205,3 +208,35 @@ impl<'a> DiagBuilderCtx<'a> {
     }
 }
 
+pub struct ArrayWrapper<T, const N: usize> {
+    inner: [T; N]
+}
+
+impl<T, const N: usize> ArrayWrapper<T, N> {
+    pub fn new(input: [T; N]) -> Self {
+        Self {
+            inner: input
+        }
+    }
+}
+
+impl<T: Display2, const N: usize> Display2 for ArrayWrapper<T, N> {
+    fn fmt2(&self, fmt: &mut Formatter<'_>) -> std::fmt::Result {
+        if N <= 1 {
+            panic!("please do not use ArrayWrapper<T, N> in such a way!")
+        } else if N == 2 {
+            write!(fmt, "{} or {}", display2!(&self.inner[0]), display2!(&self.inner[1]))
+        } else {
+            for i in 0..N-2 {
+                write!(fmt, "{}, ", display2!(&self.inner[i]))?;
+            }
+            write!(fmt, "{} or {}", display2!(&self.inner[N - 2]), display2!(&self.inner[N - 1]))
+        }
+    }
+}
+
+#[macro_export] macro_rules! awa {
+    ($($content:expr),+) => {
+        $crate::diag::ArrayWrapper::new([$($content),+])
+    }
+}

@@ -10,6 +10,7 @@ use std::mem::swap;
 
 use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::defer;
+use xjbutil::display2::ToString2;
 
 use crate::diag::{DiagContext, DiagMark};
 use crate::diag::diag_data;
@@ -135,9 +136,8 @@ impl<'s, 'd> Parser<'s, 'd> {
         if self.current_token().token_inner != token_kind {
             self.diag.borrow_mut()
                 .diag(self.current_token().range.left(), diag_data::err_expected_token_0_got_1)
-                // TODO: diagPrettyPrint : TokenInner -> String
-                .add_arg("todo")
-                .add_arg("todo")
+                .add_arg(token_kind.to_string2())
+                .add_arg(self.current_token().token_inner.to_string2())
                 .add_mark(
                     DiagMark::from(self.current_token().range).add_comment("unexpected token")
                 )

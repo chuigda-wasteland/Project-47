@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter};
 use std::mem::discriminant;
 
 use smallvec::alloc::fmt::Debug;
+use xjbutil::display2::Display2;
 
 use crate::diag::location::SourceRange;
 
@@ -202,7 +203,7 @@ impl<'a> Display for Token<'a> {
             LitChar(ch) => write!(f, "⟨char, '{}'⟩", ch),
             LitFloat(num) => write!(f, "⟨num, {}f⟩", num),
             LitInt(num) => write!(f, "⟨num, {}i⟩", num),
-            LitStr(str) => write!(f, "⟨str, `{}`⟩", str),
+            LitStr(str) => write!(f, "⟨str, \"{}\"⟩", str),
 
             RsvAsm => write!(f, "⟨asm⟩"),
             RsvAttribute => write!(f, "⟨attribute⟩"),
@@ -214,10 +215,10 @@ impl<'a> Display for Token<'a> {
 
             SymAmp => write!(f, "⟨&⟩"),
             SymAster => write!(f, "⟨*⟩"),
-            SymBackslash => write!(f, "⟨`\\`⟩"),
+            SymBackslash => write!(f, "⟨'\\'⟩"),
             SymCaret => write!(f, "⟨^⟩"),
-            SymColon => write!(f, "⟨`:`⟩"),
-            SymComma => write!(f, "⟨`,`⟩"),
+            SymColon => write!(f, "⟨':'⟩"),
+            SymComma => write!(f, "⟨','⟩"),
             SymDAmp => write!(f, "⟨&&⟩"),
             SymDCaret => write!(f, "⟨^^⟩"),
             SymDColon => write!(f, "⟨::⟩"),
@@ -227,29 +228,29 @@ impl<'a> Display for Token<'a> {
             SymDPipe => write!(f, "⟨||⟩"),
             SymDPlus => write!(f, "⟨++⟩"),
             SymDMinus => write!(f, "⟨--⟩"),
-            SymDot => write!(f, "⟨`.`⟩"),
+            SymDot => write!(f, "⟨'.'⟩"),
             SymEq => write!(f, "⟨=⟩"),
             SymExclaim => write!(f, "⟨!⟩"),
-            SymGe => write!(f, "⟨`≥`⟩"),
-            SymGt => write!(f, "⟨`>`⟩"),
+            SymGe => write!(f, "⟨'≥'⟩"),
+            SymGt => write!(f, "⟨'>'⟩"),
             SymHash => write!(f, "⟨#⟩"),
-            SymLBrace => write!(f, "⟨`{{`⟩"),
-            SymLBracket => write!(f, "⟨`[`⟩"),
-            SymLParen => write!(f, "⟨`(`⟩"),
-            SymLe => write!(f, "⟨`≤`⟩"),
-            SymLt => write!(f, "⟨`<`⟩"),
+            SymLBrace => write!(f, "⟨'{{'⟩"),
+            SymLBracket => write!(f, "⟨'['⟩"),
+            SymLParen => write!(f, "⟨'('⟩"),
+            SymLe => write!(f, "⟨'≤'⟩"),
+            SymLt => write!(f, "⟨'<'⟩"),
             SymMinus => write!(f, "⟨-⟩"),
             SymNe => write!(f, "⟨!=⟩"),
             SymPercent => write!(f, "⟨%⟩"),
             SymPipe => write!(f, "⟨|⟩"),
             SymPlus => write!(f, "⟨+⟩"),
             SymQues => write!(f, "⟨?⟩"),
-            SymRBrace => write!(f, "⟨`}}`⟩"),
-            SymRBracket => write!(f, "⟨`]`⟩"),
-            SymRParen => write!(f, "⟨`)`⟩"),
-            SymSemicolon => write!(f, "⟨`;`⟩"),
-            SymSlash => write!(f, "⟨`/`⟩"),
-            SymTilde => write!(f, "⟨~⟩"),
+            SymRBrace => write!(f, "⟨'}}'⟩"),
+            SymRBracket => write!(f, "⟨']'⟩"),
+            SymRParen => write!(f, "⟨')'⟩"),
+            SymSemicolon => write!(f, "⟨';'⟩"),
+            SymSlash => write!(f, "⟨'/'⟩"),
+            SymTilde => write!(f, "⟨'~'⟩"),
 
             EndOfInput => write!(f, "♦")
         }
@@ -259,5 +260,102 @@ impl<'a> Display for Token<'a> {
 impl<'a> Debug for Token<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self)
+    }
+}
+
+impl<'a> Display2 for TokenInner<'a> {
+    fn fmt2(&self, fmt: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenInner::Ident(ident) => if ident.is_empty() {
+                write!(fmt, "identifier")
+            } else {
+                write!(fmt, "identifier \"{}\"", ident)
+            },
+
+            TokenInner::KwdAny => write!(fmt, "'any'"),
+            TokenInner::KwdAs => write!(fmt, "'as'"),
+            TokenInner::KwdAuto => write!(fmt, "'auto'"),
+            TokenInner::KwdAwait => write!(fmt, "'await'"),
+            TokenInner::KwdBool => write!(fmt, "'bool'"),
+            TokenInner::KwdCatch => write!(fmt, "'catch'"),
+            TokenInner::KwdChar => write!(fmt, "'char'"),
+            TokenInner::KwdConst => write!(fmt, "'const'"),
+            TokenInner::KwdDo => write!(fmt, "'do'"),
+            TokenInner::KwdElse => write!(fmt, "'else'"),
+            TokenInner::KwdExport => write!(fmt, "'export'"),
+            TokenInner::KwdFalse => write!(fmt, "'false'"),
+            TokenInner::KwdFloat => write!(fmt, "'float'"),
+            TokenInner::KwdFunc => write!(fmt, "'func'"),
+            TokenInner::KwdIf => write!(fmt, "'if'"),
+            TokenInner::KwdImport => write!(fmt, "'import'"),
+            TokenInner::KwdInt => write!(fmt, "'int'"),
+            TokenInner::KwdObject => write!(fmt, "'object'"),
+            TokenInner::KwdOpen => write!(fmt, "'open'"),
+            TokenInner::KwdReturn => write!(fmt, "'any'"),
+            TokenInner::KwdSpawn => write!(fmt, "'spawn'"),
+            TokenInner::KwdString => write!(fmt, "'string'"),
+            TokenInner::KwdThrow => write!(fmt, "'throw'"),
+            TokenInner::KwdTrue => write!(fmt, "'true'"),
+            TokenInner::KwdTry => write!(fmt, "'try'"),
+            TokenInner::KwdType => write!(fmt, "'type'"),
+            TokenInner::KwdTypeOf => write!(fmt, "'typeof'"),
+            TokenInner::KwdVar => write!(fmt, "'var'"),
+            TokenInner::KwdVector => write!(fmt, "'vector'"),
+            TokenInner::KwdVoid => write!(fmt, "'void'"),
+            TokenInner::KwdWhile => write!(fmt, "'write'"),
+
+            TokenInner::LitChar(_) => write!(fmt, "char literal"),
+            TokenInner::LitFloat(_) => write!(fmt, "float literal"),
+            TokenInner::LitInt(_) => write!(fmt, "integer literal"),
+            TokenInner::LitStr(_) => write!(fmt, "string literal"),
+
+            TokenInner::RsvAsm => write!(fmt, "'asm'"),
+            TokenInner::RsvAttribute => write!(fmt, "'attribute'"),
+            TokenInner::RsvCkx => write!(fmt, "'ckx'"),
+            TokenInner::RsvRefl => write!(fmt, "'refl'"),
+            TokenInner::RsvRequire => write!(fmt, "'require'"),
+
+            TokenInner::RsymAt => write!(fmt, "'@'"),
+            TokenInner::RsymDollar => write!(fmt, "'$'"),
+            TokenInner::SymAmp => write!(fmt, "'&'"),
+            TokenInner::SymAster => write!(fmt, "'*'"),
+            TokenInner::SymBackslash => write!(fmt, "'\\'"),
+            TokenInner::SymCaret => write!(fmt, "'^'"),
+            TokenInner::SymColon => write!(fmt, "':'"),
+            TokenInner::SymComma => write!(fmt, "','"),
+            TokenInner::SymDAmp => write!(fmt, "'&&'"),
+            TokenInner::SymDCaret => write!(fmt, "'^^'"),
+            TokenInner::SymDColon => write!(fmt, "'::'"),
+            TokenInner::SymDEq => write!(fmt, "'=='"),
+            TokenInner::SymDGt => write!(fmt, "'>>'"),
+            TokenInner::SymDLt => write!(fmt, "'<<'"),
+            TokenInner::SymDPipe => write!(fmt, "'||'"),
+            TokenInner::SymDPlus => write!(fmt, "'++'"),
+            TokenInner::SymDMinus => write!(fmt, "'--'"),
+            TokenInner::SymDot => write!(fmt, "'.'"),
+            TokenInner::SymEq => write!(fmt, "'='"),
+            TokenInner::SymExclaim => write!(fmt, "'!'"),
+            TokenInner::SymGe => write!(fmt, "'>='"),
+            TokenInner::SymGt => write!(fmt, "'>'"),
+            TokenInner::SymHash => write!(fmt, "'#'"),
+            TokenInner::SymLBrace => write!(fmt, "'{{'"),
+            TokenInner::SymLBracket => write!(fmt, "'['"),
+            TokenInner::SymLParen => write!(fmt, "'('"),
+            TokenInner::SymLe => write!(fmt, "'<='"),
+            TokenInner::SymLt => write!(fmt, "'<'"),
+            TokenInner::SymMinus => write!(fmt, "'-'"),
+            TokenInner::SymNe => write!(fmt, "'!='"),
+            TokenInner::SymPercent => write!(fmt, "'%'"),
+            TokenInner::SymPipe => write!(fmt, "'|'"),
+            TokenInner::SymPlus => write!(fmt, "'+'"),
+            TokenInner::SymQues => write!(fmt, "'?'"),
+            TokenInner::SymRBrace => write!(fmt, "'}}'"),
+            TokenInner::SymRBracket => write!(fmt, "']'"),
+            TokenInner::SymRParen => write!(fmt, "')'"),
+            TokenInner::SymSemicolon => write!(fmt, "';'"),
+            TokenInner::SymSlash => write!(fmt, "'/'"),
+            TokenInner::SymTilde => write!(fmt, "'~'"),
+            TokenInner::EndOfInput => write!(fmt, "end of input"),
+        }
     }
 }
