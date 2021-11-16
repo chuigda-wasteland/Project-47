@@ -1,7 +1,6 @@
 use super::{Parser, TOP_LEVEL_DECL_FAILSAFE};
 
 use unchecked_unwrap::UncheckedUnwrap;
-use xjbutil::display2::ToString2;
 use xjbutil::either::Either;
 
 use crate::awa;
@@ -56,15 +55,8 @@ impl<'s, 'd> Parser<'s, 'd> {
                 self.diag.borrow_mut()
                     .diag(self.current_token().range.left(),
                           diag_data::err_expected_any_of_0_got_1)
-                    .add_arg(awa![
-                        TokenInner::KwdConst,
-                        TokenInner::KwdExport,
-                        TokenInner::KwdFunc,
-                        TokenInner::KwdImport,
-                        TokenInner::KwdOpen,
-                        TokenInner::SymHash
-                    ].to_string2())
-                    .add_arg(self.current_token().token_inner.to_string2())
+                    .add_arg2(awa![TokenInner::SymExclaim, TokenInner::SymLBracket])
+                    .add_arg2(self.current_token().token_inner)
                     .add_mark(self.current_token().range.into())
                     .build();
                 None

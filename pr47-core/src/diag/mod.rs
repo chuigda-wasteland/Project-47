@@ -9,7 +9,7 @@ use std::mem::replace;
 
 use smallvec::SmallVec;
 use xjbutil::display2;
-use xjbutil::display2::Display2;
+use xjbutil::display2::{Display2, ToString2};
 
 use crate::diag::location::{SourceLoc, SourceRange};
 
@@ -123,6 +123,11 @@ impl DiagBuilder {
         self
     }
 
+    #[must_use] pub fn add_arg2(mut self, arg: impl ToString2) -> Self {
+        self.diag.args.push(arg.to_string2());
+        self
+    }
+
     #[must_use] pub fn add_mark(mut self, mark: DiagMark) -> Self {
         self.diag.marks.push(mark);
         self
@@ -190,6 +195,11 @@ impl DiagContext {
 impl<'a> DiagBuilderCtx<'a> {
     #[must_use] pub fn add_arg(mut self, arg: impl ToString) -> Self {
         self.diag_builder = self.diag_builder.add_arg(arg);
+        self
+    }
+
+    #[must_use] pub fn add_arg2(mut self, arg: impl ToString2) -> Self {
+        self.diag_builder = self.diag_builder.add_arg2(arg);
         self
     }
 
