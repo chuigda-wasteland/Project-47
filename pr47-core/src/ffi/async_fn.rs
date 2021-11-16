@@ -9,6 +9,7 @@ use crate::data::exception::UncheckedException;
 use crate::data::traits::{StaticBase};
 use crate::data::wrapper::{OwnershipInfo, Wrapper};
 use crate::data::wrapper::{
+    OWN_INFO_OWNED_MASK,
     OWN_INFO_READ_MASK,
     OWN_INFO_WRITE_MASK
 };
@@ -166,9 +167,9 @@ use futures::FutureExt;
     let original: u8 = (*wrapper_ptr).ownership_info;
     if original & OWN_INFO_READ_MASK != 0 {
         let data_ptr: *const T = value.get_as_mut_ptr_norm() as *const T;
-        if original != OwnershipInfo::SharedToRust as u8 {
+        if original & OWN_INFO_WRITE_MASK != 0 {
             (*wrapper_ptr).ownership_info2 = original;
-            (*wrapper_ptr).ownership_info = OwnershipInfo::SharedToRust as u8;
+            (*wrapper_ptr).ownership_info = original & (OWN_INFO_READ_MASK | OWN_INFO_OWNED_MASK);
             (*wrapper_ptr).refcount = 1;
         } else {
             (*wrapper_ptr).refcount += 1;

@@ -126,7 +126,7 @@ impl Drop for OwnershipGuard {
 ) -> Result<OwnershipGuard, FFIException> {
     let wrapper_ptr: *mut Wrapper<()> = value.untagged_ptr_field() as *mut _;
     let original: u8 = (*wrapper_ptr).ownership_info;
-    if original & OWN_INFO_OWNED_MASK != 0 {
+    if original & (OWN_INFO_READ_MASK | OWN_INFO_WRITE_MASK | OWN_INFO_OWNED_MASK) != 0 {
         Ok(OwnershipGuard::new(wrapper_ptr, original))
     } else {
         Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
@@ -175,8 +175,8 @@ impl Drop for OwnershipGuard {
     let original: u8 = (*wrapper_ptr).ownership_info;
     if original & OWN_INFO_READ_MASK != 0 {
         let data_ptr: *const T = value.get_as_mut_ptr_norm() as *const T;
-        if original != OwnershipInfo::SharedToRust as u8 {
-            (*wrapper_ptr).ownership_info = OwnershipInfo::SharedToRust as u8;
+        if original & (OWN_INFO_WRITE_MASK) != 0 {
+            (*wrapper_ptr).ownership_info = original & (OWN_INFO_READ_MASK | OWN_INFO_OWNED_MASK);
             Ok((
                 &*data_ptr,
                 Some(OwnershipGuard::new(wrapper_ptr, original))
