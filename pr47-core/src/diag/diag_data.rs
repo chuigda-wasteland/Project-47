@@ -15,6 +15,7 @@ pub const err_import_decl_disallow_attr: u32 = 2007;
 pub const err_export_decl_disallow_attr: u32 = 2008;
 pub const err_expected_any_of_0_got_1: u32 = 2009;
 pub const err_no_top_level_var_decl: u32 = 2010;
+pub const err_expected_unqual_id: u32 = 2011;
 
 // warnings
 pub const warn_commence_placeholder: u32 = 4000;
@@ -45,6 +46,7 @@ pub const fn diag_message(code: u32) -> &'static str {
             err_export_decl_disallow_attr => "cannot add attribute to `export`s",
             err_expected_any_of_0_got_1 => "expected any of ?0, got ?1",
             err_no_top_level_var_decl => "variable declaration cannot appear at top level",
+            err_expected_unqual_id => "expected unqualified identifier",
             _ => "INVALID_ERROR_CODE"
         }
     } else /* if code > note_commence_placeholder */ {

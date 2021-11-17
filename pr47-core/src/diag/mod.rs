@@ -164,7 +164,14 @@ impl DiagContext {
         }
     }
 
+    #[cfg_attr(test, allow(unreachable_code))]
     pub fn diag(&mut self, location: SourceLoc, diag_id: u32) -> DiagBuilderCtx {
+        #[cfg(test)] panic!(
+            "#[cfg(test)] diag panic: location = {:?}, diag_id = {}",
+            location,
+            diag_id
+        );
+
         let diag_builder: DiagBuilder = Diagnostic::builder(location, diag_id);
         DiagBuilderCtx {
             diag_context: self,

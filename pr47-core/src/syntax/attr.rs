@@ -74,7 +74,8 @@ pub enum AttrValueInner<'a> {
     IntLiteral(i64),
     FloatLiteral(f64),
     CharLiteral(char),
-    StringLiteral(&'a str)
+    StringLiteral(&'a str),
+    BoolLiteral(bool)
 }
 
 impl<'a> AttrValue<'a> {
@@ -109,6 +110,13 @@ impl<'a> AttrValue<'a> {
     pub fn string_value(value: &'a str, range: SourceRange) -> Self {
         Self {
             inner: AttrValueInner::StringLiteral(value),
+            range
+        }
+    }
+
+    pub fn bool_value(value: bool, range: SourceRange) -> Self {
+        Self {
+            inner: AttrValueInner::BoolLiteral(value),
             range
         }
     }

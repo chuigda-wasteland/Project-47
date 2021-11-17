@@ -2,6 +2,7 @@ use super::Parser;
 
 use smallvec::SmallVec;
 use xjbutil::defer;
+use crate::awa;
 
 use crate::diag::diag_data;
 use crate::diag::location::SourceRange;
@@ -140,11 +141,21 @@ impl<'s, 'd> Parser<'s, 'd> {
             TokenInner::LitFloat(float_value) => Some(AttrValue::float_value(float_value, range)),
             TokenInner::LitChar(char_value) => Some(AttrValue::char_value(char_value, range)),
             TokenInner::LitStr(str_value) => Some(AttrValue::string_value(str_value, range)),
+            TokenInner::KwdTrue => Some(AttrValue::bool_value(true, range)),
+            TokenInner::KwdFalse => Some(AttrValue::bool_value(false, range)),
             _ => {
                 self.diag.borrow_mut()
                     .diag(range.left(), diag_data::err_expected_any_of_0_got_1)
-                    .add_arg("todo")
-                    .add_arg("todo")
+                    .add_arg2(awa![
+                        TokenInner::Ident(""),
+                        TokenInner::LitInt(0),
+                        TokenInner::LitFloat(0.0),
+                        TokenInner::LitChar(' '),
+                        TokenInner::LitStr(""),
+                        TokenInner::KwdTrue,
+                        TokenInner::KwdFalse
+                    ])
+                    .add_arg2(self.current_token().token_inner)
                     .add_mark(range.into())
                     .build();
                 self.skip_to_any_of(skip_set);
