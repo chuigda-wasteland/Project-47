@@ -256,7 +256,7 @@ struct BFSResult<'a, S: Clone + Debug + Eq + Hash> {
     transformations: HashSet<(isize, isize, &'a str)>
 }
 
-fn breath_first_search<'a, I, S, F>(
+fn breadth_first_search<'a, I, S, F>(
     initial_states: I,
     transformers: &[(F, &'a str)]
 ) -> BFSResult<'a, S>
@@ -310,7 +310,7 @@ fn main() {
     let show_error: bool = args.contains("show-error");
     let show_unreachable: bool = args.contains("show-unreachable");
 
-    let result = breath_first_search(
+    let result = breadth_first_search(
         [
             ObjectState::owned_by_vm(),
             ObjectState::shared_from_rust(),

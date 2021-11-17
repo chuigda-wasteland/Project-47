@@ -62,6 +62,10 @@ flamegraph_bench_al31fm2_raw_iter:
 flamegraph_bench_al31fm2_ffi:
 	@BENCH_ITEM="ffi" cargo flamegraph ${ASYNC_BENCH_FEATURES} --bin bench_al31fm2
 
+.PHONY: flamegraph_bench_al31fm2_sync_ffi
+flamegraph_bench_al31fm2_sync_ffi:
+	@BENCH_ITEM="ffi" cargo flamegraph ${SYNC_BENCH_FEATURES} --bin bench_al31fm2_sync
+
 .PHONY: flamegraph_bench_al31fm2_sync_fib35
 flamegraph_bench_al31fm2_sync_fib35:
 	@BENCH_ITEM="fib35" cargo flamegraph ${SYNC_BENCH_FEATURES} --bin bench_al31fm2_sync
