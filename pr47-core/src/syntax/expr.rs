@@ -2,13 +2,11 @@
 //!
 //! Expression syntax:
 //! ```text
-//! expression ::= assignment-expression
-//!
-//! assignment-expression ::= binary-expression assign-op assignment-expression
-//!                         | binary-expression
+//! expression ::= identifier assign-op binary-expression
+//!              | binary-expression
 //!
 //! binary-expression ::= binary-expression logic-op comparison-expression
-//!                       | comparison-expression
+//!                     | comparison-expression
 //!
 //! comparison-expression ::= comparison-expression compare-op bit-or-expression
 //!                         | bit-or-expression
@@ -62,9 +60,9 @@
 //!
 //! mul-op ::= '*' | '/' | '%'
 //!
-//! unary-op ::= '+' | '-'
+//! unary-op ::= '+' | '-' | '!' | '~'
 //!
-//! intrinsic-op ::= TODO
+//! intrinsic-op ::= TODO define intrinsics
 //! ```
 
 use crate::diag::location::{SourceLoc, SourceRange};

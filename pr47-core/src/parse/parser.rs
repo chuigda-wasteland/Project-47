@@ -8,6 +8,7 @@ pub mod ty;
 use std::cell::RefCell;
 use std::mem::swap;
 
+use smallvec::SmallVec;
 use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::defer;
 
@@ -45,20 +46,42 @@ impl<'s, 'd> Parser<'s, 'd> {
         }
     }
 
-    #[allow(unused)]
     fn parse_list_alike<I, F, V>(
         &mut self,
-        _parse_item_fn: F,
-        _item_skip_set: &[&[TokenInner<'_>]],
-        _separation: TokenInner<'_>,
-        _termination: TokenInner<'_>,
-        _skip_set: &[&[TokenInner<'_>]]
+        parse_item_fn: F,
+        item_skip_set: &[&[TokenInner<'_>]],
+        separation: TokenInner<'_>,
+        termination: TokenInner<'_>,
+        skip_set: &[&[TokenInner<'_>]]
     ) -> Option<(V, SourceRange)>
         where I: 's,
               F: for<'r> Fn(&mut Self, &[&[TokenInner<'r>]]) -> Option<I>,
-              V: Appendable<Item = I>
+              V: Appendable<Item = I> + Default
     {
-        todo!()
+        let mut items: V = V::default();
+        loop {
+            if self.current_token().is_eoi() {
+                self.diag_unexpected_eoi(self.current_token().range);
+                return None
+            }
+
+            if self.current_token().token_inner == termination {
+                break;
+            }
+
+            let item: I = parse_item_fn(self, item_skip_set).or_else(|| {
+                self.skip_to_any_of(skip_set);
+                None
+            })?;
+
+            items.push_back(item);
+
+            if self.current_token().token_inner == separation {
+                self.consume_token();
+            }
+        }
+
+        Some((items, self.consume_token().range))
     }
 
     fn parse_list_alike_nonnull<I, F, V>(
@@ -73,27 +96,35 @@ impl<'s, 'd> Parser<'s, 'd> {
               F: for<'r> Fn(&mut Self, &[&[TokenInner<'r>]]) -> Option<I>,
               V: Appendable<Item = I> + Default
     {
-        let mut items: V = V::default();
-        let termination_range: SourceRange = loop {
-            if self.current_token().is_eoi() {
-                self.diag_unexpected_eoi(self.current_token().range);
-                return None;
+        let first_item: I = parse_item_fn(self, item_skip_set).or_else(|| {
+            self.skip_to_any_of(skip_set);
+            None
+        })?;
+
+        if self.current_token().token_inner == separation {
+            self.consume_token();
+            let (rest, termination_range): (SmallVec<[I; 4]>, SourceRange) = self.parse_list_alike(
+                parse_item_fn,
+                item_skip_set,
+                separation,
+                termination,
+                skip_set
+            )?;
+
+            let mut ret = V::default();
+            ret.push_back(first_item);
+            for item in rest {
+                ret.push_back(item);
             }
 
-            if let Some(item /*: I*/) = parse_item_fn(self, item_skip_set) {
-                items.push_back(item);
-            } else {
-                self.skip_to_any_of(skip_set);
-                return None;
-            }
-
-            if self.m_current_token.token_inner == separation {
-                self.consume_token();
-            } else {
-                break self.expect_n_consume(termination, skip_set)?.range;
-            }
-        };
-        Some((items, termination_range))
+            Some((ret, termination_range))
+        } else {
+            let termination_range: SourceRange =
+                self.expect_n_consume(termination, skip_set)?.range;
+            let mut ret = V::default();
+            ret.push_back(first_item);
+            Some((ret, termination_range))
+        }
     }
 
     fn consume_token(&mut self) -> Token<'s> {
@@ -199,7 +230,7 @@ impl<'s, 'd> Parser<'s, 'd> {
         });
     }
 
-    fn without_attr_mode<T>(&mut self, skip_operation: impl FnOnce(&mut Self) -> T) -> T{
+    fn without_attr_mode<T>(&mut self, skip_operation: impl FnOnce(&mut Self) -> T) -> T {
         if self.lexer.current_mode() == LexerMode::LexAttr {
             let this: &mut Self = self;
             this.lexer.push_lexer_mode(this.lexer.prev_mode());
