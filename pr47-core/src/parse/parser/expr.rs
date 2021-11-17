@@ -27,7 +27,7 @@ impl<'s, 'd> Parser<'s, 'd> {
         skip_set: &[&[TokenInner<'_>]]
     ) -> Option<ConcreteExpr<'s>> {
         let this: &mut Self = self;
-        defer!(|this: &mut Self| this.pop_lexer_mode(), this);
+        defer!(|this: &mut Self| this.lexer.pop_lexer_mode(), this);
 
         this.parse_binary_expression(
             operator_prec(TokenInner::SymEq).unwrap(),
