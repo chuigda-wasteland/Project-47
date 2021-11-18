@@ -2,7 +2,7 @@
 
 use std::ptr::NonNull;
 
-use crate::data::container::ContainerVT;
+use crate::data::container::{ContainerCtor, ContainerVT};
 use crate::data::tyck::TyckInfo;
 
 /// An VM instruction
@@ -459,7 +459,7 @@ pub enum Insc {
 
     CreateString(usize),
     CreateObject(usize),
-    CreateContainer(ContainerVT, usize),
+    CreateContainer(ContainerCtor, NonNull<ContainerVT>, usize),
 
     VecIndex(usize, usize, usize),
     VecIndexPut(usize, usize, usize),

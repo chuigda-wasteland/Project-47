@@ -1,6 +1,7 @@
 use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::ptr::{NonNull, addr_of, null_mut};
+use xjbutil::mem::move_to_heap;
 
 use xjbutil::wide_ptr::WidePointer;
 use xjbutil::void::Void;
@@ -305,8 +306,8 @@ impl StaticBase<TestStruct2> for Void {
 
     let test_container_vt: ContainerVT =
         create_test_container_vt::<TestStruct2>(&mut tyck_info_pool);
-    let v: Value = Value::new_container::<TestContainer<TestStruct2>>(
-        test_container,
+    let v: Value = Value::new_container(
+        move_to_heap(<TestContainer::<TestStruct2>>::new()).as_ptr() as _,
         &test_container_vt as _
     );
 

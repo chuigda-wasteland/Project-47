@@ -404,7 +404,24 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 );
                 insc_ptr = compiled.start_addr;
             },
-            Insc::CallPtr(_, _, _) => {}
+            Insc::CallPtr(func_id_loc, args, rets) => {
+                let func_id: usize = slice.get_value(*func_id_loc).vt_data.inner.int_value as usize;
+
+                #[cfg(not(debug_assertions))]
+                    let compiled: &CompiledFunction = program.functions.get_unchecked(func_id);
+                #[cfg(debug_assertions)]
+                    let compiled: &CompiledFunction = &program.functions[func_id];
+
+                debug_assert_eq!(compiled.arg_count, args.len());
+                slice = thread.stack.func_call_grow_stack(
+                    func_id,
+                    compiled.stack_size,
+                    args,
+                    NonNull::from(&rets[..]),
+                    insc_ptr
+                );
+                insc_ptr = compiled.start_addr;
+            },
             Insc::CallOverload(_, _, _) => {}
             Insc::ReturnNothing => {
                 if let Some((prev_stack_slice, ret_addr)) =
@@ -656,7 +673,11 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 get_vm!(thread).alloc.add_managed(object.ptr_repr);
                 slice.set_value(*dest, object);
             },
-            Insc::CreateContainer(_, _) => {}
+            Insc::CreateContainer(ctor, vt, dest) => {
+                let container: Value = Value::new_container(ctor(), vt.as_ref());
+                get_vm!(thread).alloc.add_managed(container.ptr_repr);
+                slice.set_value(*dest, container);
+            },
             Insc::VecIndex(_, _, _) => {}
             Insc::VecIndexPut(_, _, _) => {}
             Insc::VecInsert(_, _, _) => {}
@@ -686,10 +707,32 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
             Insc::StrSlice(_, _, _, _) => {}
             Insc::StrEquals(_, _) => {}
 
-            Insc::ObjectGet(_, _, _) => {}
-            Insc::ObjectGetDyn(_, _, _) => {}
-            Insc::ObjectPut(_, _, _) => {}
-            Insc::ObjectPutDyn(_, _, _) => {}
+            Insc::ObjectGet(src, field, dest) => {
+                let object: &Object =
+                    &*(slice.get_value(*src).ptr as *mut Object as *const Object);
+                let value: Value = *object.fields.get(field.as_ref()).unwrap_or(&Value::new_null());
+                slice.set_value(*dest, value);
+            },
+            Insc::ObjectGetDyn(src, field, dest) => {
+                let object: &Object =
+                    &*(slice.get_value(*src).ptr as *mut Object as *const Object);
+                let field: &String =
+                    &*(slice.get_value(*field).ptr as *mut String as *const String);
+                let value: Value = *object.fields.get(field).unwrap_or(&Value::new_null());
+                slice.set_value(*dest, value);
+            },
+            Insc::ObjectPut(src, field, data) => {
+                let object: &mut Object = &mut *(slice.get_value(*src).ptr as *mut Object);
+                let data: Value = slice.get_value(*data);
+                object.fields.insert(field.as_ref().to_string(), data);
+            },
+            Insc::ObjectPutDyn(src, field, data) => {
+                let object: &mut Object = &mut *(slice.get_value(*src).ptr as *mut Object);
+                let field: &String =
+                    &*(slice.get_value(*field).ptr as *mut String as *const String);
+                let data: Value = slice.get_value(*data);
+                object.fields.insert(field.to_string(), data);
+            }
         }
     }
 }

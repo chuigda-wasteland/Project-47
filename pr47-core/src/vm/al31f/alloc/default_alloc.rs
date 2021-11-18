@@ -190,10 +190,12 @@ impl Alloc for DefaultAlloc {
 
 #[cfg(test)]
 mod test {
+    use xjbutil::mem::move_to_heap;
     use crate::collections::test_container::{TestContainer, create_test_container_vt};
     use crate::data::Value;
     use crate::data::container::ContainerVT;
     use crate::data::tyck::TyckInfoPool;
+    use crate::data::wrapper::Wrapper;
     use crate::vm::al31f::alloc::Alloc;
     use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
     use crate::vm::al31f::stack::{Stack, StackSlice};
@@ -267,7 +269,10 @@ mod test {
         }
         let vt: ContainerVT = create_test_container_vt::<String>(&mut tyck_info_pool);
 
-        let container: Value = Value::new_container::<TestContainer<String>>(container, &vt);
+        let container: Value = Value::new_container(
+            move_to_heap(container).as_ptr() as *mut Wrapper<()>,
+            &vt
+        );
 
         unsafe {
             alloc.add_stack(&stack);

@@ -6,7 +6,7 @@ use crate::data::Value;
 use crate::data::traits::{ChildrenType, StaticBase};
 
 pub struct Object {
-    fields: HashMap<String, Value>
+    pub(crate) fields: HashMap<String, Value>
 }
 
 impl Object {

@@ -1,7 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use std::ptr::NonNull;
 
-use crate::data::Value;
 use crate::data::traits::ChildrenType;
 use crate::data::tyck::ContainerTyckInfo;
 use crate::data::wrapper::Wrapper;
@@ -23,7 +22,7 @@ pub type ChildrenFn = unsafe fn(this: *const ()) -> ChildrenType;
 
 pub type DropFn = unsafe fn(this: *mut());
 
-pub type ContainerCtor = fn() -> Value;
+pub type ContainerCtor = fn() -> *mut Wrapper<()>;
 
 pub struct ContainerVT {
     pub tyck_info: NonNull<ContainerTyckInfo>,

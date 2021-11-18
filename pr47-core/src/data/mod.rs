@@ -10,7 +10,6 @@ use std::mem::{MaybeUninit, transmute};
 
 use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::mem::move_to_heap;
-use xjbutil::std_ext::BoxedExt;
 use xjbutil::unchecked::UnsafeFrom;
 use xjbutil::void::Void;
 use xjbutil::wide_ptr::WidePointer;
@@ -82,13 +81,8 @@ impl Value {
         }
     }
 
-    pub fn new_container<T>(data: T, vt: *const ContainerVT) -> Self
-        where T: 'static,
-              Void: StaticBase<T>
-    {
-        let wrapper: Box<Wrapper<T>> = Box::new(Wrapper::new_owned(data));
-        let ptr: usize = wrapper.leak_as_nonnull().as_ptr() as usize;
-        let ptr: usize = ptr | (CONTAINER_MASK as usize);
+    pub fn new_container(wrapper: *mut Wrapper<()>, vt: *const ContainerVT) -> Self {
+        let ptr: usize = (wrapper as usize) | (CONTAINER_MASK as usize);
         let trivia: usize = vt as _;
 
         Self {
@@ -153,7 +147,7 @@ impl Value {
     }
 
     /// Create a new `null` `Value`
-    #[inline(always)] pub fn new_null() -> Self {
+    #[inline(always)] pub const fn new_null() -> Self {
         Self {
             ptr_repr: WidePointer::new(0, 0)
         }
