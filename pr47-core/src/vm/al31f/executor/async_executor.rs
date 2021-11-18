@@ -408,9 +408,9 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 let func_id: usize = slice.get_value(*func_id_loc).vt_data.inner.int_value as usize;
 
                 #[cfg(not(debug_assertions))]
-                    let compiled: &CompiledFunction = program.functions.get_unchecked(func_id);
+                let compiled: &CompiledFunction = program.functions.get_unchecked(func_id);
                 #[cfg(debug_assertions)]
-                    let compiled: &CompiledFunction = &program.functions[func_id];
+                let compiled: &CompiledFunction = &program.functions[func_id];
 
                 debug_assert_eq!(compiled.arg_count, args.len());
                 slice = thread.stack.func_call_grow_stack(

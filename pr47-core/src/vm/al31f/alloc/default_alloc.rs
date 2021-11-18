@@ -270,7 +270,7 @@ mod test {
         let vt: ContainerVT = create_test_container_vt::<String>(&mut tyck_info_pool);
 
         let container: Value = Value::new_container(
-            move_to_heap(container).as_ptr() as *mut Wrapper<()>,
+            move_to_heap(Wrapper::new_owned(container)).as_ptr() as *mut Wrapper<()>,
             &vt
         );
 
