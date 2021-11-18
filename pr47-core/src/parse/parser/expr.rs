@@ -46,7 +46,7 @@ impl<'s, 'd> Parser<'s, 'd> {
     ) -> Option<ConcreteExpr<'s>> {
         let this: &mut Self = self;
         defer!(|this: &mut Self| this.lexer.pop_lexer_mode(), this);
-        this.push_lexer_mode(LexerMode::LexExpr);
+        this.lexer.push_lexer_mode(LexerMode::LexExpr);
 
         this.parse_binary_expression(
             operator_prec(TokenInner::SymEq).unwrap(),

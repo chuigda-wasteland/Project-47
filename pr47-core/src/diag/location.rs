@@ -13,7 +13,7 @@ impl SourceCoord {
 }
 
 #[derive(Clone, Copy)]
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub struct SourceLoc {
     pub file_id: u32,
     pub offset: u32
@@ -39,7 +39,7 @@ impl SourceLoc {
 }
 
 #[derive(Clone, Copy)]
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub struct SourceRange {
     file_id: u32,
     offset_begin: u32,

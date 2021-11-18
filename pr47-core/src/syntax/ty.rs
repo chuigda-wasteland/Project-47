@@ -25,7 +25,7 @@ use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::id::Identifier;
 use crate::syntax::token::Token;
 
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub enum ConcreteType<'a> {
     PrimitiveType(Token<'a>),
     GenericType(Box<ConcreteGenericType<'a>>),
@@ -33,7 +33,7 @@ pub enum ConcreteType<'a> {
     UserType(Identifier<'a>)
 }
 
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub struct ConcreteGenericType<'a> {
     pub base: Token<'a>,
     pub inner: SmallVec<[ConcreteType<'a>; 2]>,

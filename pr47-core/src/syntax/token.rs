@@ -7,7 +7,7 @@ use xjbutil::display2::Display2;
 use crate::diag::location::SourceRange;
 
 #[derive(Clone, Copy)]
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(any(debug_assertions, test), derive(Debug))]
 pub enum TokenInner<'a> {
     Ident(&'a str),
 
