@@ -15,13 +15,27 @@ use smallvec::SmallVec;
 
 use crate::syntax::token::Token;
 
-#[cfg_attr(debug_assertions, derive(Debug))]
 pub enum Identifier<'a> {
     Unqual(Token<'a>),
     Qual(SmallVec<[Token<'a>; 2]>)
 }
 
-#[cfg(debug_assertions)]
+#[cfg(test)]
+impl<'a> std::fmt::Debug for Identifier<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Identifier::Unqual(token) => write!(f, "{}", token.get_str_value()),
+            Identifier::Qual(tokens) => {
+                for i in 0..tokens.len() - 1 {
+                    write!(f, "{} :: ", tokens[i].get_str_value())?;
+                }
+                write!(f, "{}", tokens[tokens.len() - 1])
+            }
+        }
+    }
+}
+
+#[cfg(test)]
 pub fn assert_ident_unqual(ident: &Identifier<'_>, expected: &str) {
     use crate::syntax::token::TokenInner;
 
@@ -36,7 +50,7 @@ pub fn assert_ident_unqual(ident: &Identifier<'_>, expected: &str) {
     }
 }
 
-#[cfg(debug_assertions)]
+#[cfg(test)]
 pub fn assert_ident_qual(ident: &Identifier<'_>, expected: &[&str]) {
     if let Identifier::Qual(tokens) = ident {
         tokens.iter()

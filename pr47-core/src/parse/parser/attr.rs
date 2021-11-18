@@ -157,7 +157,7 @@ impl<'s, 'd> Parser<'s, 'd> {
                     ])
                     .add_arg2(self.current_token().token_inner)
                     .add_mark(range.into())
-                    .build();
+                    .emit();
                 self.skip_to_any_of(skip_set);
                 None
             }

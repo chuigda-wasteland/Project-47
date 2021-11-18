@@ -58,7 +58,7 @@ impl<'s, 'd> Parser<'s, 'd> {
                     .add_arg2(awa![TokenInner::SymExclaim, TokenInner::SymLBracket])
                     .add_arg2(self.current_token().token_inner)
                     .add_mark(self.current_token().range.into())
-                    .build();
+                    .emit();
                 None
             }
         }
@@ -85,21 +85,21 @@ impl<'s, 'd> Parser<'s, 'd> {
                     .diag(export_decl.export_kwd_range.left(),
                           diag_data::err_export_decl_disallow_attr)
                     .add_mark(export_decl.export_kwd_range.into())
-                    .build();
+                    .emit();
             },
             ConcreteDecl::ImportDecl(import_decl) => {
                 self.diag.borrow_mut()
                     .diag(import_decl.import_kwd_range.left(),
                           diag_data::err_import_decl_disallow_attr)
                     .add_mark(import_decl.import_kwd_range.into())
-                    .build();
+                    .emit();
             },
             ConcreteDecl::OpenImportDecl(open_import_decl) => {
                 self.diag.borrow_mut()
                     .diag(open_import_decl.open_kwd_range.left(),
                           diag_data::err_import_decl_disallow_attr)
                     .add_mark(open_import_decl.open_kwd_range.into())
-                    .build();
+                    .emit();
             },
             ConcreteDecl::VarDecl(_) => {
                 unreachable!("variable declarations cannot appear at top level")
@@ -120,7 +120,7 @@ impl<'s, 'd> Parser<'s, 'd> {
                     .diag(self.current_token().range.left(),
                           diag_data::err_no_top_level_var_decl)
                     .add_mark(self.current_token().range.into())
-                    .build();
+                    .emit();
                 None
             },
             _ => todo!()
@@ -130,6 +130,6 @@ impl<'s, 'd> Parser<'s, 'd> {
     pub fn diag_unexpected_eoi(&mut self, range: SourceRange) {
         self.diag.borrow_mut()
             .diag(range.left(), diag_data::err_unexpected_eoi)
-            .build()
+            .emit()
     }
 }

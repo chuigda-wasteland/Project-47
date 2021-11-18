@@ -32,20 +32,20 @@
 //! unary-expression ::= unary-op unary-expression
 //!                    | postfix-expression
 //!
-//! postfix-expression ::= postfix-expression '[' expression ']'
+//! postfix-expression ::= postfix-expression '[' binary-expression ']'
+//!                      | postfix-expression '(' expression-list ')'
 //!                      | postfix-expression '.' ID
-//!                      | postfix-expression '.' ID '(' expression-list ')'
 //!                      | postfix-expression '.' 'await'
+//!                      | postfix-expression 'as' type
 //!                      | atomic-expression
 //!
 //! atomic-expression ::= identifier
-//!                     | identifier '(' expression-list ')'
 //!                     | literal
-//!                     | '(' expression-list ')'
+//!                     | '(' binary-expression ')'
 //!                     | intrinsic-op '(' expression-list ')'
 //!
-//! expression-list ::= expression-list ',' expression
-//!                   | expression
+//! expression-list ::= expression-list ',' binary-expression
+//!                   | binary-expression
 //!                   | NIL
 //!
 //! assign-op ::= '=' | '+=' | '-=' | '*=' | '/=' | '%='
@@ -70,23 +70,46 @@ use crate::syntax::id::Identifier;
 use crate::syntax::token::Token;
 use crate::syntax::ty::ConcreteType;
 
+#[cfg(test)] use std::fmt::{Debug, Formatter};
+
 pub enum ConcreteExpr<'a> {
     LiteralExpr(ConcreteLiteralExpr<'a>),
-    IdRefExpr(ConcreteIdRefExpr<'a>),
+    IdRefExpr(Identifier<'a>),
     UnaryExpr(ConcreteUnaryExpr<'a>),
     BinaryExpr(ConcreteBinaryExpr<'a>),
     FuncCallExpr(ConcreteFuncCallExpr<'a>),
     SubscriptExpr(ConcreteSubscriptExpr<'a>),
     FieldRefExpr(ConcreteFieldRefExpr<'a>),
-    MethodCallExpr(ConcreteMethodCallExpr<'a>),
-    AsExpr(ConcreteAsExpr<'a>)
+    AsExpr(ConcreteAsExpr<'a>),
+    AwaitExpr(ConcreteAwaitExpr<'a>),
+    ParenthesizedExpr(ConcreteParenthesizedExpr<'a>),
 }
 
+#[cfg(test)]
+impl<'a> Debug for ConcreteExpr<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConcreteExpr::LiteralExpr(expr) => expr.fmt(f),
+            ConcreteExpr::IdRefExpr(expr) => expr.fmt(f),
+            ConcreteExpr::UnaryExpr(expr) => expr.fmt(f),
+            ConcreteExpr::BinaryExpr(expr) => expr.fmt(f),
+            ConcreteExpr::FuncCallExpr(expr) => expr.fmt(f),
+            ConcreteExpr::SubscriptExpr(expr) => expr.fmt(f),
+            ConcreteExpr::FieldRefExpr(expr) => expr.fmt(f),
+            ConcreteExpr::AsExpr(expr) => expr.fmt(f),
+            ConcreteExpr::AwaitExpr(expr) => expr.fmt(f),
+            ConcreteExpr::ParenthesizedExpr(expr) => expr.fmt(f)
+        }
+    }
+}
+
+#[cfg_attr(test, derive(Debug))]
 pub struct ConcreteLiteralExpr<'a> {
     pub content: LiteralExprContent<'a>,
     pub range: SourceRange
 }
 
+#[cfg_attr(test, derive(Debug))]
 pub enum LiteralExprContent<'a> {
     Int(i64),
     Float(f64),
@@ -95,42 +118,77 @@ pub enum LiteralExprContent<'a> {
     Boolean(bool)
 }
 
-pub struct ConcreteIdRefExpr<'a> {
-    pub id: Identifier<'a>
+impl<'a> ConcreteLiteralExpr<'a> {
+    pub fn new_lit_int(lit: i64, range: SourceRange) -> Self {
+        ConcreteLiteralExpr {
+            content: LiteralExprContent::Int(lit),
+            range
+        }
+    }
+
+    pub fn new_lit_float(lit: f64, range: SourceRange) -> Self {
+        ConcreteLiteralExpr {
+            content: LiteralExprContent::Float(lit), range
+        }
+    }
+
+    pub fn new_lit_char(lit: char, range: SourceRange) -> Self {
+        ConcreteLiteralExpr {
+            content: LiteralExprContent::Char(lit), range
+        }
+    }
+
+    pub fn new_lit_str(lit: &'a str, range: SourceRange) -> Self {
+        ConcreteLiteralExpr {
+            content: LiteralExprContent::String(lit), range
+        }
+    }
+
+    pub fn new_lit_bool(lit: bool, range: SourceRange) -> Self {
+        ConcreteLiteralExpr {
+            content: LiteralExprContent::Boolean(lit), range
+        }
+    }
 }
 
+#[cfg_attr(test, derive(Debug))]
 pub struct ConcreteStringLiteralExpr<'a> {
     pub value: &'a str,
     pub range: SourceRange
 }
 
+#[cfg_attr(test, derive(Debug))]
 pub struct ConcreteUnaryExpr<'a> {
     pub op: Token<'a>,
     pub operand: Box<ConcreteExpr<'a>>,
 }
 
+#[cfg_attr(test, derive(Debug))]
 pub struct ConcreteBinaryExpr<'a> {
     pub op: Token<'a>,
     pub lhs: Box<ConcreteExpr<'a>>,
     pub rhs: Box<ConcreteExpr<'a>>,
 }
 
+#[cfg_attr(test, derive(Debug))]
 pub struct ConcreteFuncCallExpr<'a> {
     pub func: Box<ConcreteExpr<'a>>,
-    pub args: Vec<Box<ConcreteExpr<'a>>>,
+    pub args: Vec<ConcreteExpr<'a>>,
 
-    pub left_paren: SourceLoc,
-    pub right_paren: SourceLoc
+    pub lparen_loc: SourceLoc,
+    pub rparen_loc: SourceLoc
 }
 
+#[cfg_attr(test, derive(Debug))]
 pub struct ConcreteSubscriptExpr<'a> {
     pub base: Box<ConcreteExpr<'a>>,
     pub idx: Box<ConcreteExpr<'a>>,
 
-    pub left_bracket: SourceLoc,
-    pub right_bracket: SourceLoc
+    pub lbracket_loc: SourceLoc,
+    pub rbracket_loc: SourceLoc
 }
 
+#[cfg_attr(test, derive(Debug))]
 pub struct ConcreteFieldRefExpr<'a> {
     pub base: Box<ConcreteExpr<'a>>,
     pub id: Identifier<'a>,
@@ -138,14 +196,10 @@ pub struct ConcreteFieldRefExpr<'a> {
     pub dot_loc: SourceLoc
 }
 
-pub struct ConcreteMethodCallExpr<'a> {
+pub struct ConcreteAwaitExpr<'a> {
     pub base: Box<ConcreteExpr<'a>>,
-    pub func_id: Identifier<'a>,
-    pub args: Vec<Box<ConcreteExpr<'a>>>,
-
     pub dot_loc: SourceLoc,
-    pub left_paren: SourceLoc,
-    pub right_paren: SourceLoc
+    pub await_range: SourceRange
 }
 
 pub struct ConcreteAsExpr<'a> {
@@ -153,4 +207,38 @@ pub struct ConcreteAsExpr<'a> {
     pub dest_type: ConcreteType<'a>,
 
     pub as_range: SourceRange
+}
+
+pub struct ConcreteParenthesizedExpr<'a> {
+    pub inner: Box<ConcreteExpr<'a>>,
+    pub lparen_loc: SourceLoc,
+    pub rparen_loc: SourceLoc
+}
+
+#[cfg(test)]
+impl<'a> Debug for ConcreteAwaitExpr<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConcreteAwaitExpr")
+            .field("base", self.base.as_ref())
+            .finish()
+    }
+}
+
+#[cfg(test)]
+impl<'a> Debug for ConcreteAsExpr<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConcreteAsExpr")
+            .field("operand", self.operand.as_ref())
+            .field("dest_type", &self.dest_type)
+            .finish()
+    }
+}
+
+#[cfg(test)]
+impl<'a> Debug for ConcreteParenthesizedExpr<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConcreteParenthesizedExpr")
+            .field("inner", &self.inner)
+            .finish()
+    }
 }

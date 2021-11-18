@@ -166,7 +166,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
             .diag(location, diag_data::err_unexpected_control_char_0)
             .add_mark(location.into())
             .add_arg(format!("\\{:x}", ch as u32))
-            .build();
+            .emit();
     }
 }
 
@@ -431,7 +431,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
             .diag(location, diag_data::err_reserved_symbol_0)
             .add_mark(DiagMark::from(location))
             .add_arg(ch.to_string())
-            .build();
+            .emit();
         self.next_char();
         Token::new(token, SourceRange::from(location))
     }
@@ -451,7 +451,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
                         .add_comment("reserved identifier")
                 )
                 .add_arg(id)
-                .build();
+                .emit();
         }
     }
 
@@ -460,7 +460,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
             self.diag.borrow_mut()
                 .diag(start_loc, diag_data::warn_underscored_id_reserved)
                 .add_mark(DiagMark::from(SourceRange::from_loc_pair(start_loc, end_loc)))
-                .build();
+                .emit();
         }
     }
 }

@@ -165,6 +165,7 @@ impl DiagContext {
     }
 
     #[cfg_attr(test, allow(unreachable_code))]
+    #[must_use]
     pub fn diag(&mut self, location: SourceLoc, diag_id: u32) -> DiagBuilderCtx {
         #[cfg(test)] panic!(
             "#[cfg(test)] diag panic: location = {:?}, diag_id = {}",
@@ -220,7 +221,7 @@ impl<'a> DiagBuilderCtx<'a> {
         self
     }
 
-    pub fn build(self) {
+    pub fn emit(self) {
         self.diag_context.add_diag(self.diag_builder.build())
     }
 }

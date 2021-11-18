@@ -87,7 +87,7 @@ impl<'s, 'd> Parser<'s, 'd> {
                 .add_mark(
                     DiagMark::from(self.current_token().range).add_comment("unexpected token")
                 )
-                .build();
+                .emit();
             if skip_on_failure.len() != 0 {
                 self.skip_to_any_of(skip_on_failure);
             }

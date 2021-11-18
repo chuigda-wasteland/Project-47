@@ -28,7 +28,7 @@ use smallvec::SmallVec;
 use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::id::Identifier;
 
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub struct Attribute<'a> {
     pub items: SmallVec<[AttrItem<'a>; 4]>,
 
@@ -38,14 +38,14 @@ pub struct Attribute<'a> {
     pub right_bracket_loc: SourceLoc
 }
 
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub enum AttrItem<'a> {
     IdentifierItem(Identifier<'a>),
     AssignLikeItem(AttrAssignLikeItem<'a>),
     CallLikeItem(AttrCallLikeItem<'a>)
 }
 
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub struct AttrAssignLikeItem<'a> {
     pub ident: Identifier<'a>,
     pub value: AttrValue<'a>,
@@ -53,7 +53,7 @@ pub struct AttrAssignLikeItem<'a> {
     pub assign_loc: SourceLoc,
 }
 
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub struct AttrCallLikeItem<'a> {
     pub ident: Identifier<'a>,
     pub args: Vec<AttrItem<'a>>,
@@ -62,13 +62,13 @@ pub struct AttrCallLikeItem<'a> {
     pub right_paren_loc: SourceLoc,
 }
 
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub struct AttrValue<'a> {
     pub inner: AttrValueInner<'a>,
     pub range: SourceRange
 }
 
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub enum AttrValueInner<'a> {
     Identifier(Identifier<'a>),
     IntLiteral(i64),

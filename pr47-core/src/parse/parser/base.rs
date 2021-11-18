@@ -1,6 +1,7 @@
 use super::Parser;
 
 use smallvec::{SmallVec, smallvec};
+use crate::diag::diag_data;
 
 use crate::diag::location::SourceRange;
 use crate::syntax::id::Identifier;
@@ -27,7 +28,10 @@ impl<'s, 'd> Parser<'s, 'd> {
     pub fn parse_unqual_ident(&mut self) -> Option<Identifier<'s>> {
         let token: Token<'s> = self.expect_n_consume(TokenInner::Ident(""), &[])?;
         if self.current_token().token_inner == TokenInner::SymDColon {
-            todo!("report error and recovery")
+            self.diag.borrow_mut()
+                .diag(self.current_token().range.left(), diag_data::err_expected_unqual_id)
+                .add_mark(self.current_token().range.into())
+                .emit();
         }
 
         Some(Identifier::Unqual(token))
