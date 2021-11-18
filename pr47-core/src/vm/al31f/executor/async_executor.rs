@@ -174,8 +174,8 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
         thread.stack.ext_func_call_grow_stack(func_id, compiled_function.stack_size, args);
     let mut insc_ptr: usize = compiled_function.start_addr;
 
-    let mut ffi_args: Vec<Value> = vec![Value::new_null(); 32];
-    let mut ffi_rets: Vec<*mut Value> = vec![std::ptr::null_mut(); 8];
+    let mut ffi_args: [Value; 32] = [Value::new_null(); 32];
+    let mut ffi_rets: [*mut Value; 8] = [std::ptr::null_mut(); 8];
 
     loop {
         #[cfg(not(debug_assertions))]
@@ -462,23 +462,25 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
                     = &program.ffi_funcs[*ffi_func_id];
 
-                for i /*: usize*/ in 0..args.len() {
+                let args_len: usize = args.len();
+                for i /*: usize*/ in 0..args_len {
                     let arg_idx: usize = *args.get_unchecked(i);
                     *ffi_args.get_unchecked_mut(i) = slice.get_value(arg_idx);
                 }
-                ffi_args.set_len(args.len());
 
-                for i /*: usize*/ in 0..ret_value_locs.len() {
+                let ret_locs_len: usize = ret_value_locs.len();
+                for i /*: usize*/ in 0..ret_locs_len {
                     let ret_value_loc_idx: usize = *ret_value_locs.get_unchecked(i);
                     *ffi_rets.get_unchecked_mut(i) = slice.get_value_mut_ref(ret_value_loc_idx);
                 }
-                ffi_rets.set_len(ret_value_locs.len());
 
                 let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
-                if let Err(e /*: FFIException*/) =
-                    ffi_function.call_rtlc(&mut combustor, &ffi_args, &mut ffi_rets)
-                {
+                if let Err(e /*: FFIException*/) = ffi_function.call_rtlc(
+                    &mut combustor,
+                    &ffi_args[0..args_len],
+                    &mut ffi_rets[0..ret_locs_len]
+                ) {
                     match e {
                         Either::Left(checked) => {
                             let (new_slice, insc_ptr_next): (StackSlice, usize) =
@@ -504,23 +506,25 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
                     = &program.ffi_funcs[*ffi_func_id];
 
-                for i /*: usize*/ in 0..args.len() {
+                let args_len: usize = args.len();
+                for i /*: usize*/ in 0..args_len {
                     let arg_idx: usize = *args.get_unchecked(i);
                     *ffi_args.get_unchecked_mut(i) = slice.get_value(arg_idx);
                 }
-                ffi_args.set_len(args.len());
 
-                for i /*: usize*/ in 0..ret_value_locs.len() {
+                let ret_locs_len: usize = ret_value_locs.len();
+                for i /*: usize*/ in 0..ret_locs_len {
                     let ret_value_loc_idx: usize = *ret_value_locs.get_unchecked(i);
                     *ffi_rets.get_unchecked_mut(i) = slice.get_value_mut_ref(ret_value_loc_idx);
                 }
-                ffi_rets.set_len(ret_value_locs.len());
 
                 let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
-                if let Err(e /*: FFIException*/) =
-                    ffi_function.call_unchecked(&mut combustor, &ffi_args, &mut ffi_rets)
-                {
+                if let Err(e /*: FFIException*/) = ffi_function.call_unchecked(
+                    &mut combustor,
+                    &ffi_args[0..args_len],
+                    &mut ffi_rets[0..ret_locs_len]
+                ) {
                     match e {
                         Either::Left(checked) => {
                             let (new_slice, insc_ptr_next): (StackSlice, usize) =
@@ -547,16 +551,16 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 let async_ffi_function: &Box<dyn FFIAsyncFunction<AsyncCombustor<A>>>
                     = &program.async_ffi_funcs[*async_ffi_func_id];
 
-                for i /*: usize*/ in 0..args.len() {
+                let args_len: usize = args.len();
+                for i /*: usize*/ in 0..args_len {
                     let arg_idx: usize = *args.get_unchecked(i);
                     *ffi_args.get_unchecked_mut(i) = slice.get_value(arg_idx);
                 }
-                ffi_args.set_len(args.len());
 
                 let mut combustor: AsyncCombustor<A> =
                     AsyncCombustor::new(thread.vm.serializer.clone());
 
-                match async_ffi_function.call_rtlc(&mut combustor, &ffi_args) {
+                match async_ffi_function.call_rtlc(&mut combustor, &ffi_args[0..args_len]) {
                     Ok(promise /*: Promise*/) => {
                         let promise: Value = Value::new_owned(promise);
                         thread.vm.get_shared_data_mut().alloc.add_managed(promise.ptr_repr);
