@@ -4,8 +4,8 @@ use std::pin::Pin;
 use xjbutil::void::Void;
 
 use crate::data::Value;
-use crate::data::generic::GenericTypeRef;
 use crate::data::exception::UncheckedException;
+use crate::data::generic::GenericTypeRef;
 use crate::data::traits::{StaticBase};
 use crate::data::wrapper::{OwnershipInfo, Wrapper};
 use crate::data::wrapper::{
@@ -23,19 +23,14 @@ pub trait AsyncVMContext: 'static + Sized + Send + Sync {
 }
 
 pub trait AsyncFunctionBase: 'static {
-    fn signature() -> Signature;
-
-    fn call_tyck<ACTX: AsyncVMContext>(context: &ACTX, args: &[Value])
-        -> Result<Promise, FFIException>;
+    fn signature(tyck_info_pool: &mut TyckInfoPool) -> Signature;
 
     unsafe fn call_rtlc<ACTX: AsyncVMContext>(context: &ACTX, args: &[Value])
         -> Result<Promise, FFIException>;
 }
 
 pub trait AsyncFunction<ACTX: AsyncVMContext>: 'static {
-    fn signature(&self) -> Signature;
-
-    fn call_tyck(&self, context: &ACTX, args: &[Value]) -> Result<Promise, FFIException>;
+    fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature;
 
     unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Result<Promise, FFIException>;
 }
@@ -44,12 +39,8 @@ impl<AFBase, CTX> AsyncFunction<CTX> for AFBase where
     AFBase: AsyncFunctionBase,
     CTX: AsyncVMContext
 {
-    fn signature(&self) -> Signature {
-        <AFBase as AsyncFunctionBase>::signature()
-    }
-
-    fn call_tyck(&self, context: &CTX, args: &[Value]) -> Result<Promise, FFIException> {
-        <AFBase as AsyncFunctionBase>::call_tyck(context, args)
+    fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature {
+        <AFBase as AsyncFunctionBase>::signature(tyck_info_pool)
     }
 
     unsafe fn call_rtlc(&self, context: &CTX, args: &[Value]) -> Result<Promise, FFIException> {
@@ -156,6 +147,7 @@ pub use crate::ffi::sync_fn::{
 };
 use std::task::{Context, Poll};
 use futures::FutureExt;
+use crate::data::tyck::TyckInfoPool;
 
 #[inline] pub unsafe fn value_into_ref<'a, T>(
     value: Value

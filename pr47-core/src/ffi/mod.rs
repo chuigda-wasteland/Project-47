@@ -1,4 +1,5 @@
 use std::any::TypeId;
+use std::ptr::NonNull;
 
 use xjbutil::either::Either;
 
@@ -20,10 +21,10 @@ pub enum DataOption {
 }
 
 pub struct Signature {
-    pub param_types: Box<[TyckInfo]>,
+    pub param_types: Box<[NonNull<TyckInfo>]>,
     pub param_options: Box<[DataOption]>,
-    pub ret_type: Box<[TyckInfo]>,
-    pub ret_option: Box<[DataOption]>,
+    pub ret_type: Box<[NonNull<TyckInfo>]>,
+    pub ret_option: Box<[NonNull<TyckInfo>]>,
     pub exceptions: Box<[TypeId]>
 }
 

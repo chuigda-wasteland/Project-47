@@ -5,6 +5,7 @@ use crate::data::Value;
 use crate::data::generic::GenericTypeRef;
 use crate::data::exception::{UncheckedException};
 use crate::data::traits::StaticBase;
+use crate::data::tyck::TyckInfoPool;
 use crate::data::wrapper::{OwnershipInfo, Wrapper};
 use crate::data::wrapper::{
     OWN_INFO_OWNED_MASK,
@@ -19,13 +20,7 @@ pub trait VMContext: 'static + Sized {
 }
 
 pub trait FunctionBase: 'static {
-    fn signature() -> Signature;
-
-    fn call_tyck<CTX: VMContext>(
-        context: &mut CTX,
-        args: &[Value],
-        rets: &[*mut Value]
-    ) -> Result<(), FFIException>;
+    fn signature(tyck_info_pool: &mut TyckInfoPool) -> Signature;
 
     unsafe fn call_rtlc<CTX: VMContext>(
         context: &mut CTX,
@@ -41,14 +36,7 @@ pub trait FunctionBase: 'static {
 }
 
 pub trait Function<CTX: VMContext>: 'static {
-    fn signature(&self) -> Signature;
-
-    fn call_tyck(
-        &self,
-        context: &mut CTX,
-        args: &[Value],
-        rets: &[*mut Value]
-    ) -> Result<(), FFIException>;
+    fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature;
 
     unsafe fn call_rtlc(
         &self,
@@ -69,17 +57,8 @@ impl<FBase, CTX> Function<CTX> for FBase where
     FBase: FunctionBase,
     CTX: VMContext
 {
-    #[inline] fn signature(&self) -> Signature {
-        <FBase as FunctionBase>::signature()
-    }
-
-    #[inline] fn call_tyck(
-        &self,
-        context: &mut CTX,
-        args: &[Value],
-        rets: &[*mut Value]
-    ) -> Result<(), FFIException> {
-        <FBase as FunctionBase>::call_tyck(context, args, rets)
+    #[inline] fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature {
+        <FBase as FunctionBase>::signature(tyck_info_pool)
     }
 
     #[inline] unsafe fn call_rtlc(

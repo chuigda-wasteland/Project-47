@@ -2,8 +2,8 @@ use super::Parser;
 
 use smallvec::SmallVec;
 use xjbutil::defer;
-use crate::awa;
 
+use crate::awa;
 use crate::diag::diag_data;
 use crate::diag::location::SourceRange;
 use crate::parse::lexer::LexerMode;

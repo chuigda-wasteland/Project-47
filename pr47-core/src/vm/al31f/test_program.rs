@@ -4,6 +4,7 @@ use xjbutil::void::Void;
 use crate::builtins::object::Object;
 use crate::data::Value;
 use crate::data::traits::StaticBase;
+use crate::data::tyck::TyckInfoPool;
 use crate::ffi::{FFIException, Signature};
 use crate::ffi::sync_fn::{Function, FunctionBase, OwnershipGuard, VMContext, value_into_ref};
 use crate::vm::al31f::Combustor;
@@ -177,15 +178,7 @@ pub fn exception_no_eh_program<A: Alloc>() -> CompiledProgram<A> {
 struct Pr47Binder_ffi_function();
 
 impl FunctionBase for Pr47Binder_ffi_function {
-    fn signature() -> Signature {
-        todo!()
-    }
-
-    fn call_tyck<CTX: VMContext>(
-        _context: &mut CTX,
-        _args: &[Value],
-        _rets: &[*mut Value]
-    ) -> Result<(), FFIException> {
+    fn signature(_tyck_info_pool: &mut TyckInfoPool) -> Signature {
         todo!()
     }
 
@@ -297,15 +290,7 @@ pub fn bench_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
 struct Pr47Binder_ffi_function2();
 
 impl FunctionBase for Pr47Binder_ffi_function2 {
-    fn signature() -> Signature {
-        todo!()
-    }
-
-    fn call_tyck<CTX: VMContext>(
-        _context: &mut CTX,
-        _args: &[Value],
-        _rets: &[*mut Value]
-    ) -> Result<(), FFIException> {
+    fn signature(_tyck_info_pool: &mut TyckInfoPool) -> Signature {
         todo!()
     }
 
