@@ -6,7 +6,7 @@
 //! VM runtime. So we are making as many things public as possible. This situation may change in the
 //! future so watch your back.
 
-pub mod collections;
+pub mod builtins;
 pub mod data;
 pub mod ffi;
 pub mod util;

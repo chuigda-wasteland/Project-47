@@ -3,7 +3,7 @@ use std::any::TypeId;
 use xjbutil::async_utils::block_on_future;
 use xjbutil::unchecked::UncheckedSendSync;
 
-use crate::collections::object::Object;
+use crate::builtins::object::Object;
 use crate::data::Value;
 use crate::data::exception::Exception;
 use crate::data::wrapper::DynBase;

@@ -1,3 +1,4 @@
+pub mod closure;
 pub mod object;
 pub mod set;
 pub mod vec;

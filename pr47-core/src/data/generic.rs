@@ -7,11 +7,11 @@ use crate::data::wrapper::Wrapper;
 
 #[cfg(debug_assertions)] use std::any::TypeId;
 
-pub trait ContainerRef {
+pub trait GenericTypeRef {
     fn create_ref(wrapper_ptr: *mut Wrapper<()>) -> Self;
 }
 
-pub const CONTAINER_MASK: u8 = 0b00000_010;
+pub const GENERIC_TYPE_MASK: u8 = 0b00000_010;
 
 #[cfg(debug_assertions)]
 pub type MoveOutCkFn = unsafe fn(this: *mut (), out: *mut (), type_id: TypeId);
@@ -22,9 +22,9 @@ pub type ChildrenFn = unsafe fn(this: *const ()) -> ChildrenType;
 
 pub type DropFn = unsafe fn(this: *mut());
 
-pub type ContainerCtor = fn() -> *mut Wrapper<()>;
+pub type GenericTypeCtor = fn() -> *mut Wrapper<()>;
 
-pub struct ContainerVT {
+pub struct GenericTypeVT {
     pub tyck_info: NonNull<ContainerTyckInfo>,
     pub type_name: String,
     #[cfg(debug_assertions)]
@@ -35,7 +35,7 @@ pub struct ContainerVT {
     pub drop_fn: DropFn
 }
 
-impl ContainerVT {
+impl GenericTypeVT {
     #[cfg(debug_assertions)]
     pub fn new(
         tyck_info: NonNull<ContainerTyckInfo>,
@@ -71,7 +71,7 @@ impl ContainerVT {
     }
 }
 
-impl Debug for ContainerVT {
+impl Debug for GenericTypeVT {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "ContainerVT({})", self.type_name)
     }
@@ -80,7 +80,7 @@ impl Debug for ContainerVT {
 #[derive(Clone, Copy)]
 pub struct ContainerPtr {
     pub data_ptr: *mut u8,
-    pub vt: *mut ContainerVT
+    pub vt: *mut GenericTypeVT
 }
 
 pub mod gen_impls {

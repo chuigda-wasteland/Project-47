@@ -5,7 +5,7 @@ use std::ptr::NonNull;
 use xjbutil::void::Void;
 
 use crate::data::Value;
-use crate::data::container::ContainerVT;
+use crate::data::generic::GenericTypeVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool, ContainerTyckInfo};
 
@@ -140,8 +140,8 @@ pub fn create_exception_vt(
     tyck_info_pool: &mut TyckInfoPool,
     elem_type_name: &str,
     elem_tyck_info: NonNull<TyckInfo>
-) -> ContainerVT {
-    use crate::data::container::gen_impls;
+) -> GenericTypeVT {
+    use crate::data::generic::gen_impls;
 
     #[cfg(debug_assertions)]
     unsafe fn move_out_ck(this: *mut (), out: *mut (), type_id: TypeId) {
@@ -168,7 +168,7 @@ pub fn create_exception_vt(
     let container_tyck_info: NonNull<ContainerTyckInfo> =
         unsafe { tyck_info.as_ref().get_container_tyck_info_unchecked() };
 
-    ContainerVT {
+    GenericTypeVT {
         tyck_info: container_tyck_info,
         type_name: format!("ExcContainer<{}>", elem_type_name),
         #[cfg(debug_assertions)]

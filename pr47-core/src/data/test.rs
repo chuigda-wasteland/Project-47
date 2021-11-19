@@ -1,18 +1,18 @@
 use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::ptr::{NonNull, addr_of, null_mut};
-use xjbutil::mem::move_to_heap;
 
+use xjbutil::mem::move_to_heap;
 use xjbutil::wide_ptr::WidePointer;
 use xjbutil::void::Void;
 
-use crate::collections::test_container::{
+use crate::builtins::test_container::{
     GenericTestContainer,
     TestContainer,
     create_test_container_vt
 };
 use crate::data::Value;
-use crate::data::container::ContainerVT;
+use crate::data::generic::GenericTypeVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::data::wrapper::{Wrapper, WrapperData, DynBase, OwnershipInfo};
@@ -304,7 +304,7 @@ impl StaticBase<TestStruct2> for Void {
         test_container.inner.elements.push(value2.ptr_repr);
     }
 
-    let test_container_vt: ContainerVT =
+    let test_container_vt: GenericTypeVT =
         create_test_container_vt::<TestStruct2>(&mut tyck_info_pool);
     let v: Value = Value::new_container(
         move_to_heap(<TestContainer::<TestStruct2>>::new()).as_ptr() as _,
@@ -318,8 +318,8 @@ impl StaticBase<TestStruct2> for Void {
 
     unsafe {
         let _raw_ptr: usize = v.untagged_ptr_field();
-        let vt: *const ContainerVT = v.ptr_repr.trivia as *const _;
-        let vt: &ContainerVT = vt.as_ref().unwrap();
+        let vt: *const GenericTypeVT = v.ptr_repr.trivia as *const _;
+        let vt: &GenericTypeVT = vt.as_ref().unwrap();
 
         assert_eq!(vt.type_name, "TestContainer");
     }

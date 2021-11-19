@@ -7,7 +7,7 @@ use xjbutil::either::Either;
 use xjbutil::unchecked::{UncheckedSendFut, UncheckedSendSync};
 use xjbutil::wide_ptr::WidePointer;
 
-use crate::collections::object::Object;
+use crate::builtins::object::Object;
 use crate::data::Value;
 use crate::data::exception::{CheckedException, Exception, UncheckedException};
 use crate::data::value_typed::INT_TYPE_TAG;

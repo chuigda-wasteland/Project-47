@@ -11,6 +11,7 @@ license = "MIT"
 [dependencies]
 pollster = "0.2"
 pr47-codegen = "0.0.2"
+smallvec = "1"
 unchecked_unwrap = "3"
 xjbutil = { version = "0.4.4", default-features = false, features = [
     "async",
@@ -29,7 +30,6 @@ xjbutil = { version = "0.4.4", default-features = false, features = [
 async-std = { optional = true, version = "1" }
 futures = { optional = true, version = "0.3" }
 phf = { optional = true, version = "0.10", features = ["macros"] }
-smallvec = { optional = true, version = "1" }
 tokio = { optional = true, version = "1", features = ["rt", "sync", "time"] }
 unicode-width = { optional = true, version = "0.1" }
 
@@ -44,7 +44,7 @@ async = ["futures"]
 async-astd = ["async", "async-std", "xjbutil/async-astd"]
 async-tokio = ["async", "tokio", "xjbutil/async-tokio"]
 bench = []
-compiler = ["phf", "smallvec"]
+compiler = ["phf"]
 compiler-pretty-diag = ["unicode-width"]
 huge-align = []
 no-rtlc = []

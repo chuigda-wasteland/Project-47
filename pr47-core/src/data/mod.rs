@@ -1,5 +1,5 @@
-pub mod container;
 pub mod exception;
+pub mod generic;
 pub mod traits;
 pub mod tyck;
 pub mod value_typed;
@@ -14,7 +14,7 @@ use xjbutil::unchecked::UnsafeFrom;
 use xjbutil::void::Void;
 use xjbutil::wide_ptr::WidePointer;
 
-use crate::data::container::{CONTAINER_MASK, ContainerVT};
+use crate::data::generic::{GENERIC_TYPE_MASK, GenericTypeVT};
 use crate::data::traits::StaticBase;
 use crate::data::value_typed::{VALUE_TYPE_MASK, ValueTypedData};
 use crate::data::wrapper::{DynBase, OwnershipInfo, Wrapper};
@@ -81,8 +81,8 @@ impl Value {
         }
     }
 
-    pub fn new_container(wrapper: *mut Wrapper<()>, vt: *const ContainerVT) -> Self {
-        let ptr: usize = (wrapper as usize) | (CONTAINER_MASK as usize);
+    pub fn new_container(wrapper: *mut Wrapper<()>, vt: *const GenericTypeVT) -> Self {
+        let ptr: usize = (wrapper as usize) | (GENERIC_TYPE_MASK as usize);
         let trivia: usize = vt as _;
 
         Self {
@@ -175,7 +175,7 @@ impl Value {
     /// Check if a `Value` is a custom pointer
     pub fn is_container(&self) -> bool {
         unsafe {
-            self.ptr_repr.ptr & (CONTAINER_MASK as usize) != 0
+            self.ptr_repr.ptr & (GENERIC_TYPE_MASK as usize) != 0
         }
     }
 
@@ -356,7 +356,7 @@ impl Value {
             );
         } else {
             let this_ptr: *mut () = self.untagged_ptr_field() as *mut ();
-            let custom_vt: *const ContainerVT = self.ptr_repr.trivia as *const _;
+            let custom_vt: *const GenericTypeVT = self.ptr_repr.trivia as *const _;
 
             #[cfg(debug_assertions)]
             (custom_vt.as_ref().unchecked_unwrap().move_out_fn) (

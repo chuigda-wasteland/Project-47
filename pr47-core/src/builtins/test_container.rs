@@ -6,7 +6,7 @@ use std::ptr::NonNull;
 use xjbutil::void::Void;
 use xjbutil::wide_ptr::WidePointer;
 
-use crate::data::container::ContainerVT;
+use crate::data::generic::GenericTypeVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{ContainerTyckInfo, TyckInfo, TyckInfoPool};
 
@@ -103,28 +103,10 @@ impl<T: 'static> StaticBase<TestContainer<T>> for Void
     }
 }
 
-pub fn create_test_container_vt<T: 'static>(tyck_info_pool: &mut TyckInfoPool) -> ContainerVT
+pub fn create_test_container_vt<T: 'static>(tyck_info_pool: &mut TyckInfoPool) -> GenericTypeVT
     where Void: StaticBase<T>
 {
-    use crate::data::container::gen_impls;
-
-    #[cfg(debug_assertions)]
-    unsafe fn move_out_ck(this: *mut (), out: *mut (), type_id: TypeId) {
-        gen_impls::generic_move_out_ck::<GenericTestContainer>(this, out, type_id)
-    }
-
-    #[cfg(not(debug_assertions))]
-    unsafe fn move_out(this: *mut (), out: *mut ()) {
-        gen_impls::generic_move_out::<GenericTestContainer>(this, out)
-    }
-
-    unsafe fn children(this: *const ()) -> ChildrenType {
-        gen_impls::generic_children::<GenericTestContainer>(this)
-    }
-
-    unsafe fn test_container_drop(this: *mut ()) {
-        gen_impls::generic_drop::<GenericTestContainer>(this);
-    }
+    use crate::data::generic::gen_impls;
 
     let elem_tyck_info: NonNull<TyckInfo> = <Void as StaticBase<T>>::tyck_info(tyck_info_pool);
     let tyck_info: NonNull<TyckInfo> =
@@ -132,14 +114,14 @@ pub fn create_test_container_vt<T: 'static>(tyck_info_pool: &mut TyckInfoPool) -
     let container_tyck_info: NonNull<ContainerTyckInfo> =
         unsafe { tyck_info.as_ref().get_container_tyck_info_unchecked() };
 
-    ContainerVT {
+    GenericTypeVT {
         tyck_info: container_tyck_info,
         type_name: "TestContainer".to_string(),
         #[cfg(debug_assertions)]
-        move_out_fn: move_out_ck,
+        move_out_fn: gen_impls::generic_move_out_ck::<GenericTestContainer>,
         #[cfg(not(debug_assertions))]
-        move_out_fn: move_out,
-        children_fn: children,
-        drop_fn: test_container_drop
+        move_out_fn: gen_impls::generic_move_out::<GenericTestContainer>,
+        children_fn: gen_impls::generic_children::<GenericTestContainer>,
+        drop_fn: gen_impls::generic_drop::<GenericTestContainer>
     }
 }

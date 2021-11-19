@@ -4,7 +4,7 @@ use std::pin::Pin;
 use xjbutil::void::Void;
 
 use crate::data::Value;
-use crate::data::container::ContainerRef;
+use crate::data::generic::GenericTypeRef;
 use crate::data::exception::UncheckedException;
 use crate::data::traits::{StaticBase};
 use crate::data::wrapper::{OwnershipInfo, Wrapper};
@@ -189,7 +189,7 @@ use futures::FutureExt;
 #[inline] pub unsafe fn container_into_ref<CR>(
     value: Value
 ) -> Result<(CR, AsyncShareGuard), FFIException>
-    where CR: ContainerRef
+    where CR: GenericTypeRef
 {
     let wrapper_ptr: *mut Wrapper<()> = value.untagged_ptr_field() as *mut _;
     let original: u8 = (*wrapper_ptr).ownership_info;
@@ -239,7 +239,7 @@ use futures::FutureExt;
 #[inline] pub unsafe fn container_into_mut_ref<CR>(
     value: Value
 ) -> Result<(CR, AsyncResetGuard), FFIException>
-    where CR: ContainerRef
+    where CR: GenericTypeRef
 {
     let wrapper_ptr: *mut Wrapper<()> = value.untagged_ptr_field() as *mut _;
     let original: u8 = (*wrapper_ptr).ownership_info;

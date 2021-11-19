@@ -2,7 +2,7 @@ use xjbutil::void::Void;
 use xjbutil::wide_ptr::WidePointer;
 
 use crate::data::Value;
-use crate::data::container::ContainerRef;
+use crate::data::generic::GenericTypeRef;
 use crate::data::exception::{UncheckedException};
 use crate::data::traits::StaticBase;
 use crate::data::wrapper::{OwnershipInfo, Wrapper};
@@ -214,7 +214,7 @@ impl Drop for OwnershipGuard {
 #[inline] pub unsafe fn container_into_ref<CR>(
     value: Value
 ) -> Result<(CR, Option<OwnershipGuard>), FFIException>
-    where CR: ContainerRef
+    where CR: GenericTypeRef
 {
     let wrapper_ptr: *mut Wrapper<()> = value.untagged_ptr_field() as *mut _;
     let original: u8 = (*wrapper_ptr).ownership_info;
@@ -239,7 +239,7 @@ impl Drop for OwnershipGuard {
 #[inline] pub unsafe fn container_into_ref_noalias<CR>(
     value: Value
 ) -> Result<CR, FFIException>
-    where CR: ContainerRef
+    where CR: GenericTypeRef
 {
     let wrapper_ptr: *mut Wrapper<()> = value.untagged_ptr_field() as *mut _;
     let original: u8 = (*wrapper_ptr).ownership_info;
@@ -298,7 +298,7 @@ impl Drop for OwnershipGuard {
 #[inline] pub unsafe fn container_into_mut_ref<CR>(
     value: Value
 ) -> Result<(CR, OwnershipGuard), FFIException>
-    where CR: ContainerRef
+    where CR: GenericTypeRef
 {
     let wrapper_ptr: *mut Wrapper<()> = value.untagged_ptr_field() as *mut _;
     let original: u8 = (*wrapper_ptr).ownership_info;
@@ -319,7 +319,7 @@ impl Drop for OwnershipGuard {
 #[inline] pub unsafe fn container_into_mut_ref_noalias<CR>(
     value: Value
 ) -> Result<CR, FFIException>
-    where CR: ContainerRef
+    where CR: GenericTypeRef
 {
     let wrapper_ptr: *mut Wrapper<()> = value.untagged_ptr_field() as *mut _;
     let original: u8 = (*wrapper_ptr).ownership_info;

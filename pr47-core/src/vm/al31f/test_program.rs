@@ -1,7 +1,7 @@
 use xjbutil::boxed_slice;
 use xjbutil::void::Void;
 
-use crate::collections::object::Object;
+use crate::builtins::object::Object;
 use crate::data::Value;
 use crate::data::traits::StaticBase;
 use crate::ffi::{FFIException, Signature};

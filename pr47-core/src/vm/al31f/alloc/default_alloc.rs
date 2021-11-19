@@ -5,7 +5,7 @@ use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::wide_ptr::WidePointer;
 
 use crate::data::PTR_BITS_MASK_USIZE;
-use crate::data::container::{CONTAINER_MASK, ContainerVT};
+use crate::data::generic::{GENERIC_TYPE_MASK, GenericTypeVT};
 use crate::data::wrapper::{DynBase, OWN_INFO_COLLECT_MASK, Wrapper};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::stack::Stack;
@@ -65,9 +65,9 @@ impl Drop for DefaultAlloc {
                 panic!("failed to re-claim object {:X} on destruction", raw_ptr);
             }
 
-            if ptr.ptr & (CONTAINER_MASK as usize) != 0 {
+            if ptr.ptr & (GENERIC_TYPE_MASK as usize) != 0 {
                 let container: *mut () = raw_ptr as *mut _;
-                let vt: *const ContainerVT = ptr.trivia as *const _;
+                let vt: *const GenericTypeVT = ptr.trivia as *const _;
                 unsafe { ((*vt).drop_fn)(container) };
             } else {
                 let dyn_base: *mut dyn DynBase = unsafe {
@@ -142,7 +142,7 @@ impl Alloc for DefaultAlloc {
             }
 
             (*wrapper).gc_info = DefaultGCStatus::Marked as u8;
-            if ptr.ptr & (CONTAINER_MASK as usize) == 0 {
+            if ptr.ptr & (GENERIC_TYPE_MASK as usize) == 0 {
                 let dyn_base: *mut dyn DynBase = transmute::<>(ptr);
                 if let Some(children /*: Box<dyn Iterator>*/) = (*dyn_base).children() {
                     for child /*: WidePointer*/ in children {
@@ -150,7 +150,7 @@ impl Alloc for DefaultAlloc {
                     }
                 }
             } else {
-                let container_vt: *const ContainerVT = ptr.trivia as *const _;
+                let container_vt: *const GenericTypeVT = ptr.trivia as *const _;
                 if let Some(children /*: Box<dyn Iterator> */)
                     = ((*container_vt).children_fn)(&(*wrapper).data as *const _ as *const ())
                 {
@@ -166,9 +166,9 @@ impl Alloc for DefaultAlloc {
             if (*wrapper).gc_info == DefaultGCStatus::Unmarked as u8
                 && (*wrapper).ownership_info & OWN_INFO_COLLECT_MASK != 0
             {
-                if ptr.ptr & (CONTAINER_MASK as usize) != 0 {
+                if ptr.ptr & (GENERIC_TYPE_MASK as usize) != 0 {
                     let container: *mut () = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
-                    let vt: *const ContainerVT = ptr.trivia as *const _;
+                    let vt: *const GenericTypeVT = ptr.trivia as *const _;
                     ((*vt).drop_fn)(container);
                 } else {
                     let dyn_base: *mut dyn DynBase =
@@ -191,9 +191,9 @@ impl Alloc for DefaultAlloc {
 #[cfg(test)]
 mod test {
     use xjbutil::mem::move_to_heap;
-    use crate::collections::test_container::{TestContainer, create_test_container_vt};
+    use crate::builtins::test_container::{TestContainer, create_test_container_vt};
     use crate::data::Value;
-    use crate::data::container::ContainerVT;
+    use crate::data::generic::GenericTypeVT;
     use crate::data::tyck::TyckInfoPool;
     use crate::data::wrapper::Wrapper;
     use crate::vm::al31f::alloc::Alloc;
@@ -267,7 +267,7 @@ mod test {
             container.inner.elements.push(str2.ptr_repr);
             container.inner.elements.push(str3.ptr_repr);
         }
-        let vt: ContainerVT = create_test_container_vt::<String>(&mut tyck_info_pool);
+        let vt: GenericTypeVT = create_test_container_vt::<String>(&mut tyck_info_pool);
 
         let container: Value = Value::new_container(
             move_to_heap(Wrapper::new_owned(container)).as_ptr() as *mut Wrapper<()>,
