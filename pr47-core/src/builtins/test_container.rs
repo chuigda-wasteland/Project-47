@@ -106,16 +106,13 @@ impl<T: 'static> StaticBase<TestContainer<T>> for Void
 pub fn create_test_container_vt<T: 'static>(tyck_info_pool: &mut TyckInfoPool) -> GenericTypeVT
     where Void: StaticBase<T>
 {
-    use crate::data::generic::gen_impls;
-
     let elem_tyck_info: NonNull<TyckInfo> = <Void as StaticBase<T>>::tyck_info(tyck_info_pool);
     let tyck_info: NonNull<TyckInfo> =
         tyck_info_pool.create_container_type(TypeId::of::<TestContainer<()>>(), &[elem_tyck_info]);
-    let container_tyck_info: NonNull<ContainerTyckInfo> =
-        unsafe { tyck_info.as_ref().get_container_tyck_info_unchecked() };
 
+    use crate::data::generic::gen_impls;
     GenericTypeVT {
-        tyck_info: container_tyck_info,
+        tyck_info: unsafe { tyck_info.as_ref().get_container_tyck_info_unchecked() },
         type_name: "TestContainer".to_string(),
         #[cfg(debug_assertions)]
         move_out_fn: gen_impls::generic_move_out_ck::<GenericTestContainer>,
