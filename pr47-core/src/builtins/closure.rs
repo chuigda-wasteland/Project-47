@@ -3,7 +3,6 @@ use std::ptr::NonNull;
 
 use smallvec::SmallVec;
 use xjbutil::void::Void;
-use crate::builtins::test_container::GenericTestContainer;
 
 use crate::data::Value;
 use crate::data::generic::GenericTypeVT;
@@ -22,8 +21,8 @@ impl Closure {
 }
 
 impl StaticBase<Closure> for Void {
-    fn tyck_info(tyck_info_pool: &mut TyckInfoPool) -> NonNull<TyckInfo> {
-        tyck_info_pool.create_container_type(TypeId::of::<Closure>(), &[])
+    fn tyck_info(_: &mut TyckInfoPool) -> NonNull<TyckInfo> {
+        unreachable!("StaticBase<Closure>::tyck_info should not be used in such a way!")
     }
 
     fn type_name() -> String { "closure".into() }
@@ -50,6 +49,6 @@ pub fn create_closure_vt(
         #[cfg(not(debug_assertions))]
         move_out_fn: gen_impls::generic_move_out::<Closure>,
         children_fn: gen_impls::generic_children::<Closure>,
-        drop_fn: gen_impls::generic_drop::<GenericTestContainer>
+        drop_fn: gen_impls::generic_drop::<Closure>
     }
 }

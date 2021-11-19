@@ -187,7 +187,7 @@ impl Stack {
     }
 }
 
-#[cfg(any(test, feature = "bench"))]
+#[cfg(any(feature = "bench", test))]
 impl Stack {
     pub fn trace(&self) {
         eprintln!("[STACK-TRACE] Begin stack tracing");

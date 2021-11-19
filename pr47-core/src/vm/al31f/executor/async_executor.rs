@@ -697,8 +697,8 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
             Insc::DenseVecClear(_) => {}
 
             Insc::StrConcat(src1, src2, dest) => {
-                let src1: *const String = slice.get_value(*src1).ptr as *mut _ as *const String;
-                let src2: *const String = slice.get_value(*src2).ptr as *mut _ as *const String;
+                let src1: &String = &*(slice.get_value(*src1).get_as_mut_ptr_norm() as *const _);
+                let src2: &String = &*(slice.get_value(*src2).get_as_mut_ptr_norm() as *const _);
                 let mut buffer: String = (*src1).clone();
                 buffer.push_str(&*src2);
 
@@ -712,28 +712,24 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
             Insc::StrEquals(_, _) => {}
 
             Insc::ObjectGet(src, field, dest) => {
-                let object: &Object =
-                    &*(slice.get_value(*src).ptr as *mut Object as *const Object);
+                let object: &Object = &*(slice.get_value(*src).get_as_mut_ptr_norm() as *const _);
                 let value: Value = *object.fields.get(field.as_ref()).unwrap_or(&Value::new_null());
                 slice.set_value(*dest, value);
             },
             Insc::ObjectGetDyn(src, field, dest) => {
-                let object: &Object =
-                    &*(slice.get_value(*src).ptr as *mut Object as *const Object);
-                let field: &String =
-                    &*(slice.get_value(*field).ptr as *mut String as *const String);
+                let object: &Object = &*(slice.get_value(*src).get_as_mut_ptr_norm() as *const _);
+                let field: &String = &*(slice.get_value(*field).get_as_mut_ptr_norm() as *const _);
                 let value: Value = *object.fields.get(field).unwrap_or(&Value::new_null());
                 slice.set_value(*dest, value);
             },
             Insc::ObjectPut(src, field, data) => {
-                let object: &mut Object = &mut *(slice.get_value(*src).ptr as *mut Object);
+                let object: &mut Object = &mut *(slice.get_value(*src).get_as_mut_ptr_norm());
                 let data: Value = slice.get_value(*data);
                 object.fields.insert(field.as_ref().to_string(), data);
             },
             Insc::ObjectPutDyn(src, field, data) => {
-                let object: &mut Object = &mut *(slice.get_value(*src).ptr as *mut Object);
-                let field: &String =
-                    &*(slice.get_value(*field).ptr as *mut String as *const String);
+                let object: &mut Object = &mut *(slice.get_value(*src).get_as_mut_ptr_norm());
+                let field: &String = &*(slice.get_value(*field).get_as_mut_ptr_norm() as *const _);
                 let data: Value = slice.get_value(*data);
                 object.fields.insert(field.to_string(), data);
             }

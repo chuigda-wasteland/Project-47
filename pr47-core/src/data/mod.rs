@@ -318,7 +318,7 @@ impl Value {
         }
     }
 
-    /// Given that `self` **MUST** be a reference and **MUST BOT** be a custom pointer, get a
+    /// Given that `self` **MUST** be a reference and **MUST NOT** be a custom pointer, get a
     /// pointer to the referenced data
     #[cfg_attr(not(debug_assertions), inline)]
     pub unsafe fn get_as_mut_ptr_norm<T>(&self) -> *mut T
