@@ -157,7 +157,8 @@ pub struct VMThreadRunFunctionFut<'a, A: Alloc, const S: bool> {
     slice: StackSlice,
     insc_ptr: usize,
 
-    awaiting_promise: Option<Pin<Box<dyn Future<Output = AsyncReturnType>>>>
+    awaiting_promise: Option<Pin<Box<dyn Future<Output = AsyncReturnType>>>>,
+    ret_values_resolver: Option<fn(&mut A, &[Value])>
 }
 
 unsafe impl<'a, A: Alloc, const S: bool> Send for VMThreadRunFunctionFut<'a, A, S> {}
@@ -174,6 +175,13 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             let AsyncReturnType(result) = promise_result;
             match result {
                 Ok(values) => {
+                    if let Some(ret_values_resolver) = this.ret_values_resolver.take() {
+                        ret_values_resolver(
+                            &mut this.thread.vm.get_shared_data_mut().alloc,
+                            &values
+                        );
+                    }
+
                     let insc: &Insc = &this.thread.program.as_ref().code[this.insc_ptr - 1];
                     let dests: &Box<[usize]> = if let Insc::Await(_, dests) = insc {
                         dests
@@ -608,7 +616,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             #[cfg(all(feature = "optimized-rtlc", feature = "async"))]
             Insc::FFICallAsync(async_ffi_func_id, args, ret) => {
-                let async_ffi_function: &Box<dyn FFIAsyncFunction<AsyncCombustor<A>>>
+                let async_ffi_function: &Box<dyn FFIAsyncFunction<A, AsyncCombustor<A>>>
                     = &program.async_ffi_funcs[*async_ffi_func_id];
 
                 let args_len: usize = args.len();
@@ -661,10 +669,11 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     )));
                 }
 
-                let promise: Promise = promise.move_out::<Promise>();
+                let promise: Promise<A> = promise.move_out::<Promise<A>>();
                 (*wrapper).ownership_info = OwnershipInfo::MovedToRust as u8;
 
                 let thread: &'static VMThread<A> = transmute::<_, _>(thread);
+                this.ret_values_resolver = promise.ret_values_resolver;
                 this.awaiting_promise = Some(Box::pin(thread.vm.co_await(promise)));
                 cx.waker().wake_by_ref();
                 return Poll::Pending;
@@ -802,6 +811,7 @@ pub unsafe fn vm_thread_run_function<'a, A: Alloc, const S: bool>(
         thread,
         slice,
         insc_ptr,
-        awaiting_promise: None
+        awaiting_promise: None,
+        ret_values_resolver: None
     })
 }

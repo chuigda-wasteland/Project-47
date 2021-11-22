@@ -398,10 +398,10 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
         unimplemented!()
     }
 
-    unsafe fn call_rtlc<ACTX: AsyncVMContext>(
+    unsafe fn call_rtlc<A: Alloc, ACTX: AsyncVMContext>(
         _context: &ACTX,
         _args: &[Value]
-    ) -> Result<Promise, FFIException> {
+    ) -> Result<Promise<A>, FFIException> {
         let fut = async move {
             let r: Result<String, std::io::Error> = async_ffi_function().await;
             match r {
@@ -419,7 +419,10 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
             guard: PromiseGuard {
                 guards: boxed_slice![],
                 reset_guard_count: 0
-            }
+            },
+            ret_values_resolver: Some(|alloc: &mut A, values: &[Value]| {
+                alloc.add_managed(values.get_unchecked(0).ptr_repr)
+            })
         })
     }
 }
@@ -440,7 +443,8 @@ pub fn async_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
         ],
         ffi_funcs: boxed_slice![],
         async_ffi_funcs: boxed_slice![
-            Box::new(Pr47Binder_async_ffi_function()) as Box<dyn AsyncFunction<AsyncCombustor<A>>>
+            Box::new(Pr47Binder_async_ffi_function())
+                as Box<dyn AsyncFunction<A, AsyncCombustor<A>>>
         ]
     }
 }

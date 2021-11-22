@@ -87,5 +87,5 @@ pub struct CompiledProgram<A: Alloc> {
 
     pub ffi_funcs: Box<[Box<dyn FFIFunction<Combustor<A>>>]>,
     #[cfg(feature = "async")]
-    pub async_ffi_funcs: Box<[Box<dyn FFIAsyncFunction<AsyncCombustor<A>>>]>
+    pub async_ffi_funcs: Box<[Box<dyn FFIAsyncFunction<A, AsyncCombustor<A>>>]>
 }
