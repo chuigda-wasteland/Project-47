@@ -5,7 +5,7 @@ members = [
 ]
 
 [profile.release]
-lto = "fat"
+debug = true
 
 [profile.bench]
-lto = "fat"
+debug = true

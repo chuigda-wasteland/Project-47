@@ -191,6 +191,7 @@ async fn ffi_call2() {
     }
 }
 
+#[cfg(feature = "async")]
 async fn async_ffi_call() {
     let async_ffi_call_program: CompiledProgram<DefaultAlloc> = async_ffi_call_program();
     let alloc: DefaultAlloc = DefaultAlloc::new();
@@ -235,6 +236,7 @@ async fn async_ffi_call() {
 
 #[test] fn test_ffi_call2() { block_on_future(ffi_call2()); }
 
+#[cfg(feature = "async")]
 #[test] fn test_async_ffi_call() {
     block_on_future(async_ffi_call())
 }

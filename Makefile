@@ -14,6 +14,16 @@ run_brute_force_proof:
 	@rustc brute_force_proof.rs -C opt-level=2
 	@./brute_force_proof show-error show-unreachable
 
+.PHONY: test_sync
+test_sync:
+	cargo --release ${SYNC_BENCH_FEATURES}
+	cargo test --release ${SYNC_BENCH_FEATURES}
+
+.PHONY: test_async
+test_async:
+	cargo test ${ASYNC_BENCN_FEATURES}
+	cargo test --release ${ASYNC_BENCN_FEATURES}
+
 .PHONY: bench_al31fm2_fib35
 bench_al31fm2_fib35:
 	@BENCH_ITEM="fib35" cargo run --release ${ASYNC_BENCH_FEATURES}  --bin bench_al31fm2
