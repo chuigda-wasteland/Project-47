@@ -383,13 +383,16 @@ pub fn bench_ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
     }
 }
 
+#[cfg(feature = "async")]
 #[inline(never)] async fn async_ffi_function() -> Result<String, std::io::Error> {
     tokio::fs::read_to_string("./Cargo.toml").await
 }
 
+#[cfg(feature = "async")]
 #[allow(non_camel_case_types)]
 struct Pr47Binder_async_ffi_function();
 
+#[cfg(feature = "async")]
 impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
     fn signature(_tyck_info_pool: &mut TyckInfoPool) -> Signature {
         unimplemented!()

@@ -15,7 +15,7 @@ use crate::util::serializer::CoroutineContext;
 
 pub unsafe fn vm_run_function_sync<A: Alloc>(
     alloc: A,
-    program: &mut CompiledProgram<A>,
+    program: &CompiledProgram<A>,
     func_id: usize,
     args: &[Value]
 ) -> Result<Vec<Value>, Exception> {
@@ -26,7 +26,7 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
         let vm: CoroutineContext<AL31F<A>> = CoroutineContext::main_context(vm).await;
         let mut thread: VMThread<A> = VMThread {
             vm,
-            program: NonNull::new_unchecked(program as *mut _),
+            program: NonNull::new_unchecked(program as *const _ as *mut _),
             stack: Stack::new()
         };
         vm_thread_run_function::<_, true>(UncheckedSendSync::new((&mut thread, func_id, args)))?
@@ -37,7 +37,7 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
     return pollster::block_on(async {
         let mut thread: VMThread<A> = VMThread {
             vm,
-            program: NonNull::new_unchecked(program as *mut _),
+            program: NonNull::new_unchecked(program as *const _ as *mut _),
             stack: Stack::new()
         };
         vm_thread_run_function::<_, true>(UncheckedSendSync::new((&mut thread, func_id, args)))?

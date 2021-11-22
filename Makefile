@@ -16,7 +16,7 @@ run_brute_force_proof:
 
 .PHONY: test_sync
 test_sync:
-	cargo --release ${SYNC_BENCH_FEATURES}
+	cargo test ${SYNC_BENCH_FEATURES}
 	cargo test --release ${SYNC_BENCH_FEATURES}
 
 .PHONY: test_async
