@@ -160,6 +160,9 @@ pub struct VMThreadRunFunctionFut<'a, A: Alloc, const S: bool> {
     awaiting_promise: Option<Pin<Box<dyn Future<Output = AsyncReturnType>>>>
 }
 
+unsafe impl<'a, A: Alloc, const S: bool> Send for VMThreadRunFunctionFut<'a, A, S> {}
+unsafe impl<'a, A: Alloc, const S: bool> Sync for VMThreadRunFunctionFut<'a, A, S> {}
+
 unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
     this: &mut VMThreadRunFunctionFut<'a, A, S>,
     cx: &mut Context<'_>
