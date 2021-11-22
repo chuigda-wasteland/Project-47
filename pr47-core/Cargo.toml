@@ -34,14 +34,15 @@ tokio = { optional = true, version = "1", features = ["rt", "sync", "time"] }
 unicode-width = { optional = true, version = "0.1" }
 
 [dev-dependencies]
-tokio = { version = "1", features = ["rt-multi-thread"] }
+tokio = { version = "1", features = ["rt-multi-thread", "fs"] }
 variant_count = "1"
 
 [features]
-default = ["async-tokio", "compiler", "compiler-pretty-diag", "optimized-rtlc", "std47"]
+default = ["async-avoid-block", "async-tokio", "compiler", "compiler-pretty-diag", "optimized-rtlc", "std47"]
 
 async = ["futures"]
 async-astd = ["async", "async-std", "xjbutil/async-astd"]
+async-avoid-block = []
 async-tokio = ["async", "tokio", "xjbutil/async-tokio"]
 bench = []
 compiler = ["phf"]

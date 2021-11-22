@@ -216,7 +216,19 @@ unsafe fn poll_unsafe<'a, A: Alloc>(
     let program: &CompiledProgram<A> = thread.program.as_ref();
     let mut ffi_args: [Value; 32] = [Value::new_null(); 32];
     let mut ffi_rets: [*mut Value; 8] = [std::ptr::null_mut(); 8];
+
+    #[cfg(feature = "async-avoid-block")] let mut insc_counter: u64 = 0;
+
     loop {
+        #[cfg(feature = "async-avoid-block")]
+        {
+            insc_counter += 1;
+            if insc_counter % 1_000_000 == 0 {
+                cx.waker().wake_by_ref();
+                return Poll::Pending;
+            }
+        }
+
         let insc_ptr: &mut usize = &mut this.insc_ptr;
 
         #[cfg(not(debug_assertions))]
