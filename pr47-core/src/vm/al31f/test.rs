@@ -31,7 +31,9 @@ async fn basic_program_eval() {
     let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value])
         = (&mut vm_thread, 0, &[Value::new_int(114), Value::new_int(514)]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).expect_silent("damn it").await
+        vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
+            .expect_silent("damn it")
+            .await
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
@@ -53,7 +55,9 @@ async fn basic_fn_call() {
     let mut vm_thread: Box<VMThread<DefaultAlloc>> = create_vm_main_thread(alloc, &program).await;
     let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) = (&mut vm_thread, 0, &[]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).expect_silent("damn it").await
+        vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
+            .expect_silent("damn it")
+            .await
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
@@ -77,7 +81,9 @@ async fn fibonacci_call() {
     let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) =
         (&mut vm_thread, 0, &[Value::new_int(7)]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).expect_silent("damn it").await
+        vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
+            .expect_silent("damn it")
+            .await
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
@@ -100,7 +106,9 @@ async fn exception_no_eh_call() {
         create_vm_main_thread(alloc, &exception_no_eh_program).await;
     let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) = (&mut vm_thread, 0, &[]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).expect_silent("damn it").await
+        vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
+            .expect_silent("damn it")
+            .await
     };
 
     if let Err(e /*: Exception*/) = result {
@@ -125,7 +133,9 @@ async fn exception_call() {
         create_vm_main_thread(alloc, &exception_program).await;
     let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) = (&mut vm_thread, 0, &[]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).expect_silent("damn it").await
+        vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
+            .expect_silent("damn it")
+            .await
     };
 
     if let Ok(result /*: Vec<Value>*/) = result {
@@ -149,7 +159,9 @@ async fn ffi_call() {
         create_vm_main_thread(alloc, &ffi_call_program).await;
     let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) = (&mut vm_thread, 0, &[]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).expect_silent("damn it").await
+        vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
+            .expect_silent("damn it")
+            .await
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 0);
@@ -167,7 +179,9 @@ async fn ffi_call2() {
     let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) =
         (&mut vm_thread, 0, &[Value::new_int(114), Value::new_int(514)]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).expect_silent("damn it").await
+        vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
+            .expect_silent("damn it")
+            .await
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
@@ -185,7 +199,9 @@ async fn async_ffi_call() {
         create_vm_main_thread(alloc, &async_ffi_call_program).await;
     let arg_pack: (&mut VMThread<DefaultAlloc>, usize, &[Value]) = (&mut vm_thread, 0, &[]);
     let result: Result<Vec<Value>, Exception> = unsafe {
-        vm_thread_run_function(UncheckedSendSync::new(arg_pack)).expect_silent("damn it").await
+        vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
+            .expect_silent("damn it")
+            .await
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);

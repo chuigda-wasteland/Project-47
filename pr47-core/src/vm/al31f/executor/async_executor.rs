@@ -152,7 +152,7 @@ unsafe fn checked_exception_unwind_stack<A: Alloc>(
     Err(exception)
 }
 
-pub struct VMThreadRunFunctionFut<'a, A: Alloc> {
+pub struct VMThreadRunFunctionFut<'a, A: Alloc, const S: bool> {
     thread: &'a mut VMThread<A>,
     slice: StackSlice,
     insc_ptr: usize,
@@ -160,10 +160,10 @@ pub struct VMThreadRunFunctionFut<'a, A: Alloc> {
     awaiting_promise: Option<Pin<Box<dyn Future<Output = AsyncReturnType>>>>
 }
 
-unsafe fn poll_unsafe<'a, A: Alloc>(
-    this: &mut VMThreadRunFunctionFut<'a, A>,
+unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
+    this: &mut VMThreadRunFunctionFut<'a, A, S>,
     cx: &mut Context<'_>
-) -> Poll<<VMThreadRunFunctionFut<'a, A> as Future>::Output> {
+) -> Poll<<VMThreadRunFunctionFut<'a, A, S> as Future>::Output> {
     if let Some(awaiting_promise) = &mut this.awaiting_promise {
         if let Poll::Ready(promise_result) = awaiting_promise.poll_unpin(cx) {
             this.awaiting_promise = None;
@@ -217,11 +217,13 @@ unsafe fn poll_unsafe<'a, A: Alloc>(
     let mut ffi_args: [Value; 32] = [Value::new_null(); 32];
     let mut ffi_rets: [*mut Value; 8] = [std::ptr::null_mut(); 8];
 
-    #[cfg(feature = "async-avoid-block")] let mut insc_counter: u64 = 0;
+    #[cfg(feature = "async-avoid-block")]
+    #[allow(unused)]
+    let mut insc_counter: u64 = 0;
 
     loop {
         #[cfg(feature = "async-avoid-block")]
-        {
+        if !S {
             insc_counter += 1;
             if insc_counter % 1_000_000 == 0 {
                 cx.waker().wake_by_ref();
@@ -765,7 +767,7 @@ unsafe fn poll_unsafe<'a, A: Alloc>(
     }
 }
 
-impl<'a, A: Alloc> Future for VMThreadRunFunctionFut<'a, A> {
+impl<'a, A: Alloc, const S: bool> Future for VMThreadRunFunctionFut<'a, A, S> {
     type Output = Result<Vec<Value>, Exception>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -773,9 +775,9 @@ impl<'a, A: Alloc> Future for VMThreadRunFunctionFut<'a, A> {
     }
 }
 
-pub unsafe fn vm_thread_run_function<'a, A: Alloc>(
+pub unsafe fn vm_thread_run_function<'a, A: Alloc, const S: bool>(
     arg_pack: UncheckedSendSync<(&'a mut VMThread<A>, usize, &[Value])>
-) -> Result<VMThreadRunFunctionFut<'a, A>, Exception> {
+) -> Result<VMThreadRunFunctionFut<'a, A, S>, Exception> {
     let (thread, func_id, args) = arg_pack.into_inner();
 
     get_vm!(thread).alloc.set_gc_allowed(true);

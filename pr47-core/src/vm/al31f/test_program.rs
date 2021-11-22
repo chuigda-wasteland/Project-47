@@ -299,7 +299,7 @@ struct Pr47Binder_ffi_function2();
 
 impl FunctionBase for Pr47Binder_ffi_function2 {
     fn signature(_tyck_info_pool: &mut TyckInfoPool) -> Signature {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn call_rtlc<CTX: VMContext>(
