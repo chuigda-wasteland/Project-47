@@ -774,12 +774,18 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             Insc::ObjectPut(src, field, data) => {
                 let object: &mut Object = &mut *(slice.get_value(*src).get_as_mut_ptr_norm());
                 let data: Value = slice.get_value(*data);
+                if data.is_ref() {
+                    thread.vm.get_shared_data_mut().alloc.mark_object(data.ptr_repr);
+                }
                 object.fields.insert(field.as_ref().to_string(), data);
             },
             Insc::ObjectPutDyn(src, field, data) => {
                 let object: &mut Object = &mut *(slice.get_value(*src).get_as_mut_ptr_norm());
                 let field: &String = &*(slice.get_value(*field).get_as_mut_ptr_norm() as *const _);
                 let data: Value = slice.get_value(*data);
+                if data.is_ref() {
+                    thread.vm.get_shared_data_mut().alloc.mark_object(data.ptr_repr);
+                }
                 object.fields.insert(field.to_string(), data);
             }
         }

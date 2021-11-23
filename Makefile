@@ -2,8 +2,8 @@
 all:
 	@echo "Please, run something else"
 
-ASYNC_BENCH_FEATURES = --no-default-features --features="async async-tokio bench optimized-rtlc"
-SYNC_BENCH_FEATURES = --no-default-features --features="bench optimized-rtlc"
+ASYNC_BENCH_FEATURES = --no-default-features --features="async async-tokio bench optimized-rtlc std47"
+SYNC_BENCH_FEATURES = --no-default-features --features="bench optimized-rtlc std47"
 
 .PHONY:
 clean:

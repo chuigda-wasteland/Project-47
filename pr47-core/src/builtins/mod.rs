@@ -1,5 +1,4 @@
 pub mod closure;
-pub mod error;
 pub mod object;
 pub mod set;
 pub mod vec;

@@ -16,7 +16,7 @@ pub mod vm;
 #[cfg(feature = "compiler")] pub mod parse;
 #[cfg(feature = "compiler")] pub mod syntax;
 #[cfg(feature = "compiler")] pub mod sema;
-#[cfg(feature = "std47")] pub mod std47;
+#[cfg(feature = "std47")]    pub mod std47;
 
 #[cfg(all(feature = "compiler-pretty-diag", not(feature = "compiler")))]
 compile_error!("using `compiler-pretty-diag` without `compiler` is meaningless");
