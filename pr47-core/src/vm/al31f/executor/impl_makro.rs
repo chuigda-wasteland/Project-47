@@ -94,7 +94,7 @@ macro_rules! impl_checked_op2 {
             let dst: &mut Value = &mut *$slice.get_value_mut_ref(*$dst);
             if let Err(e /*: UncheckedException*/) = $checked_op($thread, src1, src2, dst) {
                 return Poll::Ready(Err(
-                    unchecked_exception_unwind_stack(e, &mut $thread.stack, *$insc_ptr)
+                    unchecked_exception_unwind_stack(e, &mut $thread.stack, $insc_ptr)
                 ));
             }
         }
@@ -118,7 +118,7 @@ macro_rules! impl_checked_bin_op {
             let dst: &mut Value = &mut *$slice.get_value_mut_ref(*$dst);
             if let Err(e /*: UncheckedException*/) = $checked_op(src1, src2, dst) {
                 return Poll::Ready(
-                    Err(unchecked_exception_unwind_stack(e, &mut $thread.stack, *$insc_ptr))
+                    Err(unchecked_exception_unwind_stack(e, &mut $thread.stack, $insc_ptr))
                 );
             }
         }
@@ -132,7 +132,7 @@ macro_rules! impl_checked_unary_op {
             let dst: &mut Value = &mut *$slice.get_value_mut_ref(*$dst);
             if let Err(e /*: UncheckedException*/) = $checked_op(src, dst) {
                 return Poll::Ready(
-                    Err(unchecked_exception_unwind_stack(e, &mut $thread.stack, *$insc_ptr))
+                    Err(unchecked_exception_unwind_stack(e, &mut $thread.stack, $insc_ptr))
                 );
             }
         }

@@ -237,6 +237,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
     #[allow(unused)]
     let mut insc_counter: u64 = 0;
 
+    let mut insc_ptr: usize = this.insc_ptr;
     loop {
         #[cfg(feature = "async-avoid-block")]
         if !S {
@@ -247,13 +248,11 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             }
         }
 
-        let insc_ptr: &mut usize = &mut this.insc_ptr;
-
         #[cfg(not(debug_assertions))]
-        let insc: &Insc = program.code.get_unchecked(*insc_ptr);
+        let insc: &Insc = program.code.get_unchecked(insc_ptr);
         #[cfg(debug_assertions)]
-        let insc: &Insc = &program.code[*insc_ptr];
-        *insc_ptr += 1;
+        let insc: &Insc = &program.code[insc_ptr];
+        insc_ptr += 1;
 
         match insc {
             Insc::AddInt(src1, src2, dst) =>
@@ -285,7 +284,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     slice.set_value(*dst, Value::new_int(result))
                 } else {
                     return Poll::Ready(Err(unchecked_exception_unwind_stack(
-                        UncheckedException::DivideByZero, &mut thread.stack, *insc_ptr
+                        UncheckedException::DivideByZero, &mut thread.stack, insc_ptr
                     )));
                 }
             },
@@ -299,7 +298,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     slice.set_value(*dst, Value::new_int(result))
                 } else {
                     return Poll::Ready(Err(unchecked_exception_unwind_stack(
-                        UncheckedException::DivideByZero, &mut thread.stack, *insc_ptr
+                        UncheckedException::DivideByZero, &mut thread.stack, insc_ptr
                     )));
                 }
             },
@@ -453,7 +452,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     return Poll::Ready(Err(unchecked_exception_unwind_stack(
                         UncheckedException::UnexpectedNull { value: src },
                         &mut thread.stack,
-                        *insc_ptr
+                        insc_ptr
                     )));
                 }
             },
@@ -473,9 +472,9 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     compiled.stack_size,
                     args,
                     NonNull::from(&rets[..]),
-                    *insc_ptr
+                    insc_ptr
                 );
-                *insc_ptr = compiled.start_addr;
+                insc_ptr = compiled.start_addr;
             },
             Insc::CallPtr(func_id_loc, args, rets) => {
                 let func_id: usize = slice.get_value(*func_id_loc).vt_data.inner.int_value as usize;
@@ -491,16 +490,16 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     compiled.stack_size,
                     args,
                     NonNull::from(&rets[..]),
-                    *insc_ptr
+                    insc_ptr
                 );
-                *insc_ptr = compiled.start_addr;
+                insc_ptr = compiled.start_addr;
             },
             Insc::CallOverload(_, _, _) => {}
             Insc::ReturnNothing => {
                 if let Some((prev_stack_slice, ret_addr)) =
                     thread.stack.done_func_call_shrink_stack0()
                 {
-                    *insc_ptr = ret_addr;
+                    insc_ptr = ret_addr;
                     *slice = prev_stack_slice;
                 } else {
                     return Poll::Ready(Ok(vec![]));
@@ -510,7 +509,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 if let Some((prev_stack_slice, ret_addr)) =
                     thread.stack.done_func_call_shrink_stack1(*ret_value)
                 {
-                    *insc_ptr = ret_addr;
+                    insc_ptr = ret_addr;
                     *slice = prev_stack_slice;
                 } else {
                     return Poll::Ready(Ok(vec![slice.get_value(*ret_value)]));
@@ -518,9 +517,9 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             Insc::Return(ret_values) => {
                 if let Some((prev_stack_slice, ret_addr)) =
-                thread.stack.done_func_call_shrink_stack(&ret_values)
+                    thread.stack.done_func_call_shrink_stack(&ret_values)
                 {
-                    *insc_ptr = ret_addr;
+                    insc_ptr = ret_addr;
                     *slice = prev_stack_slice;
                 } else {
                     let mut ret_vec: Vec<Value> = Vec::with_capacity(ret_values.len());
@@ -562,14 +561,14 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                                     &program,
                                     checked,
                                     &mut thread.stack,
-                                    *insc_ptr
+                                    insc_ptr
                                 )?;
                             *slice = new_slice;
-                            *insc_ptr = insc_ptr_next;
+                            insc_ptr = insc_ptr_next;
                         },
                         Either::Right(unchecked) => {
                             return Poll::Ready(Err(unchecked_exception_unwind_stack(
-                                unchecked, &mut thread.stack, *insc_ptr
+                                unchecked, &mut thread.stack, insc_ptr
                             )));
                         }
                     }
@@ -606,14 +605,14 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                                     &program,
                                     checked,
                                     &mut thread.stack,
-                                    *insc_ptr
+                                    insc_ptr
                                 )?;
                             *slice = new_slice;
-                            *insc_ptr = insc_ptr_next;
+                            insc_ptr = insc_ptr_next;
                         },
                         Either::Right(unchecked) => {
                             return Poll::Ready(Err(unchecked_exception_unwind_stack(
-                                unchecked, &mut thread.stack, *insc_ptr
+                                unchecked, &mut thread.stack, insc_ptr
                             )));
                         }
                     }
@@ -648,14 +647,14 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                                         &program,
                                         checked,
                                         &mut thread.stack,
-                                        *insc_ptr
+                                        insc_ptr
                                     )?;
                                 *slice = new_slice;
-                                *insc_ptr = insc_ptr_next;
+                                insc_ptr = insc_ptr_next;
                             },
                             Either::Right(unchecked) => {
                                 return Poll::Ready(Err(unchecked_exception_unwind_stack(
-                                    unchecked, &mut thread.stack, *insc_ptr
+                                    unchecked, &mut thread.stack, insc_ptr
                                 )));
                             }
                         }
@@ -670,12 +669,14 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     return Poll::Ready(Err(unchecked_exception_unwind_stack(
                         UncheckedException::AlreadyAwaited { promise },
                         &mut thread.stack,
-                        *insc_ptr
+                        insc_ptr
                     )));
                 }
 
                 let promise: Promise<A> = promise.move_out::<Promise<A>>();
                 (*wrapper).ownership_info = OwnershipInfo::MovedToRust as u8;
+
+                this.insc_ptr = insc_ptr;
 
                 let thread: &'static VMThread<A> = transmute::<_, _>(thread);
                 this.ret_values_resolver = promise.ret_values_resolver;
@@ -691,26 +692,26 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                         &program,
                         exception,
                         &mut thread.stack,
-                        *insc_ptr
+                        insc_ptr
                     )?;
                 *slice = new_slice;
-                *insc_ptr = insc_ptr_next;
+                insc_ptr = insc_ptr_next;
                 continue;
             },
             Insc::JumpIfTrue(condition, dest) => {
                 let condition: bool = slice.get_value(*condition).vt_data.inner.bool_value;
                 if condition {
-                    *insc_ptr = *dest;
+                    insc_ptr = *dest;
                 }
             },
             Insc::JumpIfFalse(condition, dest) => {
                 let condition: bool = slice.get_value(*condition).vt_data.inner.bool_value;
                 if !condition {
-                    *insc_ptr = *dest;
+                    insc_ptr = *dest;
                 }
             },
             Insc::Jump(dest) => {
-                *insc_ptr = *dest;
+                insc_ptr = *dest;
             },
             Insc::CreateString(dest) => {
                 let string: String = String::new();
