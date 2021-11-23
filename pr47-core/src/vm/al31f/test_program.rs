@@ -6,7 +6,13 @@ use crate::data::Value;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfoPool;
 use crate::ffi::{FFIException, Signature};
-use crate::ffi::async_fn::{
+use crate::ffi::sync_fn::{Function, FunctionBase, OwnershipGuard, VMContext, value_into_ref};
+use crate::vm::al31f::Combustor;
+use crate::vm::al31f::alloc::Alloc;
+use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
+use crate::vm::al31f::insc::Insc;
+
+#[cfg(feature = "async")] use crate::ffi::async_fn::{
     AsyncFunction,
     AsyncFunctionBase,
     AsyncReturnType,
@@ -14,11 +20,7 @@ use crate::ffi::async_fn::{
     Promise,
     PromiseGuard
 };
-use crate::ffi::sync_fn::{Function, FunctionBase, OwnershipGuard, VMContext, value_into_ref};
-use crate::vm::al31f::{AsyncCombustor, Combustor};
-use crate::vm::al31f::alloc::Alloc;
-use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
-use crate::vm::al31f::insc::Insc;
+#[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
 pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
     CompiledProgram {

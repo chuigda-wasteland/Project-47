@@ -40,7 +40,7 @@ impl<'s, 'd> Parser<'s, 'd> {
     pub fn parse_global_attr_or_attributed_decl(&mut self, hash_token: Token<'s>)
         -> Option<Either<ConcreteDecl<'s>, Attribute<'s>>>
     {
-        debug_assert_eq!(hash_token.token_inner, TokenInner::SymHash);
+        #[cfg(debug_assertions)] assert_eq!(hash_token.token_inner, TokenInner::SymHash);
 
         match self.current_token().token_inner {
             TokenInner::SymLBracket => {
@@ -68,7 +68,7 @@ impl<'s, 'd> Parser<'s, 'd> {
         &mut self,
         hash_token: Token<'s>
     ) -> Option<ConcreteDecl<'s>> {
-        debug_assert_eq!(hash_token.token_inner, TokenInner::SymHash);
+        #[cfg(debug_assertions)] assert_eq!(hash_token.token_inner, TokenInner::SymHash);
 
         let attr_list: Attribute = self.parse_attribute(hash_token, false, TOP_LEVEL_FIRST)?;
         let mut decl: ConcreteDecl = self.parse_top_level_decl()?;

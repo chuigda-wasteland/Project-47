@@ -1,11 +1,8 @@
 use std::any::TypeId;
 use std::future::Future;
-use std::hint::unreachable_unchecked;
-use std::mem::transmute;
 use std::pin::Pin;
 use std::ptr::NonNull;
 use std::task::{Context, Poll};
-use futures::FutureExt;
 
 use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::either::Either;
@@ -52,6 +49,9 @@ use crate::vm::al31f::executor::checked_unary_ops::{
 use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
 
+#[cfg(feature = "async")] use std::hint::unreachable_unchecked;
+#[cfg(feature = "async")] use std::mem::transmute;
+#[cfg(feature = "async")] use futures::FutureExt;
 #[cfg(feature = "async")] use crate::data::wrapper::{Wrapper, OwnershipInfo};
 #[cfg(feature = "async")] use crate::ffi::async_fn::{AsyncReturnType, Promise};
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
@@ -157,7 +157,10 @@ pub struct VMThreadRunFunctionFut<'a, A: Alloc, const S: bool> {
     slice: StackSlice,
     insc_ptr: usize,
 
+    #[cfg(feature = "async")]
     awaiting_promise: Option<Pin<Box<dyn Future<Output = AsyncReturnType>>>>,
+
+    #[cfg(feature = "async")]
     ret_values_resolver: Option<fn(&mut A, &[Value])>
 }
 
@@ -166,8 +169,10 @@ unsafe impl<'a, A: Alloc, const S: bool> Sync for VMThreadRunFunctionFut<'a, A, 
 
 unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
     this: &mut VMThreadRunFunctionFut<'a, A, S>,
-    cx: &mut Context<'_>
+    #[cfg(feature = "async")] cx: &mut Context<'_>,
+    #[cfg(not(feature = "async"))] _cx: &mut Context<'_>
 ) -> Poll<<VMThreadRunFunctionFut<'a, A, S> as Future>::Output> {
+    #[cfg(feature = "async")]
     if let Some(awaiting_promise) = &mut this.awaiting_promise {
         if let Poll::Ready(promise_result) = awaiting_promise.poll_unpin(cx) {
             this.awaiting_promise = None;
@@ -811,7 +816,8 @@ pub unsafe fn vm_thread_run_function<'a, A: Alloc, const S: bool>(
         thread,
         slice,
         insc_ptr,
-        awaiting_promise: None,
-        ret_values_resolver: None
+
+        #[cfg(feature = "async")] awaiting_promise: None,
+        #[cfg(feature = "async")] ret_values_resolver: None
     })
 }

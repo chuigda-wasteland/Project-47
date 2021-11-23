@@ -54,7 +54,8 @@ impl<'s, 'd> Parser<'s, 'd> {
         container_type_token: Token<'s>,
         failsafe_set: &[&[TokenInner<'_>]]
     ) -> Option<ConcreteType<'s>> {
-        debug_assert_eq!(container_type_token.token_inner, TokenInner::KwdVector);
+        #[cfg(debug_assertions)]
+        assert_eq!(container_type_token.token_inner, TokenInner::KwdVector);
 
         let left_angle_range: SourceRange =
             self.expect_n_consume(TokenInner::SymLt, failsafe_set)?.range;
