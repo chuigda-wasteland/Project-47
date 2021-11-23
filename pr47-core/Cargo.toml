@@ -13,7 +13,7 @@ pollster = "0.2"
 pr47-codegen = "0.0.2"
 smallvec = "1"
 unchecked_unwrap = "3"
-xjbutil = { version = "0.4.6", default-features = false, features = [
+xjbutil = { version = "0.4.7", default-features = false, features = [
     "async",
     "defer",
     "display2",
@@ -28,7 +28,7 @@ xjbutil = { version = "0.4.6", default-features = false, features = [
 ] }
 
 async-std = { optional = true, version = "1" }
-futures = { optional = true, version = "0.3" }
+futures = { optional = true, version = "0.3", default-features = false }
 phf = { optional = true, version = "0.10", features = ["macros"] }
 tokio = { optional = true, version = "1", features = ["rt", "sync", "time"] }
 unicode-width = { optional = true, version = "0.1" }
@@ -51,7 +51,6 @@ huge-align = []
 no-rtlc = []
 optimized-rtlc = []
 std47 = []
-
 
 # Compiler testing binaries
 [[bin]]
