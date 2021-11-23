@@ -3,21 +3,31 @@ use std::collections::HashSet;
 use std::cmp::{Eq, PartialEq};
 use std::hash::{Hash, Hasher};
 use std::hint::unreachable_unchecked;
-use std::mem::forget;
+use std::mem::{discriminant, forget};
 use std::ptr::NonNull;
 
 use xjbutil::korobka::Korobka;
 use xjbutil::std_ext::{BoxedExt, VecExt};
+
+use crate::builtins::object::Object;
 
 pub struct ContainerTyckInfo {
     pub type_id: TypeId,
     pub params: NonNull<[NonNull<TyckInfo>]>
 }
 
+pub struct FunctionTyckInfo {
+    pub params: NonNull<[NonNull<TyckInfo>]>,
+    pub rets: NonNull<[NonNull<TyckInfo>]>,
+    pub exceptions: NonNull<[NonNull<TyckInfo>]>
+}
+
 pub enum TyckInfo {
     AnyType,
     Plain(TypeId),
-    Container(ContainerTyckInfo)
+    Nullable(NonNull<TyckInfo>),
+    Container(ContainerTyckInfo),
+    Function(FunctionTyckInfo)
 }
 
 impl TyckInfo {
@@ -28,14 +38,32 @@ impl TyckInfo {
             unreachable_unchecked()
         }
     }
+
+    pub unsafe fn get_function_tyck_info_unchecked(&self) -> NonNull<FunctionTyckInfo> {
+        if let TyckInfo::Function(function_tyck_info) = self {
+            NonNull::new_unchecked(function_tyck_info as *const _ as *mut _)
+        } else {
+            unreachable_unchecked()
+        }
+    }
 }
 
 impl Drop for TyckInfo {
     fn drop(&mut self) {
-        if let TyckInfo::Container(ContainerTyckInfo { type_id, params }) = self {
-            let _ = type_id;
-            let boxed: Box<[NonNull<TyckInfo>]> = unsafe { Box::reclaim(*params) };
-            drop(boxed);
+        match self {
+            TyckInfo::Container(ContainerTyckInfo { params, .. }) => {
+                let boxed: Box<[NonNull<TyckInfo>]> = unsafe { Box::reclaim(*params) };
+                drop(boxed);
+            },
+            TyckInfo::Function(FunctionTyckInfo { params, rets, exceptions }) => {
+                let boxed: Box<[NonNull<TyckInfo>]> = unsafe { Box::reclaim(*params) };
+                drop(boxed);
+                let boxed: Box<[NonNull<TyckInfo>]> = unsafe { Box::reclaim(*rets) };
+                drop(boxed);
+                let boxed: Box<[NonNull<TyckInfo>]> = unsafe { Box::reclaim(*exceptions) };
+                drop(boxed);
+            },
+            _ => {}
         }
     }
 }
@@ -44,16 +72,39 @@ impl Hash for TyckInfo {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             TyckInfo::AnyType => {
-                0.hash(state)
+                discriminant(self).hash(state);
             },
             TyckInfo::Plain(plain_type_id) => {
+                discriminant(self).hash(state);
                 plain_type_id.hash(state);
             },
+            TyckInfo::Nullable(underlying) => {
+                discriminant(self).hash(state);
+                underlying.as_ptr().hash(state);
+            },
             TyckInfo::Container(ContainerTyckInfo { type_id, params }) => {
+                discriminant(self).hash(state);
                 type_id.hash(state);
                 let params: &[NonNull<TyckInfo>] = unsafe { params.as_ref() };
                 for param /*: &NonNull<TyckInfo>*/ in params.iter() {
                     state.write_usize(param.as_ptr() as usize);
+                }
+            },
+            TyckInfo::Function(FunctionTyckInfo { params, rets, exceptions }) => {
+                discriminant(self).hash(state);
+                let params: &[NonNull<TyckInfo>] = unsafe { params.as_ref() };
+                for param /*: &NonNull<TyckInfo>*/ in params.iter() {
+                    state.write_usize(param.as_ptr() as usize);
+                }
+
+                let rets: &[NonNull<TyckInfo>] = unsafe { rets.as_ref() };
+                for ret /*: &NonNull<TyckInfo>*/ in rets.iter() {
+                    state.write_usize(ret.as_ptr() as usize);
+                }
+
+                let exceptions: &[NonNull<TyckInfo>] = unsafe { exceptions.as_ref() };
+                for exception /*: &NonNull<TyckInfo>*/ in exceptions.iter() {
+                    state.write_usize(exception.as_ptr() as usize);
                 }
             }
         }
@@ -73,6 +124,13 @@ impl PartialEq for TyckInfo {
                     false
                 }
             },
+            TyckInfo::Nullable(underlying) => {
+                if let TyckInfo::Nullable(other_underlying) = other {
+                    underlying.as_ptr() == other_underlying.as_ptr()
+                } else {
+                    false
+                }
+            },
             TyckInfo::Container(ContainerTyckInfo { type_id, params }) => {
                 let self_params: &[NonNull<TyckInfo>] = unsafe { params.as_ref() };
                 if let TyckInfo::Container(other_container_tyck_info) = other {
@@ -88,6 +146,39 @@ impl PartialEq for TyckInfo {
                 } else {
                     false
                 }
+            },
+            TyckInfo::Function(FunctionTyckInfo { params, rets, exceptions }) => {
+                let self_params: &[NonNull<TyckInfo>] = unsafe { params.as_ref() };
+                let self_rets: &[NonNull<TyckInfo>] = unsafe { rets.as_ref() };
+                let self_exceptions: &[NonNull<TyckInfo>] = unsafe { exceptions.as_ref() };
+                if let TyckInfo::Function(other_function_tyck_info) = other {
+                    let other_params: &[NonNull<TyckInfo>] = unsafe {
+                        other_function_tyck_info.params.as_ref()
+                    };
+                    let other_rets: &[NonNull<TyckInfo>] = unsafe {
+                        other_function_tyck_info.rets.as_ref()
+                    };
+                    let other_exceptions: &[NonNull<TyckInfo>] = unsafe {
+                        other_function_tyck_info.exceptions.as_ref()
+                    };
+                    self_params.iter().zip(other_params.iter()).all(
+                        |(p1, p2): (&NonNull<TyckInfo>, &NonNull<TyckInfo>)| {
+                            p1.as_ptr() == p2.as_ptr()
+                        }
+                    )
+                    && self_rets.iter().zip(other_rets.iter()).all(
+                        |(r1, r2): (&NonNull<TyckInfo>, &NonNull<TyckInfo>)| {
+                            r1.as_ptr() == r2.as_ptr()
+                        }
+                    )
+                    && self_exceptions.iter().zip(other_exceptions.iter()).all(
+                        |(e1, e2): (&NonNull<TyckInfo>, &NonNull<TyckInfo>)| {
+                            e1.as_ptr() == e2.as_ptr()
+                        }
+                    )
+                } else {
+                    false
+                }
             }
         }
     }
@@ -97,26 +188,57 @@ impl Eq for TyckInfo {}
 
 pub struct TyckInfoPool {
     pool: HashSet<Korobka<TyckInfo>>,
-    any_type: NonNull<TyckInfo>
+    any_type: NonNull<TyckInfo>,
+    object_type: NonNull<TyckInfo>,
+    string_type: NonNull<TyckInfo>
 }
 
 impl TyckInfoPool {
     pub fn new() -> Self {
         let mut pool: HashSet<Korobka<TyckInfo>> = HashSet::new();
-        pool.insert(Korobka::new(TyckInfo::Plain(TypeId::of::<String>())));
-        pool.insert(Korobka::new(TyckInfo::AnyType));
 
+        pool.insert(Korobka::new(TyckInfo::AnyType));
         let any_type: NonNull<TyckInfo> = pool.get(&TyckInfo::AnyType).unwrap().as_nonnull();
 
-        Self { pool, any_type }
+        let mut ret = Self {
+            pool,
+            any_type,
+            object_type: NonNull::dangling(),
+            string_type: NonNull::dangling()
+        };
+
+        ret.object_type = ret.create_plain_type(TypeId::of::<Object>());
+        ret.string_type = ret.create_plain_type(TypeId::of::<String>());
+
+        ret
     }
 
-    pub fn create_any_type(&mut self) -> NonNull<TyckInfo> {
+    pub fn get_any_type(&self) -> NonNull<TyckInfo> {
         self.any_type
+    }
+
+    pub fn get_object_type(&self) -> NonNull<TyckInfo> {
+        self.object_type
+    }
+
+    pub fn get_string_type(&self) -> NonNull<TyckInfo> {
+        self.string_type
     }
 
     pub fn create_plain_type(&mut self, type_id: TypeId) -> NonNull<TyckInfo> {
         let tyck_info: TyckInfo = TyckInfo::Plain(type_id);
+        if let Some(tyck_info /*: &Korobka<TyckInfo>*/) = self.pool.get(&tyck_info) {
+            tyck_info.as_nonnull()
+        } else {
+            let tyck_info: Korobka<TyckInfo> = Korobka::new(tyck_info);
+            let ret: NonNull<TyckInfo> = tyck_info.as_nonnull();
+            self.pool.insert(tyck_info);
+            ret
+        }
+    }
+
+    pub fn create_nullable_type(&mut self, base: NonNull<TyckInfo>) -> NonNull<TyckInfo> {
+        let tyck_info: TyckInfo = TyckInfo::Nullable(base);
         if let Some(tyck_info /*: &Korobka<TyckInfo>*/) = self.pool.get(&tyck_info) {
             tyck_info.as_nonnull()
         } else {
@@ -154,6 +276,38 @@ impl TyckInfoPool {
         forget(query_tyck_info);
         ret
     }
+
+    pub fn create_function_type(
+        &mut self,
+        params: &[NonNull<TyckInfo>],
+        rets: &[NonNull<TyckInfo>],
+        exceptions: &[NonNull<TyckInfo>]
+    ) -> NonNull<TyckInfo> {
+        let query_tyck_info: TyckInfo = TyckInfo::Function(FunctionTyckInfo {
+            params: unsafe { NonNull::new_unchecked(params as *const _ as *mut _) },
+            rets: unsafe { NonNull::new_unchecked(rets as *const _ as *mut _) },
+            exceptions: unsafe { NonNull::new_unchecked(exceptions as *const _ as *mut _) }
+        });
+
+        let ret: NonNull<TyckInfo> =
+            if let Some(tyck_info /*: &Korobka<TyckInfo>*/) = self.pool.get(&query_tyck_info) {
+                tyck_info.as_nonnull()
+            } else {
+                let tyck_info: TyckInfo = TyckInfo::Function(FunctionTyckInfo {
+                    params: Vec::from(params).into_slice_ptr(),
+                    rets: Vec::from(rets).into_slice_ptr(),
+                    exceptions: Vec::from(exceptions).into_slice_ptr()
+                });
+                let tyck_info: Korobka<TyckInfo> = Korobka::new(tyck_info);
+                let ret: NonNull<TyckInfo> = tyck_info.as_nonnull();
+                self.pool.insert(tyck_info);
+                ret
+            };
+
+        forget(query_tyck_info);
+        ret
+    }
+
 }
 
 #[cfg(test)]
