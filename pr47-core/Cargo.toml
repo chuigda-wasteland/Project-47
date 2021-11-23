@@ -38,8 +38,19 @@ tokio = { version = "1", features = ["rt-multi-thread", "fs"] }
 variant_count = "1"
 
 [features]
-default = ["async-avoid-block", "async-tokio", "compiler", "compiler-pretty-diag", "optimized-rtlc", "std47"]
+default = [
+    "al31f",
+    "al31f-builtin-ops",
+    "async-avoid-block",
+    "async-tokio",
+    "compiler",
+    "compiler-pretty-diag",
+    "optimized-rtlc",
+    "std47"
+]
 
+al31f = []
+al31f-builtin-ops = []
 async = ["futures"]
 async-astd = ["async", "async-std", "xjbutil/async-astd"]
 async-avoid-block = []
@@ -47,6 +58,7 @@ async-tokio = ["async", "tokio", "xjbutil/async-tokio"]
 bench = []
 compiler = ["phf"]
 compiler-pretty-diag = ["unicode-width"]
+d30f6 = []
 huge-align = []
 no-rtlc = []
 optimized-rtlc = []

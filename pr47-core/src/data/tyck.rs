@@ -15,6 +15,7 @@ pub struct ContainerTyckInfo {
 }
 
 pub enum TyckInfo {
+    AnyType,
     Plain(TypeId),
     Container(ContainerTyckInfo)
 }
@@ -42,6 +43,9 @@ impl Drop for TyckInfo {
 impl Hash for TyckInfo {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
+            TyckInfo::AnyType => {
+                0.hash(state)
+            },
             TyckInfo::Plain(plain_type_id) => {
                 plain_type_id.hash(state);
             },
@@ -59,6 +63,9 @@ impl Hash for TyckInfo {
 impl PartialEq for TyckInfo {
     fn eq(&self, other: &Self) -> bool {
         match self {
+            TyckInfo::AnyType => {
+                if let TyckInfo::AnyType = other { true } else { false }
+            },
             TyckInfo::Plain(plain_type_id) => {
                 if let TyckInfo::Plain(other_plain_type_id) = other {
                     plain_type_id == other_plain_type_id
@@ -89,15 +96,23 @@ impl PartialEq for TyckInfo {
 impl Eq for TyckInfo {}
 
 pub struct TyckInfoPool {
-    pool: HashSet<Korobka<TyckInfo>>
+    pool: HashSet<Korobka<TyckInfo>>,
+    any_type: NonNull<TyckInfo>
 }
 
 impl TyckInfoPool {
     pub fn new() -> Self {
         let mut pool: HashSet<Korobka<TyckInfo>> = HashSet::new();
         pool.insert(Korobka::new(TyckInfo::Plain(TypeId::of::<String>())));
+        pool.insert(Korobka::new(TyckInfo::AnyType));
 
-        Self { pool }
+        let any_type: NonNull<TyckInfo> = pool.get(&TyckInfo::AnyType).unwrap().as_nonnull();
+
+        Self { pool, any_type }
+    }
+
+    pub fn create_any_type(&mut self) -> NonNull<TyckInfo> {
+        self.any_type
     }
 
     pub fn create_plain_type(&mut self, type_id: TypeId) -> NonNull<TyckInfo> {

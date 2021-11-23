@@ -430,10 +430,10 @@ pub enum Insc {
     Return(Box<[usize]>),
 
     /// `FFI-CALL-RTLC [FFI-FUNC-ID] [ARGS..] [RETS..]`
-    #[cfg(feature = "optimized-rtlc")]
     FFICallRtlc(usize, Box<[usize]>, Box<[usize]>),
 
     /// `FFI-CALL [FFI-FUNC-ID] [ARGS..] [RETS..]`
+    #[cfg(feature = "optimized-rtlc")]
     FFICall(usize, Box<[usize]>, Box<[usize]>),
 
     /// `FFI-CALL-ASYNC [FUNC-ID] [ARGS..] [RET]`
@@ -457,35 +457,29 @@ pub enum Insc {
     JumpIfFalse(usize, usize),
     Jump(usize),
 
-    CreateString(usize),
-    CreateObject(usize),
     CreateContainer(GenericTypeCtor, NonNull<GenericTypeVT>, usize),
 
-    VecIndex(usize, usize, usize),
-    VecIndexPut(usize, usize, usize),
-    VecInsert(usize, usize, usize),
-    VecRemove(usize, usize, usize),
-    VecLen(usize),
-    VecClear(usize),
+    #[cfg(feature = "al31f-builtin-ops")] CreateString(usize),
+    #[cfg(feature = "al31f-builtin-ops")] CreateObject(usize),
 
-    DenseVecIndex(usize, usize, usize),
-    DenseVecIndexPut(usize, usize, usize),
-    DenseVecInsert(usize, usize, usize),
-    DenseVecRemove(usize, usize, usize),
-    DenseVecLen(usize),
-    DenseVecClear(usize),
+    #[cfg(feature = "al31f-builtin-ops")] VecIndex(usize, usize, usize),
+    #[cfg(feature = "al31f-builtin-ops")] VecIndexPut(usize, usize, usize),
+    #[cfg(feature = "al31f-builtin-ops")] VecInsert(usize, usize, usize),
+    #[cfg(feature = "al31f-builtin-ops")] VecRemove(usize, usize, usize),
+    #[cfg(feature = "al31f-builtin-ops")] VecLen(usize),
+    #[cfg(feature = "al31f-builtin-ops")] VecClear(usize),
 
-    StrConcat(usize, usize, usize),
-    StrFormat(usize, Box<[usize]>, usize),
-    StrLen(usize, usize),
-    StrSlice(usize, usize, usize, usize),
-    StrEquals(usize, usize),
+    #[cfg(feature = "al31f-builtin-ops")] StrConcat(usize, usize, usize),
+    #[cfg(feature = "al31f-builtin-ops")] StrFormat(usize, Box<[usize]>, usize),
+    #[cfg(feature = "al31f-builtin-ops")] StrLen(usize, usize),
+    #[cfg(feature = "al31f-builtin-ops")] StrSlice(usize, usize, usize, usize),
+    #[cfg(feature = "al31f-builtin-ops")] StrEquals(usize, usize),
 
-    ObjectGet(usize, NonNull<str>, usize),
-    ObjectGetDyn(usize, usize, usize),
+    #[cfg(feature = "al31f-builtin-ops")] ObjectGet(usize, NonNull<str>, usize),
+    #[cfg(feature = "al31f-builtin-ops")] ObjectGetDyn(usize, usize, usize),
 
-    ObjectPut(usize, NonNull<str>, usize),
-    ObjectPutDyn(usize, usize, usize)
+    #[cfg(feature = "al31f-builtin-ops")] ObjectPut(usize, NonNull<str>, usize),
+    #[cfg(feature = "al31f-builtin-ops")] ObjectPutDyn(usize, usize, usize)
 }
 
 impl Insc {

@@ -8,7 +8,7 @@ use crate::data::wrapper::Wrapper;
 #[cfg(debug_assertions)] use std::any::TypeId;
 
 pub trait GenericTypeRef {
-    fn create_ref(wrapper_ptr: *mut Wrapper<()>) -> Self;
+    unsafe fn create_ref(wrapper_ptr: *mut Wrapper<()>) -> Self;
 }
 
 pub const GENERIC_TYPE_MASK: u8 = 0b00000_010;

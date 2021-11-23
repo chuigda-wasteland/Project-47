@@ -18,6 +18,12 @@ pub mod vm;
 #[cfg(feature = "compiler")] pub mod sema;
 #[cfg(feature = "std47")]    pub mod std47;
 
+#[cfg(all(feature = "al31f-builtin-ops", not(feature = "al31f")))]
+compile_error!("using `al31f-builtin-ops` without `al31f` is meaningless");
+
+#[cfg(all(feature = "async-avoid-block", not(feature = "async")))]
+compile_error!("using `async-avoid-block` without `async` is meaningless");
+
 #[cfg(all(feature = "compiler-pretty-diag", not(feature = "compiler")))]
 compile_error!("using `compiler-pretty-diag` without `compiler` is meaningless");
 

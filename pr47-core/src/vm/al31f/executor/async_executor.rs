@@ -530,7 +530,6 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     return Poll::Ready(Ok(ret_vec));
                 }
             },
-            #[cfg(feature = "optimized-rtlc")]
             Insc::FFICallRtlc(ffi_func_id, args, ret_value_locs) => {
                 let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
                     = &program.ffi_funcs[*ffi_func_id];
@@ -575,6 +574,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     }
                 }
             },
+            #[cfg(feature = "optimized-rtlc")]
             Insc::FFICall(ffi_func_id, args, ret_value_locs) => {
                 let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
                     = &program.ffi_funcs[*ffi_func_id];
@@ -714,37 +714,39 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             Insc::Jump(dest) => {
                 insc_ptr = *dest;
             },
+            Insc::CreateContainer(ctor, vt, dest) => {
+                let container: Value = Value::new_container(ctor(), vt.as_ref());
+                get_vm!(thread).alloc.add_managed(container.ptr_repr);
+                slice.set_value(*dest, container);
+            },
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::CreateString(dest) => {
                 let string: String = String::new();
                 let string: Value = Value::new_owned(string);
                 get_vm!(thread).alloc.add_managed(string.ptr_repr);
                 slice.set_value(*dest, string);
             },
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::CreateObject(dest) => {
                 let object: Object = Object::new();
                 let object: Value = Value::new_owned(object);
                 get_vm!(thread).alloc.add_managed(object.ptr_repr);
                 slice.set_value(*dest, object);
             },
-            Insc::CreateContainer(ctor, vt, dest) => {
-                let container: Value = Value::new_container(ctor(), vt.as_ref());
-                get_vm!(thread).alloc.add_managed(container.ptr_repr);
-                slice.set_value(*dest, container);
-            },
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecIndex(_, _, _) => {}
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecIndexPut(_, _, _) => {}
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecInsert(_, _, _) => {}
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecRemove(_, _, _) => {}
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecLen(_) => {}
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecClear(_) => {}
 
-            Insc::DenseVecIndex(_, _, _) => {}
-            Insc::DenseVecIndexPut(_, _, _) => {}
-            Insc::DenseVecInsert(_, _, _) => {}
-            Insc::DenseVecRemove(_, _, _) => {}
-            Insc::DenseVecLen(_) => {}
-            Insc::DenseVecClear(_) => {}
-
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::StrConcat(src1, src2, dest) => {
                 let src1: &String = &*(slice.get_value(*src1).get_as_mut_ptr_norm() as *const _);
                 let src2: &String = &*(slice.get_value(*src2).get_as_mut_ptr_norm() as *const _);
@@ -755,22 +757,29 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 get_vm!(thread).alloc.add_managed(dest_value.ptr_repr);
                 slice.set_value(*dest, dest_value);
             },
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::StrFormat(_, _, _) => {}
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::StrLen(_, _) => {}
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::StrSlice(_, _, _, _) => {}
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::StrEquals(_, _) => {}
 
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::ObjectGet(src, field, dest) => {
                 let object: &Object = &*(slice.get_value(*src).get_as_mut_ptr_norm() as *const _);
                 let value: Value = *object.fields.get(field.as_ref()).unwrap_or(&Value::new_null());
                 slice.set_value(*dest, value);
             },
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::ObjectGetDyn(src, field, dest) => {
                 let object: &Object = &*(slice.get_value(*src).get_as_mut_ptr_norm() as *const _);
                 let field: &String = &*(slice.get_value(*field).get_as_mut_ptr_norm() as *const _);
                 let value: Value = *object.fields.get(field).unwrap_or(&Value::new_null());
                 slice.set_value(*dest, value);
             },
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::ObjectPut(src, field, data) => {
                 let object: &mut Object = &mut *(slice.get_value(*src).get_as_mut_ptr_norm());
                 let data: Value = slice.get_value(*data);
@@ -779,6 +788,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 }
                 object.fields.insert(field.as_ref().to_string(), data);
             },
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::ObjectPutDyn(src, field, data) => {
                 let object: &mut Object = &mut *(slice.get_value(*src).get_as_mut_ptr_norm());
                 let field: &String = &*(slice.get_value(*field).get_as_mut_ptr_norm() as *const _);
