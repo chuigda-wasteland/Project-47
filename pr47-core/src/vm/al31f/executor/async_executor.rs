@@ -243,6 +243,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
         if !S {
             insc_counter += 1;
             if insc_counter % 1_000_000 == 0 {
+                this.insc_ptr = insc_ptr;
                 cx.waker().wake_by_ref();
                 return Poll::Pending;
             }
