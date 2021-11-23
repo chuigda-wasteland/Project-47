@@ -4,8 +4,9 @@ pub mod executor;
 pub mod insc;
 pub mod stack;
 
-#[cfg(test)] pub mod test;
-#[cfg(any(test, feature = "bench"))] pub mod test_program;
+#[cfg(all(test, feature = "async"))]      pub mod test_async;
+#[cfg(all(test, not(feature = "async")))] pub mod test_sync;
+#[cfg(any(test, feature = "bench"))]      pub mod test_program;
 
 use std::ptr::NonNull;
 

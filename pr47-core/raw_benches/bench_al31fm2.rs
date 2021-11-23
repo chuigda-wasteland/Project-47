@@ -1,6 +1,7 @@
 use std::env;
 
 use xjbutil::async_utils::block_on_future;
+use xjbutil::std_ext::ExpectSilentExt;
 use xjbutil::unchecked::UncheckedSendSync;
 
 use pr47::data::Value;
@@ -22,9 +23,15 @@ async fn run_program(program: CompiledProgram<DefaultAlloc>, args: Vec<Value>) {
         let mut vm_thread: Box<VMThread<DefaultAlloc>> =
             create_vm_main_thread(alloc, &program).await;
 
+        let start_time = std::time::Instant::now();
         let result: Result<Vec<Value>, Exception> = unsafe {
-            vm_thread_run_function(UncheckedSendSync::new((&mut vm_thread, 0, &args))).await
+            vm_thread_run_function::<DefaultAlloc, false>(
+                UncheckedSendSync::new((&mut vm_thread, 0, &args))
+            ).expect_silent("holy shit").await
         };
+        let end_time = std::time::Instant::now();
+        eprintln!("elapsed time = {}", (end_time - start_time).as_millis());
+
         if let Err(_) = result {
             panic!("");
         }

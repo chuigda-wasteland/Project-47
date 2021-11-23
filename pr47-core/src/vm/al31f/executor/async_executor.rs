@@ -1,10 +1,12 @@
 use std::any::TypeId;
 use std::future::Future;
+use std::pin::Pin;
 use std::ptr::NonNull;
+use std::task::{Context, Poll};
 
 use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::either::Either;
-use xjbutil::unchecked::{UncheckedSendFut, UncheckedSendSync};
+use xjbutil::unchecked::UncheckedSendSync;
 use xjbutil::wide_ptr::WidePointer;
 
 use crate::builtins::object::Object;
@@ -47,12 +49,14 @@ use crate::vm::al31f::executor::checked_unary_ops::{
 use crate::vm::al31f::insc::Insc;
 use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
 
+#[cfg(feature = "async")] use std::hint::unreachable_unchecked;
+#[cfg(feature = "async")] use std::mem::transmute;
+#[cfg(feature = "async")] use futures::FutureExt;
 #[cfg(feature = "async")] use crate::data::wrapper::{Wrapper, OwnershipInfo};
 #[cfg(feature = "async")] use crate::ffi::async_fn::{AsyncReturnType, Promise};
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
 #[cfg(feature = "async")] use crate::util::serializer::CoroutineContext;
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
-#[cfg(feature = "bench")] use xjbutil::defer;
 
 include!("get_vm_makro.rs");
 include!("impl_makro.rs");
@@ -148,45 +152,113 @@ unsafe fn checked_exception_unwind_stack<A: Alloc>(
     Err(exception)
 }
 
-async unsafe fn vm_thread_run_function_impl<A: Alloc>(
-    thread: &mut VMThread<A>,
-    func_id: usize,
-    args: &[Value]
-) -> Result<Vec<Value>, Exception> {
-    #[cfg(feature = "bench")] let start_time: std::time::Instant = std::time::Instant::now();
-    #[cfg(feature = "bench")] defer!(move || {
-        let end_time: std::time::Instant = std::time::Instant::now();
-        eprintln!("Time consumed: {}ms", (end_time - start_time).as_millis());
-    });
+pub struct VMThreadRunFunctionFut<'a, A: Alloc, const S: bool> {
+    thread: &'a mut VMThread<A>,
+    slice: StackSlice,
+    insc_ptr: usize,
 
-    get_vm!(thread).alloc.set_gc_allowed(true);
+    #[cfg(feature = "async")]
+    awaiting_promise: Option<Pin<Box<dyn Future<Output = AsyncReturnType>>>>,
 
-    let program: &CompiledProgram<A> = thread.program.as_ref();
-    let compiled_function: &CompiledFunction = &program.functions[func_id];
-    if compiled_function.arg_count != args.len() {
-        let exception: UncheckedException = UncheckedException::ArgCountMismatch {
-            func_id, expected: compiled_function.arg_count, got: args.len()
-        };
-        return Err(Exception::unchecked_exc(exception));
+    #[cfg(feature = "async")]
+    ret_values_resolver: Option<fn(&mut A, &[Value])>
+}
+
+unsafe impl<'a, A: Alloc, const S: bool> Send for VMThreadRunFunctionFut<'a, A, S> {}
+unsafe impl<'a, A: Alloc, const S: bool> Sync for VMThreadRunFunctionFut<'a, A, S> {}
+
+unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
+    this: &mut VMThreadRunFunctionFut<'a, A, S>,
+    #[cfg(feature = "async")] cx: &mut Context<'_>,
+    #[cfg(not(feature = "async"))] _cx: &mut Context<'_>
+) -> Poll<<VMThreadRunFunctionFut<'a, A, S> as Future>::Output> {
+    #[cfg(feature = "async")]
+    if let Some(awaiting_promise) = &mut this.awaiting_promise {
+        if let Poll::Ready(promise_result) = awaiting_promise.poll_unpin(cx) {
+            this.awaiting_promise = None;
+
+            let AsyncReturnType(result) = promise_result;
+            match result {
+                Ok(values) => {
+                    if let Some(ret_values_resolver) = this.ret_values_resolver.take() {
+                        ret_values_resolver(
+                            &mut this.thread.vm.get_shared_data_mut().alloc,
+                            &values
+                        );
+                    }
+
+                    let insc: &Insc = &this.thread.program.as_ref().code[this.insc_ptr - 1];
+                    let dests: &Box<[usize]> = if let Insc::Await(_, dests) = insc {
+                        dests
+                    } else {
+                        unreachable_unchecked()
+                    };
+
+                    debug_assert_eq!(values.len(), dests.len());
+                    for i in 0..dests.len() {
+                        let dest: usize = *dests.get_unchecked(i);
+                        this.slice.set_value(dest, *values.get_unchecked(i));
+                    }
+                },
+                Err(e) => {
+                    match e {
+                        Either::Left(checked) => {
+                            let (new_slice, insc_ptr_next): (StackSlice, usize) =
+                                checked_exception_unwind_stack(
+                                    get_vm!(this.thread),
+                                    this.thread.program.as_ref(),
+                                    checked,
+                                    &mut this.thread.stack,
+                                    this.insc_ptr
+                                )?;
+                            this.slice = new_slice;
+                            this.insc_ptr = insc_ptr_next;
+                        },
+                        Either::Right(unchecked) => {
+                            return Poll::Ready(Err(unchecked_exception_unwind_stack(
+                                unchecked, &mut this.thread.stack, this.insc_ptr
+                            )));
+                        }
+                    }
+                }
+            }
+        } else {
+            return Poll::Pending;
+        }
     }
 
-    let mut slice: StackSlice =
-        thread.stack.ext_func_call_grow_stack(func_id, compiled_function.stack_size, args);
-    let mut insc_ptr: usize = compiled_function.start_addr;
-
+    let slice: &mut StackSlice = &mut this.slice;
+    let thread: &mut VMThread<A> = &mut this.thread;
+    let program: &CompiledProgram<A> = thread.program.as_ref();
     let mut ffi_args: [Value; 32] = [Value::new_null(); 32];
     let mut ffi_rets: [*mut Value; 8] = [std::ptr::null_mut(); 8];
 
+    #[cfg(feature = "async-avoid-block")]
+    #[allow(unused)]
+    let mut insc_counter: u64 = 0;
+
+    let mut insc_ptr: usize = this.insc_ptr;
     loop {
+        #[cfg(feature = "async-avoid-block")]
+        if !S {
+            insc_counter += 1;
+            if insc_counter % 1_000_000 == 0 {
+                cx.waker().wake_by_ref();
+                return Poll::Pending;
+            }
+        }
+
         #[cfg(not(debug_assertions))]
         let insc: &Insc = program.code.get_unchecked(insc_ptr);
         #[cfg(debug_assertions)]
         let insc: &Insc = &program.code[insc_ptr];
-
         insc_ptr += 1;
+
         match insc {
-            Insc::AddInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, wrapping_add],
-            Insc::AddFloat(src1, src2, dst) => impl_float_binop![slice, src1, src2, dst, +],
+            Insc::AddInt(src1, src2, dst) =>
+                impl_int_binop![slice, src1, src2, dst, wrapping_add],
+            Insc::AddFloat(src1, src2, dst) =>
+                impl_float_binop![slice, src1, src2, dst, +],
             Insc::AddAny(src1, src2, dst) =>
                 impl_checked_op2![slice, src1, src2, dst, checked_add, thread, insc_ptr],
             Insc::IncrInt(pos) => {
@@ -211,9 +283,9 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 if let Some(result) = i64::checked_div(src1, src2) {
                     slice.set_value(*dst, Value::new_int(result))
                 } else {
-                    return Err(unchecked_exception_unwind_stack(
+                    return Poll::Ready(Err(unchecked_exception_unwind_stack(
                         UncheckedException::DivideByZero, &mut thread.stack, insc_ptr
-                    ))
+                    )));
                 }
             },
             Insc::DivFloat(src1, src2, dst) => impl_float_binop![slice, src1, src2, dst, /],
@@ -225,9 +297,9 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 if let Some(result) = i64::checked_rem(src1, src2) {
                     slice.set_value(*dst, Value::new_int(result))
                 } else {
-                    return Err(unchecked_exception_unwind_stack(
+                    return Poll::Ready(Err(unchecked_exception_unwind_stack(
                         UncheckedException::DivideByZero, &mut thread.stack, insc_ptr
-                    ))
+                    )));
                 }
             },
             Insc::ModAny(src1, src2, dst) =>
@@ -377,11 +449,11 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
             Insc::NullCheck(src) => {
                 let src: Value = slice.get_value(*src);
                 if src.is_null() {
-                    return Err(unchecked_exception_unwind_stack(
+                    return Poll::Ready(Err(unchecked_exception_unwind_stack(
                         UncheckedException::UnexpectedNull { value: src },
                         &mut thread.stack,
                         insc_ptr
-                    ))
+                    )));
                 }
             },
             Insc::TypeCheck(src, _tyck_info) => {
@@ -390,12 +462,12 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
             },
             Insc::Call(func_id, args, rets) => {
                 #[cfg(not(debug_assertions))]
-                let compiled: &CompiledFunction = program.functions.get_unchecked(*func_id);
+                    let compiled: &CompiledFunction = program.functions.get_unchecked(*func_id);
                 #[cfg(debug_assertions)]
-                let compiled: &CompiledFunction = &program.functions[*func_id];
+                    let compiled: &CompiledFunction = &program.functions[*func_id];
 
                 debug_assert_eq!(compiled.arg_count, args.len());
-                slice = thread.stack.func_call_grow_stack(
+                *slice = thread.stack.func_call_grow_stack(
                     *func_id,
                     compiled.stack_size,
                     args,
@@ -408,12 +480,12 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                 let func_id: usize = slice.get_value(*func_id_loc).vt_data.inner.int_value as usize;
 
                 #[cfg(not(debug_assertions))]
-                let compiled: &CompiledFunction = program.functions.get_unchecked(func_id);
+                    let compiled: &CompiledFunction = program.functions.get_unchecked(func_id);
                 #[cfg(debug_assertions)]
-                let compiled: &CompiledFunction = &program.functions[func_id];
+                    let compiled: &CompiledFunction = &program.functions[func_id];
 
                 debug_assert_eq!(compiled.arg_count, args.len());
-                slice = thread.stack.func_call_grow_stack(
+                *slice = thread.stack.func_call_grow_stack(
                     func_id,
                     compiled.stack_size,
                     args,
@@ -428,9 +500,9 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                     thread.stack.done_func_call_shrink_stack0()
                 {
                     insc_ptr = ret_addr;
-                    slice = prev_stack_slice;
+                    *slice = prev_stack_slice;
                 } else {
-                    return Ok(vec![]);
+                    return Poll::Ready(Ok(vec![]));
                 }
             },
             Insc::ReturnOne(ret_value) => {
@@ -438,9 +510,9 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                     thread.stack.done_func_call_shrink_stack1(*ret_value)
                 {
                     insc_ptr = ret_addr;
-                    slice = prev_stack_slice;
+                    *slice = prev_stack_slice;
                 } else {
-                    return Ok(vec![slice.get_value(*ret_value)]);
+                    return Poll::Ready(Ok(vec![slice.get_value(*ret_value)]));
                 }
             },
             Insc::Return(ret_values) => {
@@ -448,13 +520,13 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                     thread.stack.done_func_call_shrink_stack(&ret_values)
                 {
                     insc_ptr = ret_addr;
-                    slice = prev_stack_slice;
+                    *slice = prev_stack_slice;
                 } else {
                     let mut ret_vec: Vec<Value> = Vec::with_capacity(ret_values.len());
                     for ret_value_loc in ret_values.iter() {
                         ret_vec.push(slice.get_value(*ret_value_loc));
                     }
-                    return Ok(ret_vec);
+                    return Poll::Ready(Ok(ret_vec));
                 }
             },
             #[cfg(feature = "optimized-rtlc")]
@@ -491,13 +563,13 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                                     &mut thread.stack,
                                     insc_ptr
                                 )?;
-                            slice = new_slice;
+                            *slice = new_slice;
                             insc_ptr = insc_ptr_next;
                         },
                         Either::Right(unchecked) => {
-                            return Err(unchecked_exception_unwind_stack(
+                            return Poll::Ready(Err(unchecked_exception_unwind_stack(
                                 unchecked, &mut thread.stack, insc_ptr
-                            ));
+                            )));
                         }
                     }
                 }
@@ -535,20 +607,20 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                                     &mut thread.stack,
                                     insc_ptr
                                 )?;
-                            slice = new_slice;
+                            *slice = new_slice;
                             insc_ptr = insc_ptr_next;
                         },
                         Either::Right(unchecked) => {
-                            return Err(unchecked_exception_unwind_stack(
+                            return Poll::Ready(Err(unchecked_exception_unwind_stack(
                                 unchecked, &mut thread.stack, insc_ptr
-                            ));
+                            )));
                         }
                     }
                 }
             },
             #[cfg(all(feature = "optimized-rtlc", feature = "async"))]
             Insc::FFICallAsync(async_ffi_func_id, args, ret) => {
-                let async_ffi_function: &Box<dyn FFIAsyncFunction<AsyncCombustor<A>>>
+                let async_ffi_function: &Box<dyn FFIAsyncFunction<A, AsyncCombustor<A>>>
                     = &program.async_ffi_funcs[*async_ffi_func_id];
 
                 let args_len: usize = args.len();
@@ -577,64 +649,40 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                                         &mut thread.stack,
                                         insc_ptr
                                     )?;
-                                slice = new_slice;
+                                *slice = new_slice;
                                 insc_ptr = insc_ptr_next;
                             },
                             Either::Right(unchecked) => {
-                                return Err(unchecked_exception_unwind_stack(
+                                return Poll::Ready(Err(unchecked_exception_unwind_stack(
                                     unchecked, &mut thread.stack, insc_ptr
-                                ));
+                                )));
                             }
                         }
                     }
                 }
             },
             #[cfg(feature = "async")]
-            Insc::Await(promise, dests) => {
+            Insc::Await(promise, _) => {
                 let promise: Value = slice.get_value(*promise);
                 let wrapper: *mut Wrapper<()> = promise.ptr_repr.ptr as *mut Wrapper<()>;
                 if (*wrapper).ownership_info == OwnershipInfo::MovedToRust as u8 {
-                    return Err(unchecked_exception_unwind_stack(
+                    return Poll::Ready(Err(unchecked_exception_unwind_stack(
                         UncheckedException::AlreadyAwaited { promise },
                         &mut thread.stack,
                         insc_ptr
-                    ));
+                    )));
                 }
 
-                let promise: Promise = promise.move_out::<Promise>();
+                let promise: Promise<A> = promise.move_out::<Promise<A>>();
                 (*wrapper).ownership_info = OwnershipInfo::MovedToRust as u8;
 
-                let AsyncReturnType(result) = thread.vm.co_await(promise).await;
-                match result {
-                    Ok(values) => {
-                        debug_assert_eq!(values.len(), dests.len());
-                        for i in 0..dests.len() {
-                            let dest: usize = *dests.get_unchecked(i);
-                            slice.set_value(dest, *values.get_unchecked(i));
-                        }
-                    },
-                    Err(e) => {
-                        match e {
-                            Either::Left(checked) => {
-                                let (new_slice, insc_ptr_next): (StackSlice, usize) =
-                                    checked_exception_unwind_stack(
-                                        get_vm!(thread),
-                                        &program,
-                                        checked,
-                                        &mut thread.stack,
-                                        insc_ptr
-                                    )?;
-                                slice = new_slice;
-                                insc_ptr = insc_ptr_next;
-                            },
-                            Either::Right(unchecked) => {
-                                return Err(unchecked_exception_unwind_stack(
-                                    unchecked, &mut thread.stack, insc_ptr
-                                ));
-                            }
-                        }
-                    }
-                }
+                this.insc_ptr = insc_ptr;
+
+                let thread: &'static VMThread<A> = transmute::<_, _>(thread);
+                this.ret_values_resolver = promise.ret_values_resolver;
+                this.awaiting_promise = Some(Box::pin(thread.vm.co_await(promise)));
+                cx.waker().wake_by_ref();
+                return Poll::Pending;
             },
             Insc::Raise(exception_ptr) => {
                 let exception: Value = slice.get_value(*exception_ptr);
@@ -646,7 +694,7 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
                         &mut thread.stack,
                         insc_ptr
                     )?;
-                slice = new_slice;
+                *slice = new_slice;
                 insc_ptr = insc_ptr_next;
                 continue;
             },
@@ -737,15 +785,40 @@ async unsafe fn vm_thread_run_function_impl<A: Alloc>(
     }
 }
 
-pub unsafe fn vm_thread_run_function<'a, A: Alloc>(
-    arg_pack: UncheckedSendSync<(&'a mut VMThread<A>, usize, &'a [Value])>
-) -> impl Future<Output=Result<Vec<Value>, Exception>> + Send + Unpin + 'a {
-    let (thread, func_id, args): (&mut VMThread<A>, usize, &[Value]) = arg_pack.into_inner();
-    UncheckedSendFut::new(async move {
-        let ret = vm_thread_run_function_impl(thread, func_id, args).await;
-        #[cfg(feature = "async")]
-        thread.vm.finish().await;
-        get_vm!(thread).alloc.set_gc_allowed(false);
-        ret
+impl<'a, A: Alloc, const S: bool> Future for VMThreadRunFunctionFut<'a, A, S> {
+    type Output = Result<Vec<Value>, Exception>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        unsafe { poll_unsafe(Pin::into_inner(self), cx) }
+    }
+}
+
+pub unsafe fn vm_thread_run_function<'a, A: Alloc, const S: bool>(
+    arg_pack: UncheckedSendSync<(&'a mut VMThread<A>, usize, &[Value])>
+) -> Result<VMThreadRunFunctionFut<'a, A, S>, Exception> {
+    let (thread, func_id, args) = arg_pack.into_inner();
+
+    get_vm!(thread).alloc.set_gc_allowed(true);
+
+    let program: &CompiledProgram<A> = thread.program.as_ref();
+    let compiled_function: &CompiledFunction = &program.functions[func_id];
+    if compiled_function.arg_count != args.len() {
+        let exception: UncheckedException = UncheckedException::ArgCountMismatch {
+            func_id, expected: compiled_function.arg_count, got: args.len()
+        };
+        return Err(Exception::unchecked_exc(exception));
+    }
+
+    let slice: StackSlice =
+        thread.stack.ext_func_call_grow_stack(func_id, compiled_function.stack_size, args);
+    let insc_ptr: usize = compiled_function.start_addr;
+
+    Ok(VMThreadRunFunctionFut {
+        thread,
+        slice,
+        insc_ptr,
+
+        #[cfg(feature = "async")] awaiting_promise: None,
+        #[cfg(feature = "async")] ret_values_resolver: None
     })
 }

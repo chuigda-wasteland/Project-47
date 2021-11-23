@@ -25,26 +25,27 @@ pub trait AsyncVMContext: 'static + Sized + Send + Sync {
 pub trait AsyncFunctionBase: 'static {
     fn signature(tyck_info_pool: &mut TyckInfoPool) -> Signature;
 
-    unsafe fn call_rtlc<ACTX: AsyncVMContext>(context: &ACTX, args: &[Value])
-        -> Result<Promise, FFIException>;
+    unsafe fn call_rtlc<A: Alloc, ACTX: AsyncVMContext>(context: &ACTX, args: &[Value])
+        -> Result<Promise<A>, FFIException>;
 }
 
-pub trait AsyncFunction<ACTX: AsyncVMContext>: 'static {
+pub trait AsyncFunction<A: Alloc, ACTX: AsyncVMContext>: 'static {
     fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature;
 
-    unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Result<Promise, FFIException>;
+    unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Result<Promise<A>, FFIException>;
 }
 
-impl<AFBase, CTX> AsyncFunction<CTX> for AFBase where
+impl<AFBase, A, ACTX> AsyncFunction<A, ACTX> for AFBase where
     AFBase: AsyncFunctionBase,
-    CTX: AsyncVMContext
+    A: Alloc,
+    ACTX: AsyncVMContext
 {
     fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature {
         <AFBase as AsyncFunctionBase>::signature(tyck_info_pool)
     }
 
-    unsafe fn call_rtlc(&self, context: &CTX, args: &[Value]) -> Result<Promise, FFIException> {
-        <AFBase as AsyncFunctionBase>::call_rtlc(context, args)
+    unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Result<Promise<A>, FFIException> {
+        <AFBase as AsyncFunctionBase>::call_rtlc::<A, ACTX>(context, args)
     }
 }
 
@@ -116,14 +117,16 @@ impl Drop for PromiseGuard {
     }
 }
 
-pub struct Promise {
+pub struct Promise<A: Alloc> {
     pub fut: Pin<Box<dyn Future<Output=AsyncReturnType> + Send + 'static>>,
-    pub guard: PromiseGuard
+    pub guard: PromiseGuard,
+
+    pub ret_values_resolver: Option<fn(&mut A, &[Value])>
 }
 
-impl Unpin for Promise {}
+impl<A: Alloc> Unpin for Promise<A> {}
 
-impl Future for Promise {
+impl<A: Alloc> Future for Promise<A> {
     type Output = AsyncReturnType;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -131,7 +134,7 @@ impl Future for Promise {
     }
 }
 
-impl StaticBase<Promise> for Void {
+impl<A: Alloc> StaticBase<Promise<A>> for Void {
     fn type_name() -> String {
         "promise".to_string()
     }
@@ -148,6 +151,7 @@ pub use crate::ffi::sync_fn::{
 use std::task::{Context, Poll};
 use futures::FutureExt;
 use crate::data::tyck::TyckInfoPool;
+use crate::vm::al31f::alloc::Alloc;
 
 #[inline] pub unsafe fn value_into_ref<'a, T>(
     value: Value

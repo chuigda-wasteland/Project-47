@@ -18,7 +18,7 @@ impl<'s, 'd> Parser<'s, 'd> {
         is_global: bool,
         skip_set: &[&[TokenInner<'_>]]
     ) -> Option<Attribute<'s>> {
-        debug_assert_eq!(hash_token.token_inner, TokenInner::SymHash);
+        #[cfg(debug_assertions)] assert_eq!(hash_token.token_inner, TokenInner::SymHash);
 
         let this: &mut Parser<'s, 'd> = self;
 
@@ -100,7 +100,7 @@ impl<'s, 'd> Parser<'s, 'd> {
         eq_token: Token<'s>,
         skip_set: &[&[TokenInner<'_>]]
     ) -> Option<AttrItem<'s>> {
-        debug_assert_eq!(eq_token.token_inner, TokenInner::SymEq);
+        #[cfg(debug_assertions)] assert_eq!(eq_token.token_inner, TokenInner::SymEq);
 
         let attr_value: AttrValue<'s> = self.parse_attr_value(skip_set)?;
         Some(AttrItem::AssignLikeItem(AttrAssignLikeItem {
@@ -116,7 +116,7 @@ impl<'s, 'd> Parser<'s, 'd> {
         lparen_token: Token<'s>,
         skip_set: &[&[TokenInner<'_>]]
     ) -> Option<AttrItem<'s>> {
-        debug_assert_eq!(lparen_token.token_inner, TokenInner::SymLParen);
+        #[cfg(debug_assertions)] assert_eq!(lparen_token.token_inner, TokenInner::SymLParen);
         let (items, right_paren_range): (SmallVec<[AttrItem; 4]>, SourceRange) =
             self.parse_attribute_list(TokenInner::SymRParen, skip_set)?;
         Some(AttrItem::CallLikeItem(AttrCallLikeItem {

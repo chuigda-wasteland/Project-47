@@ -13,7 +13,7 @@ pollster = "0.2"
 pr47-codegen = "0.0.2"
 smallvec = "1"
 unchecked_unwrap = "3"
-xjbutil = { version = "0.4.4", default-features = false, features = [
+xjbutil = { version = "0.4.6", default-features = false, features = [
     "async",
     "defer",
     "display2",
@@ -34,14 +34,15 @@ tokio = { optional = true, version = "1", features = ["rt", "sync", "time"] }
 unicode-width = { optional = true, version = "0.1" }
 
 [dev-dependencies]
-tokio = { version = "1", features = ["rt-multi-thread"] }
+tokio = { version = "1", features = ["rt-multi-thread", "fs"] }
 variant_count = "1"
 
 [features]
-default = ["async-tokio", "compiler", "compiler-pretty-diag", "optimized-rtlc", "std47"]
+default = ["async-avoid-block", "async-tokio", "compiler", "compiler-pretty-diag", "optimized-rtlc", "std47"]
 
 async = ["futures"]
 async-astd = ["async", "async-std", "xjbutil/async-astd"]
+async-avoid-block = []
 async-tokio = ["async", "tokio", "xjbutil/async-tokio"]
 bench = []
 compiler = ["phf"]

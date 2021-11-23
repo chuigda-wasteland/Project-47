@@ -12,6 +12,16 @@ use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
 use crate::vm::al31f::insc::Insc;
 
+#[cfg(feature = "async")] use crate::ffi::async_fn::{
+    AsyncFunction,
+    AsyncFunctionBase,
+    AsyncReturnType,
+    AsyncVMContext,
+    Promise,
+    PromiseGuard
+};
+#[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
+
 pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
     CompiledProgram {
         code: boxed_slice![
@@ -291,7 +301,7 @@ struct Pr47Binder_ffi_function2();
 
 impl FunctionBase for Pr47Binder_ffi_function2 {
     fn signature(_tyck_info_pool: &mut TyckInfoPool) -> Signature {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn call_rtlc<CTX: VMContext>(
@@ -372,5 +382,71 @@ pub fn bench_ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
             Box::new(Pr47Binder_ffi_function2()) as Box<dyn Function<Combustor<A>>>
         ],
         #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
+    }
+}
+
+#[cfg(feature = "async")]
+#[inline(never)] async fn async_ffi_function() -> Result<String, std::io::Error> {
+    tokio::fs::read_to_string("./Cargo.toml").await
+}
+
+#[cfg(feature = "async")]
+#[allow(non_camel_case_types)]
+struct Pr47Binder_async_ffi_function();
+
+#[cfg(feature = "async")]
+impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
+    fn signature(_tyck_info_pool: &mut TyckInfoPool) -> Signature {
+        unimplemented!()
+    }
+
+    unsafe fn call_rtlc<A: Alloc, ACTX: AsyncVMContext>(
+        _context: &ACTX,
+        _args: &[Value]
+    ) -> Result<Promise<A>, FFIException> {
+        let fut = async move {
+            let r: Result<String, std::io::Error> = async_ffi_function().await;
+            match r {
+                Ok(data) => AsyncReturnType(Ok(boxed_slice![
+                    Value::new_owned(data)
+                ])),
+                Err(e) => AsyncReturnType(Err(FFIException::Left(
+                    Value::new_owned(e)
+                )))
+            }
+        };
+
+        Ok(Promise {
+            fut: Box::pin(fut),
+            guard: PromiseGuard {
+                guards: boxed_slice![],
+                reset_guard_count: 0
+            },
+            ret_values_resolver: Some(|alloc: &mut A, values: &[Value]| {
+                alloc.add_managed(values.get_unchecked(0).ptr_repr)
+            })
+        })
+    }
+}
+
+#[cfg(feature = "async")]
+pub fn async_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
+    CompiledProgram {
+        code: boxed_slice![
+                                                             // application_start() -> string
+            /*00*/ Insc::FFICallAsync(0, boxed_slice![], 0), // %0 = ffi-call-async @0()),
+            /*01*/ Insc::Await(0, boxed_slice![0]),          // %0 = await %0
+            /*02*/ Insc::ReturnOne(0)                        // ret string %0
+        ],
+        const_pool: boxed_slice![],
+        init_proc: 0,
+        functions: boxed_slice![
+            CompiledFunction::new(0, 0, 1, 1, boxed_slice![])
+        ],
+        ffi_funcs: boxed_slice![],
+        async_ffi_funcs: boxed_slice![
+            Box::new(Pr47Binder_async_ffi_function())
+                as Box<dyn AsyncFunction<A, AsyncCombustor<A>>>
+        ]
     }
 }
