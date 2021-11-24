@@ -20,7 +20,7 @@ use crate::vm::al31f::insc::Insc;
     Promise,
     PromiseGuard
 };
-use crate::ffi::async_fn::VMDataTrait;
+use crate::ffi::async_fn::{PromiseContext, VMDataTrait};
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
 pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
@@ -419,13 +419,15 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
 
         Ok(Promise {
             fut: Box::pin(fut),
-            guard: PromiseGuard {
-                guards: boxed_slice![],
-                reset_guard_count: 0
-            },
-            ret_values_resolver: Some(|alloc: &mut A, values: &[Value]| {
-                alloc.add_managed(values.get_unchecked(0).ptr_repr)
-            })
+            ctx: PromiseContext {
+                guard: PromiseGuard {
+                    guards: boxed_slice![],
+                    reset_guard_count: 0
+                },
+                resolver: Some(|alloc: &mut A, values: &[Value]| {
+                    alloc.add_managed(values.get_unchecked(0).ptr_repr)
+                })
+            }
         })
     }
 }

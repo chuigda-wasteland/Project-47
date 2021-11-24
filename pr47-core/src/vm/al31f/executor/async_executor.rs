@@ -55,6 +55,7 @@ use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
 #[cfg(feature = "async")] use crate::data::wrapper::{Wrapper, OwnershipInfo};
 #[cfg(feature = "async")] use crate::ffi::async_fn::{AsyncReturnType, Promise};
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
+use crate::ffi::async_fn::PromiseContext;
 #[cfg(feature = "async")] use crate::util::serializer::CoroutineContext;
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
@@ -158,10 +159,7 @@ pub struct VMThreadRunFunctionFut<'a, A: Alloc, const S: bool> {
     insc_ptr: usize,
 
     #[cfg(feature = "async")]
-    awaiting_promise: Option<Pin<Box<dyn Future<Output = AsyncReturnType>>>>,
-
-    #[cfg(feature = "async")]
-    ret_values_resolver: Option<fn(&mut A, &[Value])>
+    awaiting_promise: Option<(Pin<Box<dyn Future<Output = AsyncReturnType>>>, PromiseContext<A>)>,
 }
 
 unsafe impl<'a, A: Alloc, const S: bool> Send for VMThreadRunFunctionFut<'a, A, S> {}
@@ -173,15 +171,15 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
     #[cfg(not(feature = "async"))] _cx: &mut Context<'_>
 ) -> Poll<<VMThreadRunFunctionFut<'a, A, S> as Future>::Output> {
     #[cfg(feature = "async")]
-    if let Some(awaiting_promise) = &mut this.awaiting_promise {
-        if let Poll::Ready(promise_result) = awaiting_promise.poll_unpin(cx) {
-            this.awaiting_promise = None;
+    if let Some((fut, _)) = &mut this.awaiting_promise {
+        if let Poll::Ready(promise_result) = fut.poll_unpin(cx) {
+            let (_, mut ctx) = this.awaiting_promise.take().unchecked_unwrap();
 
             let AsyncReturnType(result) = promise_result;
             match result {
                 Ok(values) => {
-                    if let Some(ret_values_resolver) = this.ret_values_resolver.take() {
-                        ret_values_resolver(
+                    if let Some(resolver) = ctx.resolver.take() {
+                        resolver(
                             &mut this.thread.vm.get_shared_data_mut().alloc,
                             &values
                         );
@@ -674,14 +672,13 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     )));
                 }
 
-                let promise: Promise<A> = promise.move_out::<Promise<A>>();
+                let Promise { fut, ctx } = promise.move_out::<Promise<A>>();
                 (*wrapper).ownership_info = OwnershipInfo::MovedToRust as u8;
 
                 this.insc_ptr = insc_ptr;
 
                 let thread: &'static VMThread<A> = transmute::<_, _>(thread);
-                this.ret_values_resolver = promise.ret_values_resolver;
-                this.awaiting_promise = Some(Box::pin(thread.vm.co_await(promise)));
+                this.awaiting_promise = Some((Box::pin(thread.vm.co_await(fut)), ctx));
                 cx.waker().wake_by_ref();
                 return Poll::Pending;
             },
@@ -835,7 +832,6 @@ pub unsafe fn vm_thread_run_function<'a, A: Alloc, const S: bool>(
         slice,
         insc_ptr,
 
-        #[cfg(feature = "async")] awaiting_promise: None,
-        #[cfg(feature = "async")] ret_values_resolver: None
+        #[cfg(feature = "async")] awaiting_promise: None
     })
 }

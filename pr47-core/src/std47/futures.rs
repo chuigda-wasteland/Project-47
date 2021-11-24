@@ -1,10 +1,12 @@
-use smallvec::SmallVec;
+use std::future::Future;
+use std::pin::Pin;
+use smallvec::{SmallVec, smallvec};
 use xjbutil::boxed_slice;
 use xjbutil::async_utils::join_all;
 
 use crate::data::tyck::TyckInfoPool;
 use crate::data::Value;
-use crate::ffi::async_fn::{AsyncFunctionBase, AsyncReturnType, AsyncVMContext, Promise, PromiseGuard, VMDataTrait};
+use crate::ffi::async_fn::{AsyncFunctionBase, AsyncReturnType, AsyncVMContext, Promise, PromiseContext, PromiseGuard, VMDataTrait};
 use crate::ffi::async_fn::{value_move_out_check_norm_noalias, value_move_out_norm_noalias};
 use crate::ffi::{FFIException, Signature};
 use crate::util::serializer::{CoroutineSharedData, Serializer, SerializerLock};
@@ -29,27 +31,32 @@ impl AsyncFunctionBase for JoinBind {
             value_move_out_check_norm_noalias(*arg)?;
         }
 
-        let promises: SmallVec<[Promise<A>; 4]> = args.into_iter()
+
+        let mut ctx: SmallVec<[PromiseContext<A>; 4]> = smallvec![];
+        let mut futs: SmallVec<[Pin<Box<dyn Future<Output = AsyncReturnType> + Send>>; 4]>
+            = smallvec![];
+
+        for promise in args.into_iter()
             .map(|arg: &Value| value_move_out_norm_noalias::<Promise<A>>(*arg))
-            .collect();
-        let promise_resolvers: SmallVec<[Option<fn(&mut A, &[Value])>; 4]> = promises.iter()
-            .map(|promise: &Promise<A>| promise.ret_values_resolver.clone())
-            .collect();
+        {
+            ctx.push(promise.ctx);
+            futs.push(promise.fut);
+        }
 
         let serializer: Serializer<(CoroutineSharedData, ACTX::VMData)> =
             context.serializer().clone();
 
         let fut = async move {
-            let results: Vec<AsyncReturnType> = join_all(promises).await;
+            let results: Vec<AsyncReturnType> = join_all(futs).await;
             let mut serialized: SerializerLock<(CoroutineSharedData, ACTX::VMData)> =
                 serializer.lock().await;
             let alloc: &mut <ACTX::VMData as VMDataTrait>::Allocator = serialized.1.get_alloc();
 
-            let x = results.into_iter().zip(promise_resolvers)
-                .map(|(result, resolver): (AsyncReturnType, _)| {
+            let x = results.into_iter().zip(ctx.into_iter())
+                .map(|(result, ctx): (AsyncReturnType, _)| {
                     match result.0 {
                         Ok(values) => {
-                            if let Some(resolver) = resolver {
+                            if let Some(resolver) = ctx.resolver {
                                 resolver(alloc, &values);
                             }
                             Ok(values)
@@ -69,8 +76,10 @@ impl AsyncFunctionBase for JoinBind {
 
         Ok(Promise {
             fut: Box::pin(fut),
-            guard: PromiseGuard { guards: boxed_slice![], reset_guard_count: 0 },
-            ret_values_resolver: None
+            ctx: PromiseContext {
+                guard: PromiseGuard { guards: boxed_slice![], reset_guard_count: 0 },
+                resolver: None
+            }
         })
     }
 }

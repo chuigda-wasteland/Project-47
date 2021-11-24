@@ -126,24 +126,19 @@ impl Drop for PromiseGuard {
     }
 }
 
-pub struct Promise<A: Alloc> {
-    pub fut: Pin<Box<dyn Future<Output=AsyncReturnType> + Send + 'static>>,
-    pub guard: PromiseGuard,
+pub type AsyncRetValueResolver<A> = Option<fn(&mut A, &[Value])>;
 
-    pub ret_values_resolver: Option<fn(&mut A, &[Value])>
+pub struct PromiseContext<A: Alloc> {
+    pub guard: PromiseGuard,
+    pub resolver: AsyncRetValueResolver<A>
 }
 
-unsafe impl<A: Alloc> Send for Promise<A> {}
-unsafe impl<A: Alloc> Sync for Promise<A> {}
+unsafe impl<A: Alloc> Send for PromiseContext<A> {}
+unsafe impl<A: Alloc> Sync for PromiseContext<A> {}
 
-impl<A: Alloc> Unpin for Promise<A> {}
-
-impl<A: Alloc> Future for Promise<A> {
-    type Output = AsyncReturnType;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        Pin::into_inner(self).fut.poll_unpin(cx)
-    }
+pub struct Promise<A: Alloc> {
+    pub fut: Pin<Box<dyn Future<Output=AsyncReturnType> + Send + 'static>>,
+    pub ctx: PromiseContext<A>
 }
 
 impl<A: Alloc> StaticBase<Promise<A>> for Void {
@@ -162,8 +157,6 @@ pub use crate::ffi::sync_fn::{
     value_move_out_norm,
     value_move_out_norm_noalias
 };
-use std::task::{Context, Poll};
-use futures::FutureExt;
 use crate::data::tyck::TyckInfoPool;
 use crate::vm::al31f::alloc::Alloc;
 
