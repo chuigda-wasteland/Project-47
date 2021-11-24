@@ -49,16 +49,16 @@ impl GenericTypeRef for ObjectRef {
     }
 }
 
+#[cfg(not(feature = "al31f-builtin-ops"))]
 mod ops {
+    use std::ptr::NonNull;
     use unchecked_unwrap::UncheckedUnwrap;
     use xjbutil::boxed_slice;
-    use xjbutil::void::Void;
 
     use crate::builtins::object::{Object, ObjectRef};
-    use crate::data::traits::StaticBase;
-    use crate::data::tyck::TyckInfoPool;
+    use crate::data::tyck::{TyckInfo, TyckInfoPool};
     use crate::data::Value;
-    use crate::ffi::{DATA_OPTION_NULLABLE_MASK, DataOption, FFIException, Signature};
+    use crate::ffi::{DataOption, FFIException, Signature};
     use crate::ffi::sync_fn::{container_into_ref_noalias, FunctionBase, value_into_ref_noalias, VMContext};
 
     pub struct CreateObjectBind();
@@ -67,12 +67,14 @@ mod ops {
 
     impl FunctionBase for CreateObjectBind {
         fn signature(tyck_info_pool: &mut TyckInfoPool) -> Signature {
+            let object_type: NonNull<TyckInfo> = tyck_info_pool.get_object_type();
+
             Signature {
-                param_types: boxed_slice![],
+                func_type: tyck_info_pool.create_function_type(
+                    &[], &[object_type], &[]
+                ),
                 param_options: boxed_slice![],
-                ret_type: boxed_slice![<Void as StaticBase<Object>>::tyck_info(tyck_info_pool)],
-                ret_option: boxed_slice![DataOption::Move as u8],
-                exceptions: boxed_slice![]
+                ret_option: boxed_slice![DataOption::Move],
             }
         }
 
@@ -98,19 +100,17 @@ mod ops {
 
     impl FunctionBase for ObjectGetBind {
         fn signature(tyck_info_pool: &mut TyckInfoPool) -> Signature {
+            let object_type: NonNull<TyckInfo> = tyck_info_pool.get_object_type();
+            let string_type: NonNull<TyckInfo> = tyck_info_pool.get_string_type();
+            let any_type: NonNull<TyckInfo> = tyck_info_pool.get_any_type();
+            let nullable_any: NonNull<TyckInfo> = tyck_info_pool.create_nullable_type(any_type);
+
             Signature {
-                param_types: boxed_slice![
-                    <Void as StaticBase<Object>>::tyck_info(tyck_info_pool),
-                    <Void as StaticBase<String>>::tyck_info(tyck_info_pool)
-                ],
-                param_options: boxed_slice![DataOption::Share as u8, DataOption::Share as u8],
-                ret_type: boxed_slice![
-                    tyck_info_pool.create_any_type()
-                ],
-                ret_option: boxed_slice![
-                    DataOption::RawUntyped as u8 | DATA_OPTION_NULLABLE_MASK
-                ],
-                exceptions: boxed_slice![]
+                func_type: tyck_info_pool.create_function_type(
+                    &[object_type, string_type], &[nullable_any], &[]
+                ),
+                param_options: boxed_slice![DataOption::Share, DataOption::Share],
+                ret_option: boxed_slice![DataOption::RawUntyped]
             }
         }
 
@@ -143,20 +143,21 @@ mod ops {
 
     impl FunctionBase for ObjectPutBind {
         fn signature(tyck_info_pool: &mut TyckInfoPool) -> Signature {
+            let object_type: NonNull<TyckInfo> = tyck_info_pool.get_object_type();
+            let string_type: NonNull<TyckInfo> = tyck_info_pool.get_string_type();
+            let any_type: NonNull<TyckInfo> = tyck_info_pool.get_any_type();
+            let nullable_any: NonNull<TyckInfo> = tyck_info_pool.create_nullable_type(any_type);
+
             Signature {
-                param_types: boxed_slice![
-                    <Void as StaticBase<Object>>::tyck_info(tyck_info_pool),
-                    <Void as StaticBase<String>>::tyck_info(tyck_info_pool),
-                    tyck_info_pool.create_any_type()
-                ],
+                func_type: tyck_info_pool.create_function_type(
+                    &[object_type, string_type, nullable_any], &[], &[]
+                ),
                 param_options: boxed_slice![
-                    DataOption::MutShare as u8,
-                    DataOption::Share as u8,
-                    DataOption::RawUntyped as u8 | DATA_OPTION_NULLABLE_MASK
+                    DataOption::MutShare,
+                    DataOption::Share,
+                    DataOption::RawUntyped
                 ],
-                ret_type: boxed_slice![],
-                ret_option: boxed_slice![],
-                exceptions: boxed_slice![]
+                ret_option: boxed_slice![]
             }
         }
 
