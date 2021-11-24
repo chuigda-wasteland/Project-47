@@ -1,11 +1,14 @@
+use std::any::TypeId;
 use std::future::Future;
 use std::pin::Pin;
+use std::ptr::NonNull;
+use std::time::Duration;
 use futures::future::select_all;
 use smallvec::{SmallVec, smallvec};
 use xjbutil::boxed_slice;
 use xjbutil::async_utils::join_all;
 
-use crate::data::tyck::TyckInfoPool;
+use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::data::Value;
 use crate::ffi::async_fn::{
     AsyncFunctionBase,
@@ -148,17 +151,35 @@ impl AsyncFunctionBase for SelectBind {
     }
 }
 
-pub struct SleepBind();
+pub struct SleepMillisBind();
 
-impl AsyncFunctionBase for SleepBind {
+impl AsyncFunctionBase for SleepMillisBind {
     fn signature(tyck_info_pool: &mut TyckInfoPool) -> Signature {
-        todo!()
+        let i64_type: NonNull<TyckInfo> = tyck_info_pool.create_plain_type(TypeId::of::<i64>());
+
+        Signature {
+            func_type: tyck_info_pool.create_function_type(&[i64_type], &[], &[]),
+            param_options: boxed_slice![],
+            ret_option: boxed_slice![]
+        }
     }
 
     unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Alloc=A>, ACTX: AsyncVMContext<VMData=VD>>(
-        context: &ACTX,
+        _context: &ACTX,
         args: &[Value]
     ) -> Result<Promise<A>, FFIException> {
-        todo!()
+        let int_value: i64 = args.get_unchecked(0).vt_data.inner.int_value;
+        let fut = async move {
+            tokio::time::sleep(Duration::from_millis(int_value as u64)).await;
+            AsyncReturnType(Ok(boxed_slice![]))
+        };
+
+        Ok(Promise {
+            fut: Box::pin(fut),
+            ctx: PromiseContext {
+                guard: PromiseGuard { guards: boxed_slice![], reset_guard_count: 0 },
+                resolver: None
+            }
+        })
     }
 }

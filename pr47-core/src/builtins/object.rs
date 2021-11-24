@@ -32,7 +32,7 @@ impl StaticBase<Object> for Void {
 }
 
 pub struct ObjectRef {
-    pub(crate) ptr: NonNull<Object>
+    pub ptr: NonNull<Object>
 }
 
 impl GenericTypeRef for ObjectRef {
