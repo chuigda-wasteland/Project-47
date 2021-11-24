@@ -30,9 +30,9 @@ impl<A: Alloc> AL31F<A> {
 }
 
 impl<A: Alloc> VMDataTrait for AL31F<A> {
-    type Allocator = A;
+    type Alloc = A;
 
-    fn get_alloc(&mut self) -> &mut Self::Allocator {
+    fn get_alloc(&mut self) -> &mut Self::Alloc {
         &mut self.alloc
     }
 }

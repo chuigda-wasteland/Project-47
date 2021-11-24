@@ -17,9 +17,9 @@ use crate::ffi::{FFIException, Signature};
 use crate::util::serializer::{CoroutineSharedData, Serializer};
 
 pub trait VMDataTrait : 'static + Sized + Send {
-    type Allocator;
+    type Alloc;
 
-    fn get_alloc(&mut self) -> &mut Self::Allocator;
+    fn get_alloc(&mut self) -> &mut Self::Alloc;
 }
 
 pub trait AsyncVMContext: 'static + Sized + Send + Sync {
@@ -31,7 +31,7 @@ pub trait AsyncVMContext: 'static + Sized + Send + Sync {
 pub trait AsyncFunctionBase: 'static {
     fn signature(tyck_info_pool: &mut TyckInfoPool) -> Signature;
 
-    unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Allocator = A>, ACTX: AsyncVMContext<VMData = VD>> (
+    unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Alloc= A>, ACTX: AsyncVMContext<VMData = VD>> (
         context: &ACTX,
         args: &[Value]
     ) -> Result<Promise<A>, FFIException>;
@@ -46,7 +46,7 @@ pub trait AsyncFunction<A: Alloc, VD: VMDataTrait, ACTX: AsyncVMContext>: 'stati
 impl<AFBase, A, VD, ACTX> AsyncFunction<A, VD, ACTX> for AFBase where
     AFBase: AsyncFunctionBase,
     A: Alloc,
-    VD: VMDataTrait<Allocator = A>,
+    VD: VMDataTrait<Alloc= A>,
     ACTX: AsyncVMContext<VMData = VD>
 {
     fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature {

@@ -401,7 +401,7 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
         unimplemented!()
     }
 
-    unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Allocator = A>, ACTX: AsyncVMContext<VMData = VD>> (
+    unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Alloc= A>, ACTX: AsyncVMContext<VMData = VD>> (
         _context: &ACTX,
         _args: &[Value]
     ) -> Result<Promise<A>, FFIException> {
