@@ -20,7 +20,7 @@ use crate::vm::al31f::insc::Insc;
     Promise,
     PromiseGuard
 };
-use crate::ffi::async_fn::{PromiseContext, VMDataTrait};
+#[cfg(feature = "async")] use crate::ffi::async_fn::{PromiseContext, VMDataTrait};
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
 pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {

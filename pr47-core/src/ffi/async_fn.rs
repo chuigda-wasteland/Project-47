@@ -70,8 +70,8 @@ pub struct AsyncShareGuard {
 }
 
 pub union AsyncOwnershipGuard {
-    reset_guard: AsyncResetGuard,
-    share_guard: AsyncShareGuard
+    pub reset_guard: AsyncResetGuard,
+    pub share_guard: AsyncShareGuard
 }
 
 impl AsyncOwnershipGuard {
@@ -137,7 +137,7 @@ unsafe impl<A: Alloc> Send for PromiseContext<A> {}
 unsafe impl<A: Alloc> Sync for PromiseContext<A> {}
 
 pub struct Promise<A: Alloc> {
-    pub fut: Pin<Box<dyn Future<Output=AsyncReturnType> + Send + 'static>>,
+    pub fut: Pin<Box<dyn Future<Output=AsyncReturnType> + Send>>,
     pub ctx: PromiseContext<A>
 }
 
