@@ -7,7 +7,7 @@ use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfoPool;
 use crate::ffi::{FFIException, Signature};
 use crate::ffi::sync_fn::{Function, FunctionBase, OwnershipGuard, VMContext, value_into_ref};
-use crate::vm::al31f::Combustor;
+use crate::vm::al31f::{AL31F, Combustor};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
 use crate::vm::al31f::insc::Insc;
@@ -20,6 +20,7 @@ use crate::vm::al31f::insc::Insc;
     Promise,
     PromiseGuard
 };
+use crate::ffi::async_fn::VMDataTrait;
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
 pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
@@ -400,7 +401,7 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
         unimplemented!()
     }
 
-    unsafe fn call_rtlc<A: Alloc, ACTX: AsyncVMContext>(
+    unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Allocator = A>, ACTX: AsyncVMContext<VMData = VD>> (
         _context: &ACTX,
         _args: &[Value]
     ) -> Result<Promise<A>, FFIException> {
@@ -446,7 +447,7 @@ pub fn async_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
         ffi_funcs: boxed_slice![],
         async_ffi_funcs: boxed_slice![
             Box::new(Pr47Binder_async_ffi_function())
-                as Box<dyn AsyncFunction<A, AsyncCombustor<A>>>
+                as Box<dyn AsyncFunction<A, AL31F<A>, AsyncCombustor<A>>>
         ]
     }
 }

@@ -15,7 +15,7 @@ use crate::data::wrapper::{
 use crate::ffi::{FFIException, Signature};
 
 pub trait VMContext: 'static + Sized {
-    fn allocate(&mut self, wide_ptr: WidePointer);
+    fn add_heap_managed(&mut self, wide_ptr: WidePointer);
     fn mark(&mut self, wide_ptr: WidePointer);
 }
 
@@ -110,7 +110,7 @@ impl Drop for OwnershipGuard {
     } else {
         Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
             object: value,
-            expected_mask: OWN_INFO_OWNED_MASK
+            expected_mask: (OWN_INFO_READ_MASK | OWN_INFO_WRITE_MASK | OWN_INFO_OWNED_MASK)
         }))
     }
 }
@@ -120,12 +120,26 @@ impl Drop for OwnershipGuard {
 ) -> Result<OwnershipGuard, FFIException> {
     let wrapper_ptr: *mut Wrapper<()> = value.ptr_repr.ptr as *mut _;
     let original: u8 = (*wrapper_ptr).ownership_info;
-    if original & OWN_INFO_OWNED_MASK != 0 {
+    if original & (OWN_INFO_READ_MASK | OWN_INFO_WRITE_MASK | OWN_INFO_OWNED_MASK) != 0 {
         Ok(OwnershipGuard::new(wrapper_ptr, original))
     } else {
         Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
             object: value,
-            expected_mask: OWN_INFO_OWNED_MASK
+            expected_mask: (OWN_INFO_READ_MASK | OWN_INFO_WRITE_MASK | OWN_INFO_OWNED_MASK)
+        }))
+    }
+}
+
+#[inline] pub unsafe fn value_move_out_check_norm_noalias(
+    value: Value
+) -> Result<(), FFIException> {
+    let original: u8 = value.ownership_info_norm() as u8;
+    if original & (OWN_INFO_READ_MASK | OWN_INFO_WRITE_MASK | OWN_INFO_OWNED_MASK) != 0 {
+        Ok(())
+    } else {
+        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+            object: value,
+            expected_mask: (OWN_INFO_READ_MASK | OWN_INFO_WRITE_MASK | OWN_INFO_OWNED_MASK)
         }))
     }
 }
@@ -141,6 +155,14 @@ impl Drop for OwnershipGuard {
     where T: 'static,
           Void: StaticBase<T>
 {
+    value.move_out_norm::<T>()
+}
+
+#[inline] pub unsafe fn value_move_out_norm_noalias<T>(value: Value) -> T
+    where T: 'static,
+          Void: StaticBase<T>
+{
+    value.set_ownership_info_norm(OwnershipInfo::MovedToRust);
     value.move_out_norm::<T>()
 }
 

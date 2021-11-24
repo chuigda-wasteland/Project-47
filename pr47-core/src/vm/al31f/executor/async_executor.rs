@@ -621,7 +621,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             #[cfg(all(feature = "optimized-rtlc", feature = "async"))]
             Insc::FFICallAsync(async_ffi_func_id, args, ret) => {
-                let async_ffi_function: &Box<dyn FFIAsyncFunction<A, AsyncCombustor<A>>>
+                let async_ffi_function: &Box<dyn FFIAsyncFunction<A, AL31F<A>, AsyncCombustor<A>>>
                     = &program.async_ffi_funcs[*async_ffi_func_id];
 
                 let args_len: usize = args.len();
@@ -784,7 +784,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 let object: &mut Object = &mut *(slice.get_value(*src).get_as_mut_ptr_norm());
                 let data: Value = slice.get_value(*data);
                 if data.is_ref() {
-                    thread.vm.get_shared_data_mut().alloc.mark_object(data.ptr_repr);
+                    get_vm!(thread).alloc.mark_object(data.ptr_repr);
                 }
                 object.fields.insert(field.as_ref().to_string(), data);
             },
@@ -794,7 +794,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 let field: &String = &*(slice.get_value(*field).get_as_mut_ptr_norm() as *const _);
                 let data: Value = slice.get_value(*data);
                 if data.is_ref() {
-                    thread.vm.get_shared_data_mut().alloc.mark_object(data.ptr_repr);
+                    get_vm!(thread).alloc.mark_object(data.ptr_repr);
                 }
                 object.fields.insert(field.to_string(), data);
             }

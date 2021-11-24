@@ -16,8 +16,14 @@ use crate::data::wrapper::{
 use crate::ffi::{FFIException, Signature};
 use crate::util::serializer::{CoroutineSharedData, Serializer};
 
+pub trait VMDataTrait : 'static + Sized + Send {
+    type Allocator;
+
+    fn get_alloc(&mut self) -> &mut Self::Allocator;
+}
+
 pub trait AsyncVMContext: 'static + Sized + Send + Sync {
-    type VMData;
+    type VMData: VMDataTrait;
 
     fn serializer(&self) -> &Serializer<(CoroutineSharedData, Self::VMData)>;
 }
@@ -25,27 +31,30 @@ pub trait AsyncVMContext: 'static + Sized + Send + Sync {
 pub trait AsyncFunctionBase: 'static {
     fn signature(tyck_info_pool: &mut TyckInfoPool) -> Signature;
 
-    unsafe fn call_rtlc<A: Alloc, ACTX: AsyncVMContext>(context: &ACTX, args: &[Value])
-        -> Result<Promise<A>, FFIException>;
+    unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Allocator = A>, ACTX: AsyncVMContext<VMData = VD>> (
+        context: &ACTX,
+        args: &[Value]
+    ) -> Result<Promise<A>, FFIException>;
 }
 
-pub trait AsyncFunction<A: Alloc, ACTX: AsyncVMContext>: 'static {
+pub trait AsyncFunction<A: Alloc, VD: VMDataTrait, ACTX: AsyncVMContext>: 'static {
     fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature;
 
     unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Result<Promise<A>, FFIException>;
 }
 
-impl<AFBase, A, ACTX> AsyncFunction<A, ACTX> for AFBase where
+impl<AFBase, A, VD, ACTX> AsyncFunction<A, VD, ACTX> for AFBase where
     AFBase: AsyncFunctionBase,
     A: Alloc,
-    ACTX: AsyncVMContext
+    VD: VMDataTrait<Allocator = A>,
+    ACTX: AsyncVMContext<VMData = VD>
 {
     fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature {
         <AFBase as AsyncFunctionBase>::signature(tyck_info_pool)
     }
 
     unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Result<Promise<A>, FFIException> {
-        <AFBase as AsyncFunctionBase>::call_rtlc::<A, ACTX>(context, args)
+        <AFBase as AsyncFunctionBase>::call_rtlc::<A, VD, ACTX>(context, args)
     }
 }
 
@@ -124,6 +133,9 @@ pub struct Promise<A: Alloc> {
     pub ret_values_resolver: Option<fn(&mut A, &[Value])>
 }
 
+unsafe impl<A: Alloc> Send for Promise<A> {}
+unsafe impl<A: Alloc> Sync for Promise<A> {}
+
 impl<A: Alloc> Unpin for Promise<A> {}
 
 impl<A: Alloc> Future for Promise<A> {
@@ -144,9 +156,11 @@ pub use crate::ffi::sync_fn::{
     value_copy,
     value_copy_norm,
     value_move_out,
-    value_move_out_norm,
     value_move_out_check,
-    value_move_out_check_norm
+    value_move_out_check_norm,
+    value_move_out_check_norm_noalias,
+    value_move_out_norm,
+    value_move_out_norm_noalias
 };
 use std::task::{Context, Poll};
 use futures::FutureExt;

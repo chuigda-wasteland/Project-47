@@ -90,7 +90,7 @@ mod ops {
             rets: &[*mut Value]
         ) -> Result<(), FFIException> {
             let object: Value = Value::new_owned(Object::new());
-            context.allocate(object.ptr_repr);
+            context.add_heap_managed(object.ptr_repr);
             **rets.get_unchecked(0) = object;
             Ok(())
         }

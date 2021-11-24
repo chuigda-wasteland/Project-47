@@ -4,7 +4,7 @@ use std::ptr::NonNull;
 use crate::data::Value;
 use crate::data::tyck::TyckInfo;
 use crate::ffi::sync_fn::Function as FFIFunction;
-use crate::vm::al31f::Combustor;
+use crate::vm::al31f::{AL31F, Combustor};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::insc::Insc;
 
@@ -87,5 +87,5 @@ pub struct CompiledProgram<A: Alloc> {
 
     pub ffi_funcs: Box<[Box<dyn FFIFunction<Combustor<A>>>]>,
     #[cfg(feature = "async")]
-    pub async_ffi_funcs: Box<[Box<dyn FFIAsyncFunction<A, AsyncCombustor<A>>>]>
+    pub async_ffi_funcs: Box<[Box<dyn FFIAsyncFunction<A, AL31F<A>, AsyncCombustor<A>>>]>
 }

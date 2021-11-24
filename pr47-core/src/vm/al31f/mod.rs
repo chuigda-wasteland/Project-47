@@ -16,6 +16,7 @@ use crate::ffi::sync_fn::VMContext;
 use crate::vm::al31f::alloc::Alloc;
 
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncVMContext;
+use crate::ffi::async_fn::VMDataTrait;
 #[cfg(feature = "async")] use crate::util::serializer::{CoroutineSharedData, Serializer};
 
 pub struct AL31F<A: Alloc> {
@@ -25,6 +26,14 @@ pub struct AL31F<A: Alloc> {
 impl<A: Alloc> AL31F<A> {
     pub fn new(alloc: A) -> Self {
         Self { alloc }
+    }
+}
+
+impl<A: Alloc> VMDataTrait for AL31F<A> {
+    type Allocator = A;
+
+    fn get_alloc(&mut self) -> &mut Self::Allocator {
+        &mut self.alloc
     }
 }
 
@@ -39,7 +48,7 @@ impl<A: Alloc> Combustor<A> {
 }
 
 impl<A: Alloc> VMContext for Combustor<A> {
-    fn allocate(&mut self, wide_ptr: WidePointer) {
+    fn add_heap_managed(&mut self, wide_ptr: WidePointer) {
         unsafe { self.vm.as_mut().alloc.add_managed(wide_ptr); }
     }
 
