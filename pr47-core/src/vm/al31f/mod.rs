@@ -16,7 +16,7 @@ use crate::ffi::sync_fn::VMContext;
 use crate::vm::al31f::alloc::Alloc;
 
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncVMContext;
-use crate::ffi::async_fn::VMDataTrait;
+#[cfg(feature = "async")] use crate::ffi::async_fn::VMDataTrait;
 #[cfg(feature = "async")] use crate::util::serializer::{CoroutineSharedData, Serializer};
 
 pub struct AL31F<A: Alloc> {
@@ -29,6 +29,7 @@ impl<A: Alloc> AL31F<A> {
     }
 }
 
+#[cfg(feature = "async")]
 impl<A: Alloc> VMDataTrait for AL31F<A> {
     type Alloc = A;
 
