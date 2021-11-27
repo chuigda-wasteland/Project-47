@@ -38,7 +38,7 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
     let program: NonNull<CompiledProgram<A>> = thread.program;
 
     let arg_pack: UncheckedSendSync<_> = UncheckedSendSync::new((args, program));
-    let join_handle = async move {
+    let get_join_handle = async move {
         let join_handle: JoinHandle<AsyncReturnType> = thread.vm.co_spawn_task(
             |child_context, (func_id, arg_pack)| UncheckedSendFut::new(async move {
                 let (args, program): (Box<[Value]>, NonNull<CompiledProgram<A>>)
@@ -59,20 +59,33 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
                 })
             }), (func_id, arg_pack)
         ).await;
-        drop(thread);
 
-        join_handle.map_ok_or_else(
+        let join_handle = join_handle.map_ok_or_else(
             |err: JoinError| AsyncReturnType(Err(
                 FFIException::Unchecked(UncheckedException::JoinError {
                     inner: err
                 })
             )),
             |data: AsyncReturnType| data
-        ).await
+        );
+
+        let join_handle: Promise<A> = Promise {
+            fut: Box::pin(join_handle),
+            ctx: PromiseContext {
+                guard: PromiseGuard {
+                    guards: boxed_slice![],
+                    reset_guard_count: 0
+                },
+                resolver: None
+            }
+        };
+        let join_handle_value: Value = Value::new_owned(join_handle);
+        thread.vm.get_shared_data_mut().alloc.add_managed(join_handle_value.ptr_repr);
+        AsyncReturnType(Ok(boxed_slice![join_handle_value]))
     };
 
     Promise {
-        fut: Box::pin(join_handle),
+        fut: Box::pin(get_join_handle),
         ctx: PromiseContext {
             guard: PromiseGuard {
                 guards: boxed_slice![],
