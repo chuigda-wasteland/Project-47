@@ -34,6 +34,7 @@ async fn basic_program_eval() {
         vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
             .expect_silent("damn it")
             .await
+            .into_inner()
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
@@ -58,6 +59,7 @@ async fn basic_fn_call() {
         vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
             .expect_silent("damn it")
             .await
+            .into_inner()
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
@@ -84,6 +86,7 @@ async fn fibonacci_call() {
         vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
             .expect_silent("damn it")
             .await
+            .into_inner()
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
@@ -109,6 +112,7 @@ async fn exception_no_eh_call() {
         vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
             .expect_silent("damn it")
             .await
+            .into_inner()
     };
 
     if let Err(e /*: Exception*/) = result {
@@ -136,6 +140,7 @@ async fn exception_call() {
         vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
             .expect_silent("damn it")
             .await
+            .into_inner()
     };
 
     if let Ok(result /*: Vec<Value>*/) = result {
@@ -162,6 +167,7 @@ async fn ffi_call() {
         vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
             .expect_silent("damn it")
             .await
+            .into_inner()
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 0);
@@ -182,6 +188,7 @@ async fn ffi_call2() {
         vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
             .expect_silent("damn it")
             .await
+            .into_inner()
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
@@ -203,6 +210,7 @@ async fn async_ffi_call() {
         vm_thread_run_function::<_, false>(UncheckedSendSync::new(arg_pack))
             .expect_silent("damn it")
             .await
+            .into_inner()
     };
     if let Ok(result /*: Vec<Value>*/) = result {
         assert_eq!(result.len(), 1);
