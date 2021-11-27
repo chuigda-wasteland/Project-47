@@ -18,6 +18,7 @@ use crate::vm::al31f::alloc::Alloc;
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncVMContext;
 #[cfg(feature = "async")] use crate::ffi::async_fn::VMDataTrait;
 #[cfg(feature = "async")] use crate::util::serializer::{CoroutineSharedData, Serializer};
+use crate::vm::al31f::compiled::CompiledProgram;
 
 pub struct AL31F<A: Alloc> {
     pub alloc: A
@@ -60,13 +61,17 @@ impl<A: Alloc> VMContext for Combustor<A> {
 
 #[cfg(feature = "async")]
 pub struct AsyncCombustor<A: Alloc> {
-    vm: Serializer<(CoroutineSharedData, AL31F<A>)>
+    vm: Serializer<(CoroutineSharedData, AL31F<A>)>,
+    pub program: NonNull<CompiledProgram<A>>
 }
 
 #[cfg(feature = "async")]
 impl<A: Alloc> AsyncCombustor<A> {
-    pub fn new(vm: Serializer<(CoroutineSharedData, AL31F<A>)>) -> Self {
-        Self { vm }
+    pub fn new(
+        vm: Serializer<(CoroutineSharedData, AL31F<A>)>,
+        program: NonNull<CompiledProgram<A>>
+    ) -> Self {
+        Self { vm, program }
     }
 }
 

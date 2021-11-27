@@ -2,6 +2,7 @@ use std::any::TypeId;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
+use tokio::task::JoinError;
 use xjbutil::void::Void;
 
 use crate::data::Value;
@@ -18,14 +19,15 @@ pub enum UncheckedException {
     InvalidUnaryOp { unary_op: char, src: Value },
     OwnershipCheckFailure { object: Value, expected_mask: u8 },
     UnexpectedNull { value: Value },
-    IndexOutOfBound { indexed: Value, index: i64, len: usize }
+    IndexOutOfBound { indexed: Value, index: i64, len: usize },
+    JoinError { inner: JoinError }
 }
 
 pub type CheckedException = Value;
 
 pub enum ExceptionInner {
-    UncheckedException(UncheckedException),
-    CheckedException(CheckedException)
+    Unchecked(UncheckedException),
+    Checked(CheckedException)
 }
 
 #[derive(Clone, Copy)]
@@ -41,21 +43,21 @@ impl StackTrace {
 }
 
 pub struct Exception {
-    inner: ExceptionInner,
+    pub inner: ExceptionInner,
     trace: Vec<StackTrace>
 }
 
 impl Exception {
     #[inline(never)] pub fn checked_exc(checked: CheckedException) -> Self {
         Self {
-            inner: ExceptionInner::CheckedException(checked),
+            inner: ExceptionInner::Checked(checked),
             trace: vec![]
         }
     }
 
     #[inline(never)] pub fn unchecked_exc(unchecked: UncheckedException) -> Self {
         Self {
-            inner: ExceptionInner::UncheckedException(unchecked),
+            inner: ExceptionInner::Unchecked(unchecked),
             trace: vec![]
         }
     }
@@ -67,8 +69,8 @@ impl Exception {
     #[cfg(test)]
     pub fn assert_checked(&self) -> CheckedException {
         match &self.inner {
-            ExceptionInner::CheckedException(e) => e.clone(),
-            ExceptionInner::UncheckedException(_) => panic!()
+            ExceptionInner::Checked(e) => e.clone(),
+            ExceptionInner::Unchecked(_) => panic!()
         }
     }
 }
@@ -78,8 +80,8 @@ impl StaticBase<Exception> for Void {
 
     fn children(vself: *const Exception) -> ChildrenType {
         match unsafe { &(*vself).inner } {
-            ExceptionInner::UncheckedException(_) => None,
-            ExceptionInner::CheckedException(checked) => {
+            ExceptionInner::Unchecked(_) => None,
+            ExceptionInner::Checked(checked) => {
                 Some(Box::new(std::iter::once(unsafe { checked.ptr_repr })))
             }
         }
@@ -128,8 +130,8 @@ impl<E> StaticBase<ExceptionContainer<E>> for Void
     fn children(vself: *const ExceptionContainer<E>) -> ChildrenType {
         let r: &ExceptionContainer<E> = unsafe { &*vself };
         match r.exception.inner {
-            ExceptionInner::UncheckedException(_) => None,
-            ExceptionInner::CheckedException(checked) => {
+            ExceptionInner::Unchecked(_) => None,
+            ExceptionInner::Checked(checked) => {
                 Some(Box::new(std::iter::once(unsafe { checked.ptr_repr })))
             }
         }

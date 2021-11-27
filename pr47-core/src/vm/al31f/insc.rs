@@ -413,7 +413,7 @@ pub enum Insc {
 
     /// `CALL-PTR [SRC] [ARGS..] [RETS..]`
     ///
-    /// Call the function stored in function pointer `SRC` with given `ARGS`, store the return
+    /// Call the function pointer or closure stored in `SRC` with given `ARGS`, store the return
     /// values to `RETS`. **No type checking**.
     CallPtr(usize, Box<[usize]>, Box<[usize]>),
 
@@ -449,6 +449,9 @@ pub enum Insc {
     /// Await the given promise, store its results into given destinations.
     #[cfg(feature = "async")]
     Await(usize, Box<[usize]>),
+
+    #[cfg(all(feature = "async", feature = "al31f-builtin-ops"))]
+    Spawn(usize, Box<[usize]>),
 
     /// `RAISE [EXCEPTION]`
     Raise(usize),

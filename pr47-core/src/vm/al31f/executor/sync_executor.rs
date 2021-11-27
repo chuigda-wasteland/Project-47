@@ -31,6 +31,7 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
         };
         vm_thread_run_function::<_, true>(UncheckedSendSync::new((&mut thread, func_id, args)))?
             .await
+            .into_inner()
     });
 
     #[cfg(not(feature = "async"))]

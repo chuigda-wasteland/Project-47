@@ -182,7 +182,7 @@ use crate::vm::al31f::alloc::Alloc;
             AsyncShareGuard { wrapper_ptr }
         ))
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_READ_MASK
         }))
@@ -209,7 +209,7 @@ use crate::vm::al31f::alloc::Alloc;
             AsyncShareGuard { wrapper_ptr }
         ))
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_READ_MASK
         }))
@@ -232,7 +232,7 @@ use crate::vm::al31f::alloc::Alloc;
             AsyncResetGuard { wrapper_ptr, original }
         ))
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_WRITE_MASK
         }))
@@ -253,7 +253,7 @@ use crate::vm::al31f::alloc::Alloc;
             AsyncResetGuard { wrapper_ptr, original }
         ))
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_WRITE_MASK
         }))

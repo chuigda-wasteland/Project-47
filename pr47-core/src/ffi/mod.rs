@@ -1,9 +1,7 @@
 use std::ptr::NonNull;
 
-use xjbutil::either::Either;
-
 use crate::data::tyck::TyckInfo;
-use crate::data::exception::{CheckedException, UncheckedException};
+use crate::data::exception::ExceptionInner;
 
 pub mod sync_fn;
 
@@ -27,4 +25,4 @@ pub struct Signature {
     pub ret_option: Box<[DataOption]>
 }
 
-pub type FFIException = Either<CheckedException, UncheckedException>;
+pub type FFIException = ExceptionInner;

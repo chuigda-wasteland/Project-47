@@ -108,7 +108,7 @@ impl Drop for OwnershipGuard {
     if original & (OWN_INFO_READ_MASK | OWN_INFO_WRITE_MASK | OWN_INFO_OWNED_MASK) != 0 {
         Ok(OwnershipGuard::new(wrapper_ptr, original))
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: (OWN_INFO_READ_MASK | OWN_INFO_WRITE_MASK | OWN_INFO_OWNED_MASK)
         }))
@@ -123,7 +123,7 @@ impl Drop for OwnershipGuard {
     if original & (OWN_INFO_READ_MASK | OWN_INFO_WRITE_MASK | OWN_INFO_OWNED_MASK) != 0 {
         Ok(OwnershipGuard::new(wrapper_ptr, original))
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: (OWN_INFO_READ_MASK | OWN_INFO_WRITE_MASK | OWN_INFO_OWNED_MASK)
         }))
@@ -137,7 +137,7 @@ impl Drop for OwnershipGuard {
     if original & (OWN_INFO_READ_MASK | OWN_INFO_WRITE_MASK | OWN_INFO_OWNED_MASK) != 0 {
         Ok(())
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: (OWN_INFO_READ_MASK | OWN_INFO_WRITE_MASK | OWN_INFO_OWNED_MASK)
         }))
@@ -186,7 +186,7 @@ impl Drop for OwnershipGuard {
             Ok((&*data_ptr, None))
         }
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_READ_MASK
         }))
@@ -205,7 +205,7 @@ impl Drop for OwnershipGuard {
         let data_ptr: *const T = value.get_as_mut_ptr_norm() as *const T;
         Ok(&*data_ptr)
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_READ_MASK
         }))
@@ -230,7 +230,7 @@ impl Drop for OwnershipGuard {
             Ok((CR::create_ref(wrapper_ptr), None))
         }
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_READ_MASK
         }))
@@ -247,7 +247,7 @@ impl Drop for OwnershipGuard {
     if original & OWN_INFO_READ_MASK != 0 {
         Ok(CR::create_ref(wrapper_ptr))
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_READ_MASK
         }))
@@ -270,7 +270,7 @@ impl Drop for OwnershipGuard {
             OwnershipGuard::new(wrapper_ptr, original)
         ))
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_WRITE_MASK
         }))
@@ -289,7 +289,7 @@ impl Drop for OwnershipGuard {
         let data_ptr: *mut T = value.get_as_mut_ptr_norm() as *mut T;
         Ok(&mut *data_ptr)
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_WRITE_MASK
         }))
@@ -310,7 +310,7 @@ impl Drop for OwnershipGuard {
             OwnershipGuard::new(wrapper_ptr, original)
         ))
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_WRITE_MASK
         }))
@@ -327,7 +327,7 @@ impl Drop for OwnershipGuard {
     if original & OWN_INFO_WRITE_MASK != 0 {
         Ok(CR::create_ref(wrapper_ptr))
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_WRITE_MASK
         }))
@@ -344,7 +344,7 @@ impl Drop for OwnershipGuard {
         let data_ptr: *const T = value.get_as_mut_ptr_norm() as *const T;
         Ok((&*data_ptr).clone())
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_READ_MASK
         }))
@@ -361,7 +361,7 @@ impl Drop for OwnershipGuard {
         let data_ptr: *const T = value.get_as_mut_ptr_norm() as *const T;
         Ok((&*data_ptr).clone())
     } else {
-        Err(FFIException::Right(UncheckedException::OwnershipCheckFailure {
+        Err(FFIException::Unchecked(UncheckedException::OwnershipCheckFailure {
             object: value,
             expected_mask: OWN_INFO_READ_MASK
         }))

@@ -135,6 +135,38 @@ impl Stack {
         new_slice
     }
 
+    pub unsafe fn closure_call_grow_stack(
+        &mut self,
+        func_id: usize,
+        frame_size: usize,
+        captures: &[Value],
+        arg_locs: &[usize],
+        ret_value_locs: NonNull<[usize]>,
+        ret_addr: usize
+    ) -> StackSlice {
+        let this_frame: &FrameInfo = self.frames.last().unwrap();
+        let (this_frame_start, this_frame_end): (usize, usize)
+            = (this_frame.frame_start, this_frame.frame_end);
+
+        assert_eq!(this_frame_end, self.values.len());
+        let new_frame_end: usize = this_frame_end + frame_size;
+        self.values.resize(new_frame_end, None);
+        self.frames.push(
+            FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr, func_id)
+        );
+        let old_slice: StackSlice =
+            StackSlice(&mut self.values[this_frame_start..this_frame_end] as *mut _);
+        let mut new_slice: StackSlice =
+            StackSlice(&mut self.values[this_frame_end..new_frame_end] as *mut _);
+        for (i /*: usize*/, &capture /*: Value*/) in captures.iter().enumerate() {
+            new_slice.set_value(i, capture);
+        }
+        for (i /*: usize*/, arg_loc /*: &usize*/) in arg_locs.iter().enumerate() {
+            new_slice.set_value(i + captures.len(), old_slice.get_value(*arg_loc));
+        }
+        new_slice
+    }
+
     pub unsafe fn done_func_call_shrink_stack0(&mut self) -> Option<(StackSlice, usize)> {
         self.done_func_call_shrink_stack(&[])
     }
@@ -273,6 +305,38 @@ impl Stack {
         for i /*: usize*/ in 0..arg_locs.len() {
             let arg_loc: usize = *arg_locs.get_unchecked(i);
             *new_slice_ptr.offset(i as isize) = *old_slice_ptr.offset(arg_loc as isize);
+        }
+        StackSlice(new_slice_ptr)
+    }
+
+    pub unsafe fn closure_call_grow_stack(
+        &mut self,
+        func_id: usize,
+        frame_size: usize,
+        captures: &[Value],
+        arg_locs: &[usize],
+        ret_value_locs: NonNull<[usize]>,
+        ret_addr: usize
+    ) -> StackSlice {
+        let this_frame: &FrameInfo = self.frames.last().unchecked_unwrap();
+        let (this_frame_start, this_frame_end): (usize, usize)
+            = (this_frame.frame_start, this_frame.frame_end);
+        let new_frame_end: usize = this_frame_end + frame_size;
+        self.values.resize(new_frame_end, Value::new_null());
+        self.frames.push(
+            FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr, func_id)
+        );
+        let old_slice_ptr: *mut Value = self.values.as_mut_ptr().offset(this_frame_start as isize);
+        let new_slice_ptr: *mut Value = self.values.as_mut_ptr().offset(this_frame_end as isize);
+
+        let captures_len: usize = captures.len();
+        for i in 0..captures_len() {
+            *new_slice_ptr.offset(i) = *captures.get_unchecked_mut(i);
+        }
+        for i /*: usize*/ in 0..arg_locs.len() {
+            let arg_loc: usize = *arg_locs.get_unchecked(i);
+            *new_slice_ptr.offset(i as isize + captures_len)
+                = *old_slice_ptr.offset(arg_loc as isize);
         }
         StackSlice(new_slice_ptr)
     }

@@ -45,7 +45,7 @@ impl AsyncFunctionBase for AsyncReadToStringBind {
         let fut = async move {
             AsyncReturnType(match read_to_string(r).await {
                 Ok(s) => Ok(boxed_slice![Value::new_owned(s)]),
-                Err(e) => Err(FFIException::Left(Value::new_owned(e))),
+                Err(e) => Err(FFIException::Checked(Value::new_owned(e))),
             })
         };
 
