@@ -411,7 +411,7 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
                 Ok(data) => AsyncReturnType(Ok(boxed_slice![
                     Value::new_owned(data)
                 ])),
-                Err(e) => AsyncReturnType(Err(FFIException::Left(
+                Err(e) => AsyncReturnType(Err(FFIException::Checked(
                     Value::new_owned(e)
                 )))
             }

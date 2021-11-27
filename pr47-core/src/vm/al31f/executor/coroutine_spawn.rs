@@ -24,9 +24,9 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
 ) -> Promise<A> {
     let thread: &'static mut VMThread<A> = transmute::<_, _>(thread);
 
+    let func: Value = slice.get_value(*func);
     let arg_values = args.iter().map(|arg: &usize| slice.get_value(*arg));
 
-    let func: Value = slice.get_value(*func);
     let (func_id, args): (usize, Box<[Value]>) = if func.is_value() {
         let func_id: usize = func.vt_data.inner.int_value as usize;
         (func_id, arg_values.collect())

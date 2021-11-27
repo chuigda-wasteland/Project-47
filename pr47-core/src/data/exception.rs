@@ -20,6 +20,7 @@ pub enum UncheckedException {
     OwnershipCheckFailure { object: Value, expected_mask: u8 },
     UnexpectedNull { value: Value },
     IndexOutOfBound { indexed: Value, index: i64, len: usize },
+    #[cfg(feature = "async")]
     JoinError { inner: JoinError }
 }
 

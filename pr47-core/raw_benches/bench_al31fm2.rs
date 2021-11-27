@@ -27,7 +27,7 @@ async fn run_program(program: CompiledProgram<DefaultAlloc>, args: Vec<Value>) {
         let result: Result<Vec<Value>, Exception> = unsafe {
             vm_thread_run_function::<DefaultAlloc, false>(
                 UncheckedSendSync::new((&mut vm_thread, 0, &args))
-            ).expect_silent("holy shit").await
+            ).expect_silent("holy shit").await.into_inner()
         };
         let end_time = std::time::Instant::now();
         eprintln!("elapsed time = {}", (end_time - start_time).as_millis());

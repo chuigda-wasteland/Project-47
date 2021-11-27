@@ -330,12 +330,12 @@ impl Stack {
         let new_slice_ptr: *mut Value = self.values.as_mut_ptr().offset(this_frame_end as isize);
 
         let captures_len: usize = captures.len();
-        for i in 0..captures_len() {
-            *new_slice_ptr.offset(i) = *captures.get_unchecked_mut(i);
+        for i in 0..captures_len {
+            *new_slice_ptr.offset(i as isize) = *captures.get_unchecked(i);
         }
         for i /*: usize*/ in 0..arg_locs.len() {
             let arg_loc: usize = *arg_locs.get_unchecked(i);
-            *new_slice_ptr.offset(i as isize + captures_len)
+            *new_slice_ptr.offset((i + captures_len) as isize)
                 = *old_slice_ptr.offset(arg_loc as isize);
         }
         StackSlice(new_slice_ptr)

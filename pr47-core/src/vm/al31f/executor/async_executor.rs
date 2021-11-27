@@ -13,6 +13,7 @@ use crate::builtins::object::Object;
 use crate::data::Value;
 use crate::data::exception::{CheckedException, Exception, UncheckedException};
 use crate::data::value_typed::INT_TYPE_TAG;
+use crate::ffi::FFIException;
 use crate::ffi::sync_fn::Function as FFIFunction;
 use crate::vm::al31f::{AL31F, Combustor};
 use crate::vm::al31f::alloc::Alloc;
@@ -56,7 +57,6 @@ use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
 #[cfg(feature = "async")] use crate::ffi::async_fn::{AsyncReturnType, Promise};
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
 #[cfg(feature = "async")] use crate::ffi::async_fn::PromiseContext;
-use crate::ffi::FFIException;
 #[cfg(feature = "async")] use crate::util::serializer::CoroutineContext;
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
