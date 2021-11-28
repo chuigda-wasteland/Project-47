@@ -93,6 +93,8 @@ impl AsyncFunctionBase for JoinBind {
     }
 }
 
+pub const JOIN_BIND: &'static JoinBind = &JoinBind();
+
 pub struct SelectBind();
 
 impl AsyncFunctionBase for SelectBind {
@@ -151,6 +153,8 @@ impl AsyncFunctionBase for SelectBind {
     }
 }
 
+pub const SELECT_BIND: &'static SelectBind = &SelectBind();
+
 pub struct SleepMillisBind();
 
 impl AsyncFunctionBase for SleepMillisBind {
@@ -183,3 +187,5 @@ impl AsyncFunctionBase for SleepMillisBind {
         })
     }
 }
+
+pub const SLEEP_MS_BIND: &'static SleepMillisBind = &SleepMillisBind();

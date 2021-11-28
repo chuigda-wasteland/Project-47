@@ -569,8 +569,8 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 }
             },
             Insc::FFICallRtlc(ffi_func_id, args, ret_value_locs) => {
-                let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
-                    = &program.ffi_funcs[*ffi_func_id];
+                let ffi_function: &'static dyn FFIFunction<Combustor<A>>
+                    = program.ffi_funcs[*ffi_func_id];
 
                 let args_len: usize = args.len();
                 for i /*: usize*/ in 0..args_len {
@@ -614,8 +614,8 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             #[cfg(feature = "optimized-rtlc")]
             Insc::FFICall(ffi_func_id, args, ret_value_locs) => {
-                let ffi_function: &Box<dyn FFIFunction<Combustor<A>>>
-                    = &program.ffi_funcs[*ffi_func_id];
+                let ffi_function: &'static dyn FFIFunction<Combustor<A>>
+                    = program.ffi_funcs[*ffi_func_id];
 
                 let args_len: usize = args.len();
                 for i /*: usize*/ in 0..args_len {
@@ -659,8 +659,8 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             #[cfg(all(feature = "optimized-rtlc", feature = "async"))]
             Insc::FFICallAsync(async_ffi_func_id, args, ret) => {
-                let async_ffi_function: &Box<dyn FFIAsyncFunction<A, AL31F<A>, AsyncCombustor<A>>>
-                    = &program.async_ffi_funcs[*async_ffi_func_id];
+                let async_ffi_function: &'static dyn FFIAsyncFunction<A, _, _>
+                    = program.async_ffi_funcs[*async_ffi_func_id];
 
                 let args_len: usize = args.len();
                 for i /*: usize*/ in 0..args_len {
@@ -729,6 +729,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 let promise: Promise<A> = coroutine_spawn(thread, slice, func, args);
                 this.awaiting_promise = Some((promise.fut, promise.ctx));
                 this.insc_ptr = insc_ptr + 1;
+                cx.waker().wake_by_ref();
                 return Poll::Pending;
             },
             Insc::Raise(exception_ptr) => {

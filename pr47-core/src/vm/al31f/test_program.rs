@@ -6,14 +6,12 @@ use crate::data::Value;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfoPool;
 use crate::ffi::{FFIException, Signature};
-use crate::ffi::sync_fn::{Function, FunctionBase, OwnershipGuard, VMContext, value_into_ref};
-use crate::vm::al31f::{AL31F, Combustor};
+use crate::ffi::sync_fn::{FunctionBase, OwnershipGuard, VMContext, value_into_ref};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
 use crate::vm::al31f::insc::Insc;
 
 #[cfg(feature = "async")] use crate::ffi::async_fn::{
-    AsyncFunction,
     AsyncFunctionBase,
     AsyncReturnType,
     AsyncVMContext,
@@ -21,7 +19,8 @@ use crate::vm::al31f::insc::Insc;
     PromiseGuard
 };
 #[cfg(feature = "async")] use crate::ffi::async_fn::{PromiseContext, VMDataTrait};
-#[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
+use crate::std47::futures::SLEEP_MS_BIND;
+use crate::std47::io::PRINT_BIND;
 
 pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
     CompiledProgram {
@@ -131,7 +130,7 @@ pub fn exception_program<A: Alloc>() -> CompiledProgram<A> {
 
                                                                   // foo:eh:Object
             /*03*/ Insc::MakeIntConst(114514, 0),                 // %0 = $114514
-            /*04*/ Insc::ReturnOne(0),                            // return %0
+            /*04*/ Insc::ReturnOne(0),                            // return %0^
 
 
                                                                   // bar() -> ()
@@ -223,6 +222,8 @@ impl FunctionBase for Pr47Binder_ffi_function {
     }
 }
 
+const PR47BINDER_FFI_FUNCTION: &'static Pr47Binder_ffi_function = &Pr47Binder_ffi_function();
+
 pub fn ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
     CompiledProgram {
         code: boxed_slice![
@@ -237,9 +238,7 @@ pub fn ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
         functions: boxed_slice![
             CompiledFunction::new(0, 0, 0, 1, boxed_slice![])
         ],
-        ffi_funcs: boxed_slice![
-            Box::new(Pr47Binder_ffi_function()) as Box<dyn Function<Combustor<A>>>
-        ],
+        ffi_funcs: boxed_slice![PR47BINDER_FFI_FUNCTION as _],
         #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
@@ -286,9 +285,7 @@ pub fn bench_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
         functions: boxed_slice![
             CompiledFunction::new(0, 0, 0, 5, boxed_slice![])
         ],
-        ffi_funcs: boxed_slice![
-            Box::new(Pr47Binder_ffi_function()) as Box<dyn Function<Combustor<A>>>
-        ],
+        ffi_funcs: boxed_slice![PR47BINDER_FFI_FUNCTION as _],
         #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
@@ -331,6 +328,8 @@ impl FunctionBase for Pr47Binder_ffi_function2 {
     }
 }
 
+const PR47_BINDER_FFI_FUNCTION2: &'static Pr47Binder_ffi_function2 = &Pr47Binder_ffi_function2();
+
 pub fn ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
     CompiledProgram {
         code: boxed_slice![
@@ -344,9 +343,7 @@ pub fn ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
         functions: boxed_slice![
             CompiledFunction::new(0, 2, 1, 2, boxed_slice![])
         ],
-        ffi_funcs: boxed_slice![
-            Box::new(Pr47Binder_ffi_function2()) as Box<dyn Function<Combustor<A>>>
-        ],
+        ffi_funcs: boxed_slice![PR47_BINDER_FFI_FUNCTION2 as _],
         #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
@@ -379,9 +376,7 @@ pub fn bench_ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
         functions: boxed_slice![
             CompiledFunction::new(0, 0, 0, 6, boxed_slice![])
         ],
-        ffi_funcs: boxed_slice![
-            Box::new(Pr47Binder_ffi_function2()) as Box<dyn Function<Combustor<A>>>
-        ],
+        ffi_funcs: boxed_slice![PR47_BINDER_FFI_FUNCTION2 as _],
         #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
@@ -432,6 +427,9 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
     }
 }
 
+const PR47BINDER_ASYNC_FFI_FUNCTION: &'static Pr47Binder_async_ffi_function
+    = &Pr47Binder_async_ffi_function();
+
 #[cfg(feature = "async")]
 pub fn async_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
     CompiledProgram {
@@ -447,9 +445,61 @@ pub fn async_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
             CompiledFunction::new(0, 0, 1, 1, boxed_slice![])
         ],
         ffi_funcs: boxed_slice![],
-        async_ffi_funcs: boxed_slice![
-            Box::new(Pr47Binder_async_ffi_function())
-                as Box<dyn AsyncFunction<A, AL31F<A>, AsyncCombustor<A>>>
-        ]
+        async_ffi_funcs: boxed_slice![PR47BINDER_ASYNC_FFI_FUNCTION as _]
+    }
+}
+
+#[cfg(all(feature = "async", feature = "al31f-builtin-ops"))]
+pub fn async_spawn_program<A: Alloc>() -> CompiledProgram<A> {
+    let string1: String = "string1\n".into();
+    let string1: Value = Value::new_owned(string1);
+
+    let string2: String = "string2\n".into();
+    let string2: Value = Value::new_owned(string2);
+
+    let string3: String = "string3\n".into();
+    let string3: Value = Value::new_owned(string3);
+
+    let string4: String = "string4\n".into();
+    let string4: Value = Value::new_owned(string4);
+
+    CompiledProgram {
+        code: boxed_slice![
+                                                              // application_start()
+            /*00*/ Insc::MakeIntConst(1, 0),                  // %0 = $1
+            /*01*/ Insc::Spawn(0, boxed_slice![]),            // spawn %0, []
+            /*02*/ Insc::Await(0, boxed_slice![0]),           // %0 = #spawn-result
+            /*03*/ Insc::LoadConst(0, 1),                     // %1 = load-const .string1
+            /*04*/ Insc::FFICallRtlc(0, boxed_slice![1],      // ffi-call print(%1)
+                                     boxed_slice![]),
+            /*05*/ Insc::MakeIntConst(1000, 1),               // %1 = $1000
+            /*06*/ Insc::FFICallAsync(0, boxed_slice![1], 1), // %1 = ffi-call-async sleep_ms(%1)
+            /*07*/ Insc::Await(1, boxed_slice![]),            // await %1
+            /*08*/ Insc::LoadConst(1, 1),                     // %1 = load-const .string2
+            /*09*/ Insc::FFICallRtlc(0, boxed_slice![1],      // ffi-call print(%1)
+                                     boxed_slice![]),
+            /*10*/ Insc::Await(0, boxed_slice![]),            // await %0
+            /*11*/ Insc::ReturnNothing,                       // ret
+
+                                                              // spawned_task_main()
+            /*12*/ Insc::LoadConst(2, 0),                     // %0 = load-const .string3
+            /*13*/ Insc::FFICallRtlc(0, boxed_slice![0],      // ffi-call print(%0)
+                                     boxed_slice![]),
+            /*14*/ Insc::MakeIntConst(1000, 0),               // %0 = $1000
+            /*15*/ Insc::FFICallAsync(0, boxed_slice![0], 0), // %0 = ffi-call-async sleep_ms(%0)
+            /*16*/ Insc::Await(0, boxed_slice![]),            // await %0
+            /*17*/ Insc::LoadConst(3, 0),                     // %0 = load-const .string4
+            /*18*/ Insc::FFICallRtlc(0, boxed_slice![0],      // ffi-call print(%0)
+                                     boxed_slice![]),
+            /*19*/ Insc::ReturnNothing                        // ret
+        ],
+        const_pool: boxed_slice![string1, string2, string3, string4],
+        init_proc: 0,
+        functions: boxed_slice![
+            CompiledFunction::new(0, 0, 0, 2, boxed_slice![]),
+            CompiledFunction::new(12, 0, 0, 1, boxed_slice![])
+        ],
+        ffi_funcs: boxed_slice![PRINT_BIND as _],
+        async_ffi_funcs: boxed_slice![SLEEP_MS_BIND as _]
     }
 }

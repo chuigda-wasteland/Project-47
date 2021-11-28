@@ -93,7 +93,7 @@ impl Value {
     }
 
     /// Create a new "shared" `Value`
-    pub fn new_shared<T>(data: &T) -> Self
+    pub unsafe fn new_shared<T>(data: &T) -> Self
         where T: 'static,
               Void: StaticBase<T>
     {
@@ -103,7 +103,7 @@ impl Value {
     }
 
     /// Create a new "mutably shared" `Value`
-    pub fn new_mut_shared<T>(data: &mut T) -> Self
+    pub unsafe fn new_mut_shared<T>(data: &mut T) -> Self
         where T: 'static,
               Void: StaticBase<T>
     {

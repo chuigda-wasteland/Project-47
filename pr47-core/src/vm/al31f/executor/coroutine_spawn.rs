@@ -16,6 +16,7 @@ use crate::vm::al31f::compiled::CompiledProgram;
 use crate::vm::al31f::executor::{vm_thread_run_function, VMThread};
 use crate::vm::al31f::stack::{Stack, StackSlice};
 
+#[inline(never)]
 pub unsafe fn coroutine_spawn<A: Alloc>(
     thread: &mut VMThread<A>,
     slice: &mut StackSlice,

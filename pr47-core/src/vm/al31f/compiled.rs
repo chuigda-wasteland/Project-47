@@ -85,7 +85,7 @@ pub struct CompiledProgram<A: Alloc> {
     pub init_proc: usize,
     pub functions: Box<[CompiledFunction]>,
 
-    pub ffi_funcs: Box<[Box<dyn FFIFunction<Combustor<A>>>]>,
+    pub ffi_funcs: Box<[&'static dyn FFIFunction<Combustor<A>>]>,
     #[cfg(feature = "async")]
-    pub async_ffi_funcs: Box<[Box<dyn FFIAsyncFunction<A, AL31F<A>, AsyncCombustor<A>>>]>
+    pub async_ffi_funcs: Box<[&'static dyn FFIAsyncFunction<A, AL31F<A>, AsyncCombustor<A>>]>
 }
