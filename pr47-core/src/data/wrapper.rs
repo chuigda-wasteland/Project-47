@@ -9,11 +9,12 @@ use xjbutil::void::Void;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::TyckInfo;
 
-pub const OWN_INFO_READ_MASK: u8    = 0b000_1_0_0_0_0;
-pub const OWN_INFO_WRITE_MASK: u8   = 0b000_0_1_0_0_0;
-pub const OWN_INFO_MOVE_MASK: u8    = 0b000_0_0_1_0_0;
-pub const OWN_INFO_COLLECT_MASK: u8 = 0b000_0_0_0_1_0;
-pub const OWN_INFO_OWNED_MASK: u8   = 0b000_0_0_0_0_1;
+pub const OWN_INFO_GLOBAL_MASK: u8  = 0b00_1_1_0_0_0_1;
+pub const OWN_INFO_READ_MASK: u8    = 0b00_0_1_0_0_0_0;
+pub const OWN_INFO_WRITE_MASK: u8   = 0b00_0_0_1_0_0_0;
+pub const OWN_INFO_MOVE_MASK: u8    = 0b00_0_0_0_1_0_0;
+pub const OWN_INFO_COLLECT_MASK: u8 = 0b00_0_0_0_0_1_0;
+pub const OWN_INFO_OWNED_MASK: u8   = 0b00_0_0_0_0_0_1;
 
 /// Ownership information
 ///
@@ -22,18 +23,20 @@ pub const OWN_INFO_OWNED_MASK: u8   = 0b000_0_0_0_0_1;
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum OwnershipInfo {
+    // G = Global
     // R = Read
     // W = Write
     // M = Move
     // C = Collectable
     // O = Owned by VM
-    //                        R W M C O
-    VMOwned           = 0b000_1_1_1_1_1,
-    SharedFromRust    = 0b000_1_0_0_1_0,
-    MutSharedFromRust = 0b000_1_1_0_1_0,
-    SharedToRust      = 0b000_1_0_0_0_1, // also used by global constant objects
-    MutSharedToRust   = 0b000_0_0_0_0_1,
-    MovedToRust       = 0b000_0_0_0_1_0
+    //                       G R W M C O
+    VMOwned           = 0b00_0_1_1_1_1_1,
+    SharedFromRust    = 0b00_0_1_0_0_1_0,
+    MutSharedFromRust = 0b00_0_1_1_0_1_0,
+    SharedToRust      = 0b00_0_1_0_0_0_1,
+    MutSharedToRust   = 0b00_0_0_0_0_0_1,
+    MovedToRust       = 0b00_0_0_0_0_1_0,
+    GlobalConst       = 0b00_1_1_0_0_0_1
 }
 
 impl OwnershipInfo {

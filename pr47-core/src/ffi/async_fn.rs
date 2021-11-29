@@ -7,7 +7,7 @@ use crate::data::Value;
 use crate::data::exception::UncheckedException;
 use crate::data::generic::GenericTypeRef;
 use crate::data::traits::{StaticBase};
-use crate::data::wrapper::{OwnershipInfo, Wrapper};
+use crate::data::wrapper::{OWN_INFO_GLOBAL_MASK, OwnershipInfo, Wrapper};
 use crate::data::wrapper::{
     OWN_INFO_OWNED_MASK,
     OWN_INFO_READ_MASK,
@@ -84,9 +84,11 @@ impl AsyncOwnershipGuard {
     #[cfg_attr(not(debug_assertions), inline(always))]
     pub fn un_share(&self) {
         let wrapper_ref: &mut Wrapper<()> = unsafe { &mut *self.share_guard.wrapper_ptr };
-        wrapper_ref.refcount -= 1;
-        if wrapper_ref.refcount == 0 {
-            wrapper_ref.ownership_info = wrapper_ref.ownership_info2;
+        if wrapper_ref.ownership_info & OWN_INFO_GLOBAL_MASK == 0 {
+            wrapper_ref.refcount -= 1;
+            if wrapper_ref.refcount == 0 {
+                wrapper_ref.ownership_info = wrapper_ref.ownership_info2;
+            }
         }
     }
 }
@@ -170,12 +172,15 @@ use crate::vm::al31f::alloc::Alloc;
     let original: u8 = (*wrapper_ptr).ownership_info;
     if original & OWN_INFO_READ_MASK != 0 {
         let data_ptr: *const T = value.get_as_mut_ptr_norm() as *const T;
-        if original & OWN_INFO_WRITE_MASK != 0 {
-            (*wrapper_ptr).ownership_info2 = original;
-            (*wrapper_ptr).ownership_info = original & (OWN_INFO_READ_MASK | OWN_INFO_OWNED_MASK);
-            (*wrapper_ptr).refcount = 1;
-        } else {
-            (*wrapper_ptr).refcount += 1;
+        if original & OWN_INFO_GLOBAL_MASK == 0 {
+            if original & OWN_INFO_WRITE_MASK != 0 {
+                (*wrapper_ptr).ownership_info2 = original;
+                (*wrapper_ptr).ownership_info
+                    = original & (OWN_INFO_READ_MASK | OWN_INFO_OWNED_MASK);
+                (*wrapper_ptr).refcount = 1;
+            } else {
+                (*wrapper_ptr).refcount += 1;
+            }
         }
         Ok((
             &*data_ptr,

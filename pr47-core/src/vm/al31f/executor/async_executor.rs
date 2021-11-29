@@ -94,18 +94,6 @@ pub async fn create_vm_main_thread<A: Alloc>(
     ret
 }
 
-pub fn create_vm_child_thread<A: Alloc>(
-    mut context: CoroutineContext<AL31F<A>>,
-    program: NonNull<CompiledProgram<A>>
-) -> Box<VMThread<A>> {
-    let stack: Stack = Stack::new();
-    unsafe { context.get_shared_data_mut().alloc.add_stack(&stack); }
-
-    Box::new(VMThread {
-        vm: context, program, stack
-    })
-}
-
 unsafe fn unchecked_exception_unwind_stack(
     unchecked_exception: UncheckedException,
     stack: &mut Stack,
@@ -794,6 +782,15 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             Insc::VecClear(_) => {}
 
             #[cfg(feature = "al31f-builtin-ops")]
+            Insc::StrClone(src, dest) => {
+                let src: &String = &*(slice.get_value(*src).get_as_mut_ptr_norm() as *const _);
+                let buffer: String = src.clone();
+
+                let dest_value: Value = Value::new_owned(buffer);
+                get_vm!(thread).alloc.add_managed(dest_value.ptr_repr);
+                slice.set_value(*dest, dest_value);
+            },
+            #[cfg(feature = "al31f-builtin-ops")]
             Insc::StrConcat(src1, src2, dest) => {
                 let src1: &String = &*(slice.get_value(*src1).get_as_mut_ptr_norm() as *const _);
                 let src2: &String = &*(slice.get_value(*src2).get_as_mut_ptr_norm() as *const _);
@@ -888,35 +885,5 @@ pub unsafe fn vm_thread_run_function<'a, A: Alloc, const S: bool>(
         insc_ptr,
 
         #[cfg(feature = "async")] awaiting_promise: None
-    })
-}
-
-pub struct VMThreadRunFunctionFut2<A: Alloc, const S: bool> {
-    #[allow(unused)] thread: Pin<Box<VMThread<A>>>,
-    inner: VMThreadRunFunctionFut<'static, A, S>
-}
-
-unsafe impl<A: Alloc, const S: bool> Send for VMThreadRunFunctionFut2<A, S> {}
-unsafe impl<A: Alloc, const S: bool> Sync for VMThreadRunFunctionFut2<A, S> {}
-
-impl<A: Alloc, const S: bool> Future for VMThreadRunFunctionFut2<A, S> {
-    type Output = <VMThreadRunFunctionFut<'static, A, S> as Future>::Output;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        Pin::into_inner(self).inner.poll_unpin(cx)
-    }
-}
-
-pub unsafe fn vm_thread_run_function2<A: Alloc, const S: bool>(
-    arg_pack: UncheckedSendSync<(Box<VMThread<A>>, usize, &[Value])>
-) -> Result<VMThreadRunFunctionFut2<A, S>, Exception> {
-    let (mut thread, func_id, args) = arg_pack.into_inner();
-    let thread_ptr: *mut VMThread<A> = thread.as_mut() as *mut _;
-
-    let inner = vm_thread_run_function(UncheckedSendSync::new((&mut *thread_ptr, func_id, args)))?;
-
-    Ok(VMThreadRunFunctionFut2 {
-        thread: Pin::new(thread),
-        inner
     })
 }

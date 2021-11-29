@@ -472,6 +472,7 @@ pub enum Insc {
     #[cfg(feature = "al31f-builtin-ops")] VecLen(usize),
     #[cfg(feature = "al31f-builtin-ops")] VecClear(usize),
 
+    #[cfg(feature = "al31f-builtin-ops")] StrClone(usize, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrConcat(usize, usize, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrFormat(usize, Box<[usize]>, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrLen(usize, usize),
