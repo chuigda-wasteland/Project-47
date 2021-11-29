@@ -20,12 +20,12 @@ use crate::vm::al31f::stack::{Stack, StackSlice};
 pub unsafe fn coroutine_spawn<A: Alloc>(
     thread: &mut VMThread<A>,
     slice: &mut StackSlice,
-    func: &usize,
+    func: usize,
     args: &[usize]
 ) -> Promise<A> {
     let thread: &'static mut VMThread<A> = transmute::<_, _>(thread);
 
-    let func: Value = slice.get_value(*func);
+    let func: Value = slice.get_value(func);
     let arg_values = args.iter().map(|arg: &usize| slice.get_value(*arg));
 
     let (func_id, args): (usize, Box<[Value]>) = if func.is_value() {

@@ -602,6 +602,10 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             #[cfg(feature = "optimized-rtlc")]
             Insc::FFICall(ffi_func_id, args, ret_value_locs) => {
+                #[cfg(not(debug_assertions))]
+                let ffi_function: &'static dyn FFIFunction<Combustor<A>>
+                    = *program.ffi_funcs.get_unchecked(*ffi_func_id);
+                #[cfg(debug_assertions)]
                 let ffi_function: &'static dyn FFIFunction<Combustor<A>>
                     = program.ffi_funcs[*ffi_func_id];
 
@@ -647,6 +651,10 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             #[cfg(all(feature = "optimized-rtlc", feature = "async"))]
             Insc::FFICallAsync(async_ffi_func_id, args, ret) => {
+                #[cfg(not(debug_assertions))]
+                let async_ffi_function: &'static dyn FFIAsyncFunction<A, _, _>
+                    = *program.async_ffi_funcs.get_unchecked(*async_ffi_func_id);
+                #[cfg(debug_assertions)]
                 let async_ffi_function: &'static dyn FFIAsyncFunction<A, _, _>
                     = program.async_ffi_funcs[*async_ffi_func_id];
 
@@ -714,7 +722,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             #[cfg(all(feature = "async", feature = "al31f-builtin-ops"))]
             Insc::Spawn(func, args) => {
-                let promise: Promise<A> = coroutine_spawn(thread, slice, func, args);
+                let promise: Promise<A> = coroutine_spawn(thread, slice, *func, args);
                 this.awaiting_promise = Some((promise.fut, promise.ctx));
                 this.insc_ptr = insc_ptr + 1;
                 cx.waker().wake_by_ref();
