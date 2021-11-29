@@ -193,7 +193,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     }
 
                     let insc: &Insc = &this.thread.program.as_ref().code[this.insc_ptr - 1];
-                    let dests: &Box<[usize]> = if let Insc::Await(_, dests) = insc {
+                    let dests: &[usize] = if let Insc::Await(_, dests) = insc {
                         dests
                     } else {
                         unreachable_unchecked()
@@ -801,8 +801,6 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 get_vm!(thread).alloc.add_managed(dest_value.ptr_repr);
                 slice.set_value(*dest, dest_value);
             },
-            #[cfg(feature = "al31f-builtin-ops")]
-            Insc::StrFormat(_, _, _) => {}
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::StrLen(_, _) => {}
             #[cfg(feature = "al31f-builtin-ops")]

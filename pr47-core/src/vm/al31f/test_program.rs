@@ -1,4 +1,5 @@
 use xjbutil::boxed_slice;
+use xjbutil::slice_arena::SliceArena;
 use xjbutil::void::Void;
 
 use crate::builtins::object::Object;
@@ -23,11 +24,18 @@ use crate::std47::futures::SLEEP_MS_BIND;
 use crate::std47::io::PRINT_BIND;
 
 pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
-    CompiledProgram {
-        code: boxed_slice![
+    let (slice_arena, code) = unsafe {
+        let slice_arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
             Insc::AddInt(0, 1, 0),
-            Insc::Return(boxed_slice![0])
-        ],
+            Insc::Return(slice_arena.unsafe_make(&[0]))
+        ];
+        (slice_arena, code)
+    };
+
+    CompiledProgram {
+        slice_arena,
+        code,
         const_pool: boxed_slice![],
         init_proc: 0,
         functions: boxed_slice![
@@ -40,20 +48,26 @@ pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
 }
 
 pub fn basic_fn_call_program<A: Alloc>() -> CompiledProgram<A> {
-    CompiledProgram {
-        code: boxed_slice![
-                                                              // application_start() -> (int)
-            /*00*/ Insc::MakeIntConst(1, 0),                  // %0 = $1
-            /*01*/ Insc::MakeIntConst(2, 1),                  // %1 = $2
-            /*02*/ Insc::Call(
-                       1, boxed_slice![0, 1], boxed_slice![0] // [ %0 ] = call sum(%0, %1)
-                   ),
-            /*03*/ Insc::Return(boxed_slice![0]),             // return [ %0 ]
+    let (slice_arena, code) = unsafe {
+        let arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
+                                                             // application_start() -> (int)
+            /*00*/ Insc::MakeIntConst(1, 0),                 // %0 = $1
+            /*01*/ Insc::MakeIntConst(2, 1),                 // %1 = $2
+            /*02*/ Insc::Call(1, arena.unsafe_make(&[0, 1]), // [ %0 ] = call sum(%0, %1)
+                                 arena.unsafe_make(&[0])),
+            /*03*/ Insc::Return(arena.unsafe_make(&[0])),    // return [ %0 ]
 
-                                                              // sum(%0, %1) -> (int)
-            /*04*/ Insc::AddInt(0, 1, 0),                     // [ %0 ] = add int %0, %1
-            /*05*/ Insc::Return(boxed_slice![0])              // return [ %0 ]
-        ],
+                                                             // sum(%0, %1) -> (int)
+            /*04*/ Insc::AddInt(0, 1, 0),                    // [ %0 ] = add int %0, %1
+            /*05*/ Insc::Return(arena.unsafe_make(&[0]))     // return [ %0 ]
+        ];
+        (arena, code)
+    };
+
+    CompiledProgram {
+        slice_arena,
+        code,
         const_pool: boxed_slice![],
         init_proc: 0,
         functions: boxed_slice![
@@ -67,23 +81,32 @@ pub fn basic_fn_call_program<A: Alloc>() -> CompiledProgram<A> {
 }
 
 pub fn fibonacci_program<A: Alloc>() -> CompiledProgram<A> {
+    let (slice_arena, code) = unsafe {
+        let arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
+                                                           // fibonacci(%0) -> (int)
+            /*00*/ Insc::MakeIntConst(0, 1),               // %1 = $0
+            /*01*/ Insc::LeInt(0, 1, 2),                   // %2 = le int %0, %1
+            /*02*/ Insc::JumpIfTrue(2, 12),                // if %2 goto L.12
+            /*03*/ Insc::MakeIntConst(1, 1),               // %1 = $1
+            /*04*/ Insc::EqValue(0, 1, 2),                 // %2 = eq int %0, %1
+            /*05*/ Insc::JumpIfTrue(2, 12),                // if %2 goto L.12
+            /*06*/ Insc::SubInt(0, 1, 2),                  // %2 = sub int %0, %1
+            /*07*/ Insc::MakeIntConst(2, 1),               // %1 = $2
+            /*08*/ Insc::SubInt(0, 1, 3),                  // %3 = sub int %0, %1
+            /*09*/ Insc::Call(0, arena.unsafe_make(&[2]),
+                                 arena.unsafe_make(&[2])), // [ %2 ] = call fibonacci(%2)
+            /*10*/ Insc::Call(0, arena.unsafe_make(&[3]),
+                                 arena.unsafe_make(&[3])), // [ %3 ] = call fibonacci(%3)
+            /*11*/ Insc::AddInt(2, 3, 1),                  // %1 = add %2, %3
+            /*12*/ Insc::ReturnOne(1)                      // return %1
+        ];
+        (arena, code)
+    };
+
     CompiledProgram {
-        code: boxed_slice![
-                                                                    // fibonacci(%0) -> (int)
-            /*00*/ Insc::MakeIntConst(0, 1),                        // %1 = $0
-            /*01*/ Insc::LeInt(0, 1, 2),                            // %2 = le int %0, %1
-            /*02*/ Insc::JumpIfTrue(2, 12),                         // if %2 goto L.12
-            /*03*/ Insc::MakeIntConst(1, 1),                        // %1 = $1
-            /*04*/ Insc::EqValue(0, 1, 2),                          // %2 = eq int %0, %1
-            /*05*/ Insc::JumpIfTrue(2, 12),                         // if %2 goto L.12
-            /*06*/ Insc::SubInt(0, 1, 2),                           // %2 = sub int %0, %1
-            /*07*/ Insc::MakeIntConst(2, 1),                        // %1 = $2
-            /*08*/ Insc::SubInt(0, 1, 3),                           // %3 = sub int %0, %1
-            /*09*/ Insc::Call(0, boxed_slice![2], boxed_slice![2]), // [ %2 ] = call fibonacci(%2)
-            /*10*/ Insc::Call(0, boxed_slice![3], boxed_slice![3]), // [ %3 ] = call fibonacci(%3)
-            /*11*/ Insc::AddInt(2, 3, 1),                           // %1 = add %2, %3
-            /*12*/ Insc::ReturnOne(1)                               // return %1
-        ],
+        slice_arena,
+        code,
         const_pool: boxed_slice![],
         init_proc: 0,
         functions: boxed_slice![
@@ -96,8 +119,9 @@ pub fn fibonacci_program<A: Alloc>() -> CompiledProgram<A> {
 }
 
 pub fn alloc_1m_program<A: Alloc>() -> CompiledProgram<A> {
-    CompiledProgram {
-        code: boxed_slice![
+    let (slice_arena, code) = {
+        let arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
                                                       // alloc_1m()
             /*00*/ Insc::MakeIntConst(0, 0),          // %0 = $0
             /*01*/ Insc::MakeIntConst(1, 1),          // %1 = $1
@@ -108,7 +132,13 @@ pub fn alloc_1m_program<A: Alloc>() -> CompiledProgram<A> {
             /*06*/ Insc::SubInt(2, 1, 2),             // %2 = sub int %2, %1
             /*07*/ Insc::Jump(3),                     // goto L.3
             /*08*/ Insc::ReturnNothing                // return
-        ],
+        ];
+        (arena, code)
+    };
+
+    CompiledProgram {
+        slice_arena,
+        code,
         const_pool: boxed_slice![],
         init_proc: 0,
         functions: boxed_slice![
@@ -121,26 +151,35 @@ pub fn alloc_1m_program<A: Alloc>() -> CompiledProgram<A> {
 }
 
 pub fn exception_program<A: Alloc>() -> CompiledProgram<A> {
+    let (slice_arena, code) = unsafe {
+        let arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
+                                                          // foo() -> ()
+            /*00*/ Insc::MakeIntConst(12345, 0),          // %0 = $12345
+            /*01*/ Insc::Call(1, arena.unsafe_make(&[]),
+                              arena.unsafe_make(&[])),    // call bar()
+            /*02*/ Insc::ReturnOne(0),                    // return %0
+
+                                                          // foo:eh:Object
+            /*03*/ Insc::MakeIntConst(114514, 0),         // %0 = $114514
+            /*04*/ Insc::ReturnOne(0),                    // return %0^
+
+
+                                                          // bar() -> ()
+            /*05*/ Insc::Call(2, arena.unsafe_make(&[]),
+                                 arena.unsafe_make(&[])), // call baz()
+            /*06*/ Insc::ReturnNothing,                   // return
+
+                                                          // baz() -> !
+            /*07*/ Insc::CreateObject(0),                 // %0 = create-object
+            /*08*/ Insc::Raise(0)                         // raise %0
+        ];
+        (arena, code)
+    };
+
     CompiledProgram {
-        code: boxed_slice![
-                                                                  // foo() -> ()
-            /*00*/ Insc::MakeIntConst(12345, 0),                  // %0 = $12345
-            /*01*/ Insc::Call(1, boxed_slice![], boxed_slice![]), // call bar()
-            /*02*/ Insc::ReturnOne(0),                            // return %0
-
-                                                                  // foo:eh:Object
-            /*03*/ Insc::MakeIntConst(114514, 0),                 // %0 = $114514
-            /*04*/ Insc::ReturnOne(0),                            // return %0^
-
-
-                                                                  // bar() -> ()
-            /*05*/ Insc::Call(2, boxed_slice![], boxed_slice![]), // call baz()
-            /*06*/ Insc::ReturnNothing,                           // return
-
-                                                                  // baz() -> !
-            /*07*/ Insc::CreateObject(0),                         // %0 = create-object
-            /*08*/ Insc::Raise(0)                                 // raise %0
-        ],
+        slice_arena,
+        code,
         const_pool: boxed_slice![],
         init_proc: 0,
         functions: boxed_slice![
@@ -157,16 +196,24 @@ pub fn exception_program<A: Alloc>() -> CompiledProgram<A> {
 }
 
 pub fn exception_no_eh_program<A: Alloc>() -> CompiledProgram<A> {
-    CompiledProgram {
-        code: boxed_slice![
-                                                                   // foo() -> (int)
-            /*00*/ Insc::Call(1, boxed_slice![], boxed_slice![0]), // %0 = call bar
-            /*01*/ Insc::ReturnOne(0),
+    let (slice_arena, code) = unsafe {
+        let arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
+                                                           // foo() -> (int)
+            /*00*/ Insc::Call(1, arena.unsafe_make(&[]),   // %0 = call bar
+                                 arena.unsafe_make(&[0])),
+            /*01*/ Insc::ReturnOne(0),                     // return %0
 
-                                                                   // bar() -> !
-            /*02*/ Insc::CreateObject(0),                          // %0 = create-object
-            /*03*/ Insc::Raise(0),                                 // raise %0
-        ],
+                                                           // bar() -> !
+            /*02*/ Insc::CreateObject(0),                  // %0 = create-object
+            /*03*/ Insc::Raise(0),                         // raise %0
+        ];
+        (arena, code)
+    };
+
+    CompiledProgram {
+        slice_arena,
+        code,
         const_pool: boxed_slice![],
         init_proc: 0,
         functions: boxed_slice![
@@ -225,14 +272,22 @@ impl FunctionBase for Pr47Binder_ffi_function {
 const PR47BINDER_FFI_FUNCTION: &'static Pr47Binder_ffi_function = &Pr47Binder_ffi_function();
 
 pub fn ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
+    let (slice_arena, code) = unsafe {
+        let arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
+                                                                    // main() -> ()
+            /*00*/ Insc::CreateObject(0),                           // %0 = create-object
+            /*01*/ Insc::FFICallRtlc(0,                             // ffi-call-rtlc @0(%0, %0, %0)
+                                     arena.unsafe_make(&[0, 0, 0]),
+                                     arena.unsafe_make(&[])),
+            /*02*/ Insc::ReturnNothing                              // return
+        ];
+        (arena, code)
+    };
+
     CompiledProgram {
-        code: boxed_slice![
-                                                               // main() -> ()
-            /*00*/ Insc::CreateObject(0),                      // %0 = create-object
-            /*01*/ Insc::FFICallRtlc(0, boxed_slice![0, 0, 0], // ffi-call-rtlc @0(%0, %0, %0)
-                                     boxed_slice![]),
-            /*02*/ Insc::ReturnNothing                         // return
-        ],
+        slice_arena,
+        code,
         const_pool: boxed_slice![],
         init_proc: 0,
         functions: boxed_slice![
@@ -244,8 +299,9 @@ pub fn ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
 }
 
 pub fn bench_raw_iter_program<A: Alloc>() -> CompiledProgram<A> {
-    CompiledProgram {
-        code: boxed_slice![
+    let (slice_arena, code) = {
+        let arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
             /*00*/ Insc::MakeIntConst(0, 0),               // %0 = $0
             /*01*/ Insc::MakeIntConst(100_000_000, 1),     // %1 = $100_000_000
             /*02*/ Insc::MakeIntConst(1, 2),               // %2 = $1
@@ -254,7 +310,13 @@ pub fn bench_raw_iter_program<A: Alloc>() -> CompiledProgram<A> {
             /*05*/ Insc::AddInt(0, 2, 0),                  // %0 = add int %0, %2
             /*06*/ Insc::Jump(3),                          // goto L.3
             /*07*/ Insc::ReturnNothing                     // return
-        ],
+        ];
+        (arena, code)
+    };
+
+    CompiledProgram {
+        slice_arena,
+        code,
         const_pool: boxed_slice![],
         init_proc: 0,
         functions: boxed_slice![
@@ -266,20 +328,29 @@ pub fn bench_raw_iter_program<A: Alloc>() -> CompiledProgram<A> {
 }
 
 pub fn bench_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
+    let (slice_arena, code) = unsafe {
+        let arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
+            /*00*/ Insc::MakeIntConst(0, 0),                        // %0 = $0
+            /*01*/ Insc::MakeIntConst(100_000_000, 1),              // %1 = $100_000_000
+            /*02*/ Insc::MakeIntConst(1, 2),                        // %2 = $1
+            /*03*/ Insc::CreateObject(3),                           // %3 = create-object
+            /*04*/ Insc::EqValue(0, 1, 4),                          // %4 = eq int %0, %1
+            /*05*/ Insc::JumpIfTrue(4, 9),                          // if %4 goto L.9
+            /*06*/ Insc::FFICallRtlc(0,                             // ffi-call-rtlc @0(%3, %3, %3)
+                                     arena.unsafe_make(&[3, 3, 3]),
+                                     arena.unsafe_make(&[])),
+            /*07*/ Insc::AddInt(0, 2, 0),                           // %0 = add int %0, %2
+            /*08*/ Insc::Jump(4),                                   // goto L.4
+            /*09*/ Insc::ReturnNothing                              // return
+        ];
+        (arena, code)
+    };
+
+
     CompiledProgram {
-        code: boxed_slice![
-            /*00*/ Insc::MakeIntConst(0, 0),                   // %0 = $0
-            /*01*/ Insc::MakeIntConst(100_000_000, 1),         // %1 = $100_000_000
-            /*02*/ Insc::MakeIntConst(1, 2),                   // %2 = $1
-            /*03*/ Insc::CreateObject(3),                      // %3 = create-object
-            /*04*/ Insc::EqValue(0, 1, 4),                     // %4 = eq int %0, %1
-            /*05*/ Insc::JumpIfTrue(4, 9),                     // if %4 goto L.9
-            /*06*/ Insc::FFICallRtlc(0, boxed_slice![3, 3, 3], // ffi-call-rtlc @0(%3, %3, %3)
-                                     boxed_slice![]),
-            /*07*/ Insc::AddInt(0, 2, 0),                      // %0 = add int %0, %2
-            /*08*/ Insc::Jump(4),                              // goto L.4
-            /*09*/ Insc::ReturnNothing                         // return
-        ],
+        slice_arena,
+        code,
         const_pool: boxed_slice![],
         init_proc: 0,
         functions: boxed_slice![
@@ -331,13 +402,21 @@ impl FunctionBase for Pr47Binder_ffi_function2 {
 const PR47_BINDER_FFI_FUNCTION2: &'static Pr47Binder_ffi_function2 = &Pr47Binder_ffi_function2();
 
 pub fn ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
+    let (slice_arena, code) = unsafe {
+        let arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
+                                                                 // application_start(%0, %1) -> i64
+            /*00*/ Insc::FFICallRtlc(0,                          // %0 = ffi-call-rtlc @0(%0, %1)
+                                     arena.unsafe_make(&[0, 1]),
+                                     arena.unsafe_make(&[0])),
+            /*01*/ Insc::ReturnOne(0)                            // return %0
+        ];
+        (arena, code)
+    };
+
     CompiledProgram {
-        code: boxed_slice![
-                                                            // application_start(%0, %1) -> i64
-            /*00*/ Insc::FFICallRtlc(0, boxed_slice![0, 1], // %0 = ffi-call-rtlc @0(%0, %1)
-                                     boxed_slice![0]),
-            /*01*/ Insc::ReturnOne(0)                       // return %0
-        ],
+        slice_arena,
+        code,
         const_pool: boxed_slice![],
         init_proc: 0,
         functions: boxed_slice![
@@ -349,28 +428,35 @@ pub fn ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
 }
 
 pub fn bench_ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
+    let (slice_arena, code) = unsafe {
+        let arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
+            /*00*/ Insc::MakeIntConst(0, 0),                        // %0 = $0
+            /*01*/ Insc::MakeIntConst(10_000, 1),                   // %1 = $1
+            /*02*/ Insc::EqValue(0, 1, 2),                          // %2 = eq int %0, %1
+            /*03*/ Insc::JumpIfTrue(2, 15),                         // if %2 goto L.15
+            /*04*/ Insc::MakeIntConst(0, 3),                        // %3 = $0
+            /*05*/ Insc::EqValue(3, 1, 2),                          // %2 = eq int %3, %1
+            /*06*/ Insc::JumpIfTrue(2, 13),                         // if %2 goto L.13
+            /*07*/ Insc::AddInt(0, 3, 4),                           // %4 = add int %0, %3
+            /*08*/ Insc::FFICallRtlc(0, arena.unsafe_make(&[0, 3]), // %5 = ffi-call-rtlc @0(%0, %3)
+                                     arena.unsafe_make(&[5])),
+            /*09*/ Insc::EqValue(4, 5, 2),                          // %2 = eq int %4, %5
+            /*10*/ Insc::JumpIfFalse(2, 16),                        // if !%2 goto L.16
+            /*11*/ Insc::IncrInt(3),                                // inc int %3
+            /*12*/ Insc::Jump(5),                                   // goto L.5
+            /*13*/ Insc::IncrInt(0),                                // inc int %0
+            /*14*/ Insc::Jump(2),                                   // goto L.2
+            /*15*/ Insc::ReturnNothing,                             // ret
+            /*16*/ Insc::CreateObject(0),                           // %0 = create-object
+            /*17*/ Insc::Raise(0)                                   // raise %0
+        ];
+        (arena, code)
+    };
+
     CompiledProgram {
-        code: boxed_slice![
-            /*00*/ Insc::MakeIntConst(0, 0),                // %0 = $0
-            /*01*/ Insc::MakeIntConst(10_000, 1),           // %1 = $1
-            /*02*/ Insc::EqValue(0, 1, 2),                  // %2 = eq int %0, %1
-            /*03*/ Insc::JumpIfTrue(2, 15),                 // if %2 goto L.15
-            /*04*/ Insc::MakeIntConst(0, 3),                // %3 = $0
-            /*05*/ Insc::EqValue(3, 1, 2),                  // %2 = eq int %3, %1
-            /*06*/ Insc::JumpIfTrue(2, 13),                 // if %2 goto L.13
-            /*07*/ Insc::AddInt(0, 3, 4),                   // %4 = add int %0, %3
-            /*08*/ Insc::FFICallRtlc(0, boxed_slice![0, 3], // %5 = ffi-call-rtlc @0(%0, %3)
-                                     boxed_slice![5]),
-            /*09*/ Insc::EqValue(4, 5, 2),                  // %2 = eq int %4, %5
-            /*10*/ Insc::JumpIfFalse(2, 16),                // if !%2 goto L.16
-            /*11*/ Insc::IncrInt(3),                        // inc int %3
-            /*12*/ Insc::Jump(5),                           // goto L.5
-            /*13*/ Insc::IncrInt(0),                        // inc int %0
-            /*14*/ Insc::Jump(2),                           // goto L.2
-            /*15*/ Insc::ReturnNothing,                     // ret
-            /*16*/ Insc::CreateObject(0),                   // %0 = create-object
-            /*17*/ Insc::Raise(0)                           // raise %0
-        ],
+        slice_arena,
+        code,
         const_pool: boxed_slice![],
         init_proc: 0,
         functions: boxed_slice![
@@ -432,13 +518,21 @@ const PR47BINDER_ASYNC_FFI_FUNCTION: &'static Pr47Binder_async_ffi_function
 
 #[cfg(feature = "async")]
 pub fn async_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
+    let (slice_arena, code) = unsafe {
+        let arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
+                                                                  // application_start() -> string
+            /*00*/ Insc::FFICallAsync(0,                          // %0 = ffi-call-async @0()),
+                                      arena.unsafe_make(&[]), 0),
+            /*01*/ Insc::Await(0, arena.unsafe_make(&[0])),       // %0 = await %0
+            /*02*/ Insc::ReturnOne(0)                             // ret string %0
+        ];
+        (arena, code)
+    };
+
     CompiledProgram {
-        code: boxed_slice![
-                                                             // application_start() -> string
-            /*00*/ Insc::FFICallAsync(0, boxed_slice![], 0), // %0 = ffi-call-async @0()),
-            /*01*/ Insc::Await(0, boxed_slice![0]),          // %0 = await %0
-            /*02*/ Insc::ReturnOne(0)                        // ret string %0
-        ],
+        slice_arena,
+        code,
         const_pool: boxed_slice![],
         init_proc: 0,
         functions: boxed_slice![
@@ -463,36 +557,51 @@ pub fn async_spawn_program<A: Alloc>() -> CompiledProgram<A> {
     let string4: String = "string4\n".into();
     let string4: Value = Value::new_owned(string4);
 
-    CompiledProgram {
-        code: boxed_slice![
-                                                              // application_start()
-            /*00*/ Insc::MakeIntConst(1, 0),                  // %0 = $1
-            /*01*/ Insc::Spawn(0, boxed_slice![]),            // spawn %0, []
-            /*02*/ Insc::Await(0, boxed_slice![0]),           // %0 = #spawn-result
-            /*03*/ Insc::LoadConst(0, 1),                     // %1 = load-const .string1
-            /*04*/ Insc::FFICallRtlc(0, boxed_slice![1],      // ffi-call print(%1)
-                                     boxed_slice![]),
-            /*05*/ Insc::MakeIntConst(1000, 1),               // %1 = $1000
-            /*06*/ Insc::FFICallAsync(0, boxed_slice![1], 1), // %1 = ffi-call-async sleep_ms(%1)
-            /*07*/ Insc::Await(1, boxed_slice![]),            // await %1
-            /*08*/ Insc::LoadConst(1, 1),                     // %1 = load-const .string2
-            /*09*/ Insc::FFICallRtlc(0, boxed_slice![1],      // ffi-call print(%1)
-                                     boxed_slice![]),
-            /*10*/ Insc::Await(0, boxed_slice![]),            // await %0
-            /*11*/ Insc::ReturnNothing,                       // ret
+    let (slice_arena, code) = unsafe {
+        let arena: SliceArena<8192, 8> = SliceArena::new();
+        let code: Box<[Insc]> = boxed_slice![
+                                                               // application_start()
+            /*00*/ Insc::MakeIntConst(1, 0),                   // %0 = $1
+            /*01*/ Insc::Spawn(0, arena.unsafe_make(&[])),     // spawn %0, []
+            /*02*/ Insc::Await(0, arena.unsafe_make(&[0])),    // %0 = #spawn-result
+            /*03*/ Insc::LoadConst(0, 1),                      // %1 = load-const .string1
+            /*04*/ Insc::FFICallRtlc(0,                        // ffi-call print(%1)
+                                     arena.unsafe_make(&[1]),
+                                     arena.unsafe_make(&[])),
+            /*05*/ Insc::MakeIntConst(1000, 1),                // %1 = $1000
+            /*06*/ Insc::FFICallAsync(0,                       // %1 = ffi-call-async sleep_ms(%1)
+                                      arena.unsafe_make(&[1]),
+                                      1),
+            /*07*/ Insc::Await(1, arena.unsafe_make(&[])),     // await %1
+            /*08*/ Insc::LoadConst(1, 1),                      // %1 = load-const .string2
+            /*09*/ Insc::FFICallRtlc(0,                        // ffi-call print(%1)
+                                     arena.unsafe_make(&[1]),
+                                     arena.unsafe_make(&[])),
+            /*10*/ Insc::Await(0, arena.unsafe_make(&[])),     // await %0
+            /*11*/ Insc::ReturnNothing,                        // ret
 
-                                                              // spawned_task_main()
-            /*12*/ Insc::LoadConst(2, 0),                     // %0 = load-const .string3
-            /*13*/ Insc::FFICallRtlc(0, boxed_slice![0],      // ffi-call print(%0)
-                                     boxed_slice![]),
-            /*14*/ Insc::MakeIntConst(1000, 0),               // %0 = $1000
-            /*15*/ Insc::FFICallAsync(0, boxed_slice![0], 0), // %0 = ffi-call-async sleep_ms(%0)
-            /*16*/ Insc::Await(0, boxed_slice![]),            // await %0
-            /*17*/ Insc::LoadConst(3, 0),                     // %0 = load-const .string4
-            /*18*/ Insc::FFICallRtlc(0, boxed_slice![0],      // ffi-call print(%0)
-                                     boxed_slice![]),
-            /*19*/ Insc::ReturnNothing                        // ret
-        ],
+                                                               // spawned_task_main()
+            /*12*/ Insc::LoadConst(2, 0),                      // %0 = load-const .string3
+            /*13*/ Insc::FFICallRtlc(0,                        // ffi-call print(%0)
+                                     arena.unsafe_make(&[0]),
+                                     arena.unsafe_make(&[])),
+            /*14*/ Insc::MakeIntConst(1000, 0),                // %0 = $1000
+            /*15*/ Insc::FFICallAsync(0,                       // %0 = ffi-call-async sleep_ms(%0)
+                                      arena.unsafe_make(&[0]),
+                                      0),
+            /*16*/ Insc::Await(0, arena.unsafe_make(&[])),     // await %0
+            /*17*/ Insc::LoadConst(3, 0),                      // %0 = load-const .string4
+            /*18*/ Insc::FFICallRtlc(0,                        // ffi-call print(%0)
+                                     arena.unsafe_make(&[0]),
+                                     arena.unsafe_make(&[])),
+            /*19*/ Insc::ReturnNothing                         // ret
+        ];
+        (arena, code)
+    };
+
+    CompiledProgram {
+        slice_arena,
+        code,
         const_pool: boxed_slice![string1, string2, string3, string4],
         init_proc: 0,
         functions: boxed_slice![

@@ -1,5 +1,6 @@
 use std::any::TypeId;
 use std::ptr::NonNull;
+use xjbutil::slice_arena::SliceArena;
 
 use crate::data::Value;
 use crate::data::tyck::TyckInfo;
@@ -80,6 +81,8 @@ impl CompiledFunction {
 }
 
 pub struct CompiledProgram<A: Alloc> {
+    pub slice_arena: SliceArena<8192, 8>,
+
     pub code: Box<[Insc]>,
     pub const_pool: Box<[Value]>,
     pub init_proc: usize,

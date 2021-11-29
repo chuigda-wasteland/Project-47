@@ -409,16 +409,16 @@ pub enum Insc {
     ///
     /// Call the function denoted by `FUNC-ID` with given `ARGS`, store the return values to `RETS`.
     /// **No type checking**.
-    Call(usize, Box<[usize]>, Box<[usize]>),
+    Call(usize, &'static [usize], &'static [usize]),
 
     /// `CALL-PTR [SRC] [ARGS..] [RETS..]`
     ///
     /// Call the function pointer or closure stored in `SRC` with given `ARGS`, store the return
     /// values to `RETS`. **No type checking**.
-    CallPtr(usize, Box<[usize]>, Box<[usize]>),
+    CallPtr(usize, &'static [usize], &'static [usize]),
 
     /// `CALL-OVERLOAD [OVERLOAD-TBL] [ARGS..] [RETS..]`
-    CallOverload(usize, Box<[usize]>, Box<[usize]>),
+    CallOverload(usize, &'static [usize], &'static [usize]),
 
     /// `RETURN-NOTHING`
     ReturnNothing,
@@ -427,14 +427,14 @@ pub enum Insc {
     ReturnOne(usize),
 
     /// `RETURN [RETURN-VALUE-LOCS...]`
-    Return(Box<[usize]>),
+    Return(&'static [usize]),
 
     /// `FFI-CALL-RTLC [FFI-FUNC-ID] [ARGS..] [RETS..]`
-    FFICallRtlc(usize, Box<[usize]>, Box<[usize]>),
+    FFICallRtlc(usize, &'static [usize], &'static [usize]),
 
     /// `FFI-CALL [FFI-FUNC-ID] [ARGS..] [RETS..]`
     #[cfg(feature = "optimized-rtlc")]
-    FFICall(usize, Box<[usize]>, Box<[usize]>),
+    FFICall(usize, &'static [usize], &'static [usize]),
 
     /// `FFI-CALL-ASYNC [FUNC-ID] [ARGS..] [RET]`
     ///
@@ -442,16 +442,16 @@ pub enum Insc {
     /// promise to `RET`. **No type checking**. Please note that when feature `optimized-rtlc`
     /// is enabled, all async FFI calls have RTLC.
     #[cfg(all(feature = "async", feature = "optimized-rtlc"))]
-    FFICallAsync(usize, Box<[usize]>, usize),
+    FFICallAsync(usize, &'static [usize], usize),
 
     /// `AWAIT [FUT] [RETS..]`
     ///
     /// Await the given promise, store its results into given destinations.
     #[cfg(feature = "async")]
-    Await(usize, Box<[usize]>),
+    Await(usize, &'static [usize]),
 
     #[cfg(all(feature = "async", feature = "al31f-builtin-ops"))]
-    Spawn(usize, Box<[usize]>),
+    Spawn(usize, &'static [usize]),
 
     /// `RAISE [EXCEPTION]`
     Raise(usize),
@@ -474,7 +474,6 @@ pub enum Insc {
 
     #[cfg(feature = "al31f-builtin-ops")] StrClone(usize, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrConcat(usize, usize, usize),
-    #[cfg(feature = "al31f-builtin-ops")] StrFormat(usize, Box<[usize]>, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrLen(usize, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrSlice(usize, usize, usize, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrEquals(usize, usize),
