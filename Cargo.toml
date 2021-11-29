@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "pr47-core",
-    "pr47-codegen"
+    "pr47-codegen",
+    "pr47-codegen-lite"
 ]
 
 [profile.release]

@@ -137,7 +137,9 @@ impl Alloc for DefaultAlloc {
             let ptr: WidePointer = to_scan.pop_front().unwrap();
             let wrapper: *mut Wrapper<()> = (ptr.ptr & PTR_BITS_MASK_USIZE) as *mut _;
 
-            if (*wrapper).gc_info == (DefaultGCStatus::Marked as u8) {
+            if (*wrapper).ownership_info & OWN_INFO_COLLECT_MASK != 0
+                && (*wrapper).gc_info == (DefaultGCStatus::Marked as u8)
+            {
                 continue;
             }
 

@@ -29,8 +29,10 @@ xjbutil = { version = "0.5", default-features = false, features = [
 
 async-std = { optional = true, version = "1" }
 futures = { optional = true, version = "0.3", default-features = false }
+log = { optional = true, version = "0.4" }
 phf = { optional = true, version = "0.10", features = ["macros"] }
 tokio = { optional = true, version = "1", features = ["rt", "sync", "time"] }
+tracing = { optional = true, version = "0.1.29" }
 unicode-width = { optional = true, version = "0.1" }
 
 [dev-dependencies]
@@ -63,6 +65,8 @@ huge-align = []
 no-rtlc = []
 optimized-rtlc = []
 std47 = []
+with-log = ["log"]
+with-tracing = ["tracing"]
 
 # Compiler testing binaries
 [[bin]]
