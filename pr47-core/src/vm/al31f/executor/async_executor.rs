@@ -813,11 +813,12 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 slice.set_value(*dest, dest_value);
             },
             #[cfg(feature = "al31f-builtin-ops")]
-            Insc::StrConcat(src1, src2, dest) => {
-                let src1: &String = &*(slice.get_value(*src1).get_as_mut_ptr_norm() as *const _);
-                let src2: &String = &*(slice.get_value(*src2).get_as_mut_ptr_norm() as *const _);
-                let mut buffer: String = (*src1).clone();
-                buffer.push_str(&*src2);
+            Insc::StrConcat(sources, dest) => {
+                let mut buffer: String = String::new();
+                for src in sources.into_iter() {
+                    let src: &String = &*(slice.get_value(*src).get_as_mut_ptr_norm() as *const _);
+                    buffer.push_str(src);
+                }
 
                 let dest_value: Value = Value::new_owned(buffer);
                 get_vm!(thread).alloc.add_managed(dest_value.ptr_repr);

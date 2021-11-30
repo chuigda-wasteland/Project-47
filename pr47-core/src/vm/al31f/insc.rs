@@ -481,7 +481,7 @@ pub enum Insc {
     #[cfg(feature = "al31f-builtin-ops")] VecLen(usize, usize),
 
     #[cfg(feature = "al31f-builtin-ops")] StrClone(usize, usize),
-    #[cfg(feature = "al31f-builtin-ops")] StrConcat(usize, usize, usize),
+    #[cfg(feature = "al31f-builtin-ops")] StrConcat(&'static [usize], usize),
     #[cfg(feature = "al31f-builtin-ops")] StrLen(usize, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrEquals(usize, usize, usize),
 
