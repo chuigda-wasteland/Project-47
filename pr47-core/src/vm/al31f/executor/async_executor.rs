@@ -779,7 +779,9 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr_norm() as *const _);
                 let index: i64 = slice.get_value(*index).vt_data.inner.int_value;
                 if let Some(data) = vec.inner.get_mut_ref_unchecked().get_mut(index as usize) {
-                    *data = slice.get_value(*value);
+                    let value: Value = slice.get_value(*value);
+                    get_vm!(thread).alloc.mark_object(value.ptr_repr);
+                    *data = value;
                 } else {
                     return Poll::Ready(Err(
                         unchecked_exception_unwind_stack(
@@ -791,10 +793,12 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 }
             },
             #[cfg(feature = "al31f-builtin-ops")]
-            Insc::VecPush(src, value) => {
+            Insc::VecPush(src, data) => {
                 let vec_value: Value = slice.get_value(*src);
                 let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr_norm() as *const _);
-                vec.inner.get_mut_ref_unchecked().push(slice.get_value(*value));
+                let data: Value = slice.get_value(*data);
+                get_vm!(thread).alloc.mark_object(data.ptr_repr);
+                vec.inner.get_mut_ref_unchecked().push(data);
             },
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecLen(src, dst) => {
@@ -859,9 +863,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             Insc::ObjectPut(src, field, data) => {
                 let object: &mut Object = &mut *(slice.get_value(*src).get_as_mut_ptr_norm());
                 let data: Value = slice.get_value(*data);
-                if data.is_ref() {
-                    get_vm!(thread).alloc.mark_object(data.ptr_repr);
-                }
+                get_vm!(thread).alloc.mark_object(data.ptr_repr);
                 object.fields.get_mut_ref_unchecked().insert(field.as_ref().to_string(), data);
             },
             #[cfg(feature = "al31f-builtin-ops")]
@@ -869,9 +871,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 let object: &mut Object = &mut *(slice.get_value(*src).get_as_mut_ptr_norm());
                 let field: &String = &*(slice.get_value(*field).get_as_mut_ptr_norm() as *const _);
                 let data: Value = slice.get_value(*data);
-                if data.is_ref() {
-                    get_vm!(thread).alloc.mark_object(data.ptr_repr);
-                }
+                get_vm!(thread).alloc.mark_object(data.ptr_repr);
                 object.fields.get_mut_ref_unchecked().insert(field.to_string(), data);
             }
         }
