@@ -18,6 +18,8 @@ pub enum UncheckedException {
     InvalidCastOp { dest_type: &'static str, src: Value },
     InvalidUnaryOp { unary_op: char, src: Value },
     OwnershipCheckFailure { object: Value, expected_mask: u8 },
+    TypeCheckFailure { object: Value, expected_type: NonNull<TyckInfo> },
+    OverloadCallFailure { overload_table: usize },
     UnexpectedNull { value: Value },
     IndexOutOfBound { indexed: Value, index: i64, len: usize },
     #[cfg(feature = "async")]

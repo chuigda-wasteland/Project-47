@@ -400,10 +400,20 @@ pub enum Insc {
     /// Similar to `IS-NULL`, but throws null pointer exception instead
     NullCheck(usize),
 
+    /// `IS-TYPE` [SRC] [TYCK-INFO] [DEST]
+    ///
+    /// Check if data stored in `SRC` is of `TYCK-INFO` type, and save the boolean result to `DEST`.
+    IsType(usize, NonNull<TyckInfo>, usize),
+
     /// `TYCK [SRC] [TYCK-INFO]`
     ///
-    /// Check if data stored `SRC` satisfies `TYCK-INFO`, throws type checking exception if not.
+    /// Check if data stored in `SRC` satisfies `TYCK-INFO`, throws type checking exception if not.
     TypeCheck(usize, NonNull<TyckInfo>),
+
+    /// `OWNERSHIP-INFO-CHECK [SRC] [MASK]`
+    ///
+    /// Check if data stored in `SRC` satisfies given `MASK`, throws RTLC exception if not.
+    OwnershipInfoCheck(usize, u8),
 
     /// `CALL-UNCHECKED [FUNC-ID] [ARGS..] [RETS..]`
     ///
@@ -475,7 +485,6 @@ pub enum Insc {
     #[cfg(feature = "al31f-builtin-ops")] StrClone(usize, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrConcat(usize, usize, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrLen(usize, usize),
-    #[cfg(feature = "al31f-builtin-ops")] StrSlice(usize, usize, usize, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrEquals(usize, usize),
 
     #[cfg(feature = "al31f-builtin-ops")] ObjectGet(usize, NonNull<str>, usize),

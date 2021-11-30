@@ -7,6 +7,9 @@
 pub mod checked_bin_ops;
 pub mod checked_cast_ops;
 pub mod checked_unary_ops;
+pub mod overload;
+pub mod rtti;
+pub mod unwinding;
 
 pub mod sync_executor;
 pub use sync_executor::*;

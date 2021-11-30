@@ -1,4 +1,3 @@
-use std::any::TypeId;
 use std::future::Future;
 use std::pin::Pin;
 use std::ptr::NonNull;
@@ -11,7 +10,7 @@ use xjbutil::wide_ptr::WidePointer;
 use crate::builtins::closure::Closure;
 use crate::builtins::object::Object;
 use crate::data::Value;
-use crate::data::exception::{CheckedException, Exception, UncheckedException};
+use crate::data::exception::{Exception, UncheckedException};
 use crate::data::value_typed::INT_TYPE_TAG;
 use crate::ffi::FFIException;
 use crate::ffi::sync_fn::Function as FFIFunction;
@@ -48,7 +47,7 @@ use crate::vm::al31f::executor::checked_unary_ops::{
     checked_not
 };
 use crate::vm::al31f::insc::Insc;
-use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
+use crate::vm::al31f::stack::{Stack, StackSlice};
 
 #[cfg(feature = "async")] use std::hint::unreachable_unchecked;
 #[cfg(feature = "async")] use std::mem::transmute;
@@ -62,6 +61,9 @@ use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
 
 #[cfg(all(feature = "async", feature = "al31f-builtin-ops"))]
 use crate::vm::al31f::executor::coroutine_spawn::coroutine_spawn;
+use crate::vm::al31f::executor::overload::call_overload;
+use crate::vm::al31f::executor::rtti::check_type;
+use crate::vm::al31f::executor::unwinding::{checked_exception_unwind_stack, unchecked_exception_unwind_stack};
 
 include!("get_vm_makro.rs");
 include!("impl_makro.rs");
@@ -92,72 +94,6 @@ pub async fn create_vm_main_thread<A: Alloc>(
     });
     unsafe { ret.vm.get_shared_data_mut().alloc.add_stack(&ret.stack) };
     ret
-}
-
-unsafe fn unchecked_exception_unwind_stack(
-    unchecked_exception: UncheckedException,
-    stack: &mut Stack,
-    insc_ptr: usize
-) -> Exception {
-    let mut exception: Exception = Exception::unchecked_exc(unchecked_exception);
-
-    let mut insc_ptr: usize = insc_ptr;
-    while stack.frames.len() != 0 {
-        let last_frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
-        exception.push_stack_trace(last_frame.func_id, insc_ptr);
-        insc_ptr = last_frame.ret_addr - 1;
-
-        stack.unwind_shrink_slice();
-    }
-    exception
-}
-
-unsafe fn checked_exception_unwind_stack<A: Alloc>(
-    vm: &mut AL31F<A>,
-    program: &CompiledProgram<A>,
-    checked_exception: CheckedException,
-    stack: &mut Stack,
-    insc_ptr: usize
-) -> Result<(StackSlice, usize), Exception> {
-    let exception_type_id: TypeId = (*checked_exception.get_as_dyn_base()).dyn_type_id();
-
-    let mut exception: Exception = Exception::checked_exc(checked_exception);
-    let mut insc_ptr: usize = insc_ptr;
-
-    while stack.frames.len() != 0 {
-        let frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
-        let func_id: usize = frame.func_id;
-        exception.push_stack_trace(func_id, insc_ptr);
-
-        let compiled_function: &CompiledFunction = &program.functions[func_id];
-
-        if let Some(exc_handlers /*: &Box<[ExceptionHandlingBlock]>*/)
-            = &compiled_function.exc_handlers
-        {
-            for exc_handler /*: &ExceptionHandlingBlock*/ in exc_handlers.as_ref().iter() {
-                let (start_insc, end_insc): (usize, usize) = exc_handler.insc_ptr_range;
-                if insc_ptr >= start_insc &&
-                    insc_ptr <= end_insc &&
-                    exception_type_id == exc_handler.exception_id
-                {
-                    let frame_size: usize = frame.frame_end - frame.frame_start;
-                    let exception_value: Value = Value::new_owned(exception);
-                    vm.alloc.add_managed(exception_value.ptr_repr);
-                    let mut stack_slice: StackSlice = stack.last_frame_slice();
-                    stack_slice.set_value(frame_size - 1, exception_value);
-
-                    return Ok((stack_slice, exc_handler.handler_addr));
-                }
-            }
-        }
-
-        let frame_ret_addr: usize = frame.ret_addr;
-        insc_ptr = frame_ret_addr.saturating_sub(1);
-
-        stack.unwind_shrink_slice();
-    }
-
-    Err(exception)
 }
 
 pub struct VMThreadRunFunctionFut<'a, A: Alloc, const S: bool> {
@@ -462,9 +398,35 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     )));
                 }
             },
-            Insc::TypeCheck(src, _tyck_info) => {
-                let _src: Value = slice.get_value(*src);
-                todo!();
+            Insc::IsType(src, tyck_info, dest) => {
+                let src: Value = slice.get_value(*src);
+                slice.set_value(*dest, Value::new_bool(check_type(src, *tyck_info)));
+            },
+            Insc::TypeCheck(src, tyck_info) => {
+                let src: Value = slice.get_value(*src);
+                if !check_type(src, *tyck_info) {
+                    return Poll::Ready(Err(unchecked_exception_unwind_stack(
+                        UncheckedException::TypeCheckFailure {
+                            object: src,
+                            expected_type: *tyck_info
+                        },
+                        &mut thread.stack,
+                        insc_ptr
+                    )));
+                }
+            },
+            Insc::OwnershipInfoCheck(src, mask) => {
+                let src: Value = slice.get_value(*src);
+                if src.is_value() || src.ownership_info_norm() as u8 & mask != 0 {
+                    return Poll::Ready(Err(unchecked_exception_unwind_stack(
+                        UncheckedException::OwnershipCheckFailure {
+                            object: src,
+                            expected_mask: *mask
+                        },
+                        &mut thread.stack,
+                        insc_ptr
+                    )));
+                }
             },
             Insc::Call(func_id, args, rets) => {
                 #[cfg(not(debug_assertions))]
@@ -521,7 +483,24 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     insc_ptr = compiled.start_addr;
                 }
             },
-            Insc::CallOverload(_, _, _) => {}
+            Insc::CallOverload(overload_table, args, rets) => {
+                match call_overload(
+                    thread,
+                    *slice,
+                    insc_ptr,
+                    *overload_table,
+                    args,
+                    rets)
+                {
+                    Ok((new_slice, new_insc_ptr)) => {
+                        *slice = new_slice;
+                        insc_ptr = new_insc_ptr;
+                    },
+                    Err(err) => {
+                        return Poll::Ready(Err(err));
+                    }
+                }
+            },
             Insc::ReturnNothing => {
                 if let Some((prev_stack_slice, ret_addr)) =
                     thread.stack.done_func_call_shrink_stack0()
@@ -811,8 +790,6 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::StrLen(_, _) => {}
-            #[cfg(feature = "al31f-builtin-ops")]
-            Insc::StrSlice(_, _, _, _) => {}
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::StrEquals(_, _) => {}
 
