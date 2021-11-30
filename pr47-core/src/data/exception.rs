@@ -21,7 +21,7 @@ pub enum UncheckedException {
     TypeCheckFailure { object: Value, expected_type: NonNull<TyckInfo> },
     OverloadCallFailure { overload_table: usize },
     UnexpectedNull { value: Value },
-    IndexOutOfBound { indexed: Value, index: i64, len: usize },
+    IndexOutOfBounds { indexed: Value, index: i64 },
     #[cfg(feature = "async")]
     JoinError { inner: JoinError }
 }

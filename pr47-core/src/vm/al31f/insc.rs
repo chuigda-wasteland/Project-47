@@ -477,15 +477,13 @@ pub enum Insc {
 
     #[cfg(feature = "al31f-builtin-ops")] VecIndex(usize, usize, usize),
     #[cfg(feature = "al31f-builtin-ops")] VecIndexPut(usize, usize, usize),
-    #[cfg(feature = "al31f-builtin-ops")] VecInsert(usize, usize, usize),
-    #[cfg(feature = "al31f-builtin-ops")] VecRemove(usize, usize, usize),
-    #[cfg(feature = "al31f-builtin-ops")] VecLen(usize),
-    #[cfg(feature = "al31f-builtin-ops")] VecClear(usize),
+    #[cfg(feature = "al31f-builtin-ops")] VecPush(usize, usize),
+    #[cfg(feature = "al31f-builtin-ops")] VecLen(usize, usize),
 
     #[cfg(feature = "al31f-builtin-ops")] StrClone(usize, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrConcat(usize, usize, usize),
     #[cfg(feature = "al31f-builtin-ops")] StrLen(usize, usize),
-    #[cfg(feature = "al31f-builtin-ops")] StrEquals(usize, usize),
+    #[cfg(feature = "al31f-builtin-ops")] StrEquals(usize, usize, usize),
 
     #[cfg(feature = "al31f-builtin-ops")] ObjectGet(usize, NonNull<str>, usize),
     #[cfg(feature = "al31f-builtin-ops")] ObjectGetDyn(usize, usize, usize),
