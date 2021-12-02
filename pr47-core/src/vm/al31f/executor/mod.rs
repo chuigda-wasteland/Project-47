@@ -1,4 +1,4 @@
-//! # `executor.rs`: core executor of AL31F
+//! # `executor`: core executor of AL31F
 //!
 //! ## ⚠️⚠️⚠️ Develop stage note ⚠️⚠️⚠
 //! By this time the developers don't know what's the correct abstraction. This `executor` module
