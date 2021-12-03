@@ -2,10 +2,16 @@
 //!
 //! Type syntax:
 //! ```text
-//! type ::= primitive-type
-//!        | generic-type
-//!        | deduced-type
-//!        | user-type
+//! type ::= nonnull-type
+//!        | nullable-type
+//!
+//! nonnull-type ::= primitive-type
+//!                | generic-type
+//!                | deduced-type
+//!                | user-type
+//!                | nullable-type
+//!
+//! nullable-type ::= '?' nonnull-type
 //!
 //! primitive-type ::= 'any' | 'char' | 'float' | 'int' | 'object' | 'string' | 'void'
 //!
@@ -29,6 +35,7 @@ use crate::syntax::token::Token;
 pub enum ConcreteType<'a> {
     PrimitiveType(Token<'a>),
     GenericType(Box<ConcreteGenericType<'a>>),
+    NullableType(Box<ConcreteNullableType<'a>>),
     DeducedType(SourceRange),
     UserType(Identifier<'a>)
 }
@@ -39,4 +46,10 @@ pub struct ConcreteGenericType<'a> {
     pub inner: SmallVec<[ConcreteType<'a>; 2]>,
     pub left_angle: SourceLoc,
     pub right_angle: SourceLoc
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct ConcreteNullableType<'a> {
+    pub inner: ConcreteType<'a>,
+    pub ques_loc: SourceLoc
 }

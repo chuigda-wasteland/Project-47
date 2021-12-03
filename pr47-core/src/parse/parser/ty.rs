@@ -5,11 +5,11 @@ use xjbutil::defer;
 
 use crate::awa;
 use crate::diag::diag_data;
-use crate::diag::location::SourceRange;
+use crate::diag::location::{SourceLoc, SourceRange};
 use crate::parse::lexer::LexerMode;
 use crate::syntax::id::Identifier;
 use crate::syntax::token::{Token, TokenInner};
-use crate::syntax::ty::{ConcreteGenericType, ConcreteType};
+use crate::syntax::ty::{ConcreteGenericType, ConcreteNullableType, ConcreteType};
 
 impl<'s, 'd> Parser<'s, 'd> {
     pub fn parse_type(&mut self, failsafe_set: &[&[TokenInner<'_>]]) -> Option<ConcreteType<'s>> {
@@ -24,6 +24,22 @@ impl<'s, 'd> Parser<'s, 'd> {
     }
 
     fn parse_type_impl(&mut self, failsafe_set: &[&[TokenInner<'_>]]) -> Option<ConcreteType<'s>> {
+        if self.current_token().token_inner == TokenInner::SymQues {
+            let ques_loc: SourceLoc = self.consume_token().range.left();
+            let inner: ConcreteType = self.parse_nonnull_type(failsafe_set)?;
+            Some(ConcreteType::NullableType(Box::new(ConcreteNullableType {
+                inner,
+                ques_loc,
+            })))
+        } else {
+            self.parse_nonnull_type(failsafe_set)
+        }
+    }
+
+    fn parse_nonnull_type(
+        &mut self,
+        failsafe_set: &[&[TokenInner<'_>]]
+    ) -> Option<ConcreteType<'s>> {
         match self.current_token().token_inner {
             TokenInner::KwdAny | TokenInner::KwdBool | TokenInner::KwdChar |
             TokenInner::KwdFloat | TokenInner::KwdInt | TokenInner::KwdObject |
