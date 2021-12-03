@@ -3,6 +3,8 @@ use super::Parser;
 use smallvec::SmallVec;
 use xjbutil::defer;
 
+use crate::awa;
+use crate::diag::diag_data;
 use crate::diag::location::SourceRange;
 use crate::parse::lexer::LexerMode;
 use crate::syntax::id::Identifier;
@@ -43,8 +45,26 @@ impl<'s, 'd> Parser<'s, 'd> {
                 Some(ConcreteType::UserType(ident))
             },
             _ => {
-                eprintln!("{:?}", self.current_token());
-                todo!()
+                self.diag.borrow_mut()
+                    .diag(self.current_token().range.left(), diag_data::err_expected_any_of_0_got_1)
+                    .add_arg2(awa![
+                        TokenInner::KwdAny,
+                        TokenInner::KwdBool,
+                        TokenInner::KwdChar,
+                        TokenInner::KwdFloat,
+                        TokenInner::KwdInt,
+                        TokenInner::KwdObject,
+                        TokenInner::KwdString,
+                        TokenInner::KwdVoid,
+                        TokenInner::KwdVector,
+                        TokenInner::KwdAuto,
+                        TokenInner::Ident("")
+                    ])
+                    .add_arg2(self.current_token().token_inner)
+                    .add_mark(self.current_token().range.into())
+                    .emit();
+                self.skip_to_any_of(failsafe_set);
+                None
             }
         }
     }

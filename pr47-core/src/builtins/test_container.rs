@@ -88,7 +88,6 @@ impl<T: 'static> StaticBase<TestContainer<T>> for Void
             <Void as StaticBase<GenericTestContainer>>::type_id() == *type_id
                 && params.len() == 1
                 && <Void as StaticBase<T>>::tyck(unsafe { params.get_unchecked(0).as_ref() })
-            // TODO: take `any` type into consideration
         } else {
             false
         }

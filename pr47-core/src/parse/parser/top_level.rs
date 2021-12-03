@@ -10,7 +10,7 @@ use crate::parse::lexer::LexerMode;
 use crate::parse::parser::TOP_LEVEL_FIRST;
 use crate::syntax::ConcreteProgram;
 use crate::syntax::attr::Attribute;
-use crate::syntax::decl::{ConcreteDecl, ConcreteObjectDecl};
+use crate::syntax::decl::{ConcreteDecl, ConcreteExportDecl, ConcreteFuncDecl, ConcreteImportDecl, ConcreteObjectDecl, ConcreteOpenImportDecl};
 use crate::syntax::token::{Token, TokenInner};
 
 impl<'s, 'd> Parser<'s, 'd> {
@@ -123,7 +123,44 @@ impl<'s, 'd> Parser<'s, 'd> {
                     .emit();
                 None
             },
-            _ => todo!()
+            TokenInner::KwdFunc => {
+                let func_token: Token<'s> = self.consume_token();
+                self.parse_func_decl(func_token, TOP_LEVEL_DECL_FAILSAFE)
+                    .map(|func_decl: ConcreteFuncDecl| ConcreteDecl::FuncDecl(func_decl))
+            },
+            TokenInner::KwdExport => {
+                let export_token: Token<'s> = self.consume_token();
+                self.parse_export_decl(export_token, TOP_LEVEL_DECL_FAILSAFE)
+                    .map(|export_decl: ConcreteExportDecl| ConcreteDecl::ExportDecl(export_decl))
+            },
+            TokenInner::KwdImport => {
+                let import_token: Token<'s> = self.consume_token();
+                self.parse_import_decl(import_token, TOP_LEVEL_DECL_FAILSAFE)
+                    .map(|import_decl: ConcreteImportDecl| ConcreteDecl::ImportDecl(import_decl))
+            },
+            TokenInner::KwdOpen => {
+                let open_token: Token<'s> = self.consume_token();
+                self.parse_open_import_decl(open_token, TOP_LEVEL_DECL_FAILSAFE)
+                    .map(|open_import_decl: ConcreteOpenImportDecl| {
+                        ConcreteDecl::OpenImportDecl(open_import_decl)
+                    })
+            },
+            _ => {
+                self.diag.borrow_mut()
+                    .diag(self.current_token().range.left(), diag_data::err_expected_any_of_0_got_1)
+                    .add_arg2(awa![
+                        TokenInner::KwdConst,
+                        TokenInner::KwdFunc,
+                        TokenInner::KwdExport,
+                        TokenInner::KwdImport,
+                        TokenInner::KwdOpen
+                    ])
+                    .add_arg2(self.current_token().token_inner)
+                    .add_mark(self.current_token().range.into())
+                    .emit();
+                self.skip_to_any_of(TOP_LEVEL_DECL_FAILSAFE);
+                None
+            }
         }
     }
 

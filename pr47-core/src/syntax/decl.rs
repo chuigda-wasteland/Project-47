@@ -47,12 +47,12 @@ pub enum ConcreteDecl<'a> {
 pub struct ConcreteObjectDecl<'a> {
     pub attr: Option<Attribute<'a>>,
 
-    pub name: String,
+    pub name: Identifier<'a>,
     pub obj_type: Option<ConcreteType<'a>>,
-    pub init_expr: Option<ConcreteExpr<'a>>,
+    pub init_expr: ConcreteExpr<'a>,
 
     pub kwd_range: SourceRange,
-    pub name_range: SourceRange
+    pub eq_range: SourceRange
 }
 
 pub struct FunctionParam<'a> {
