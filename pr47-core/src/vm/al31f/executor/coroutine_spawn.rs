@@ -20,25 +20,14 @@ use crate::vm::al31f::stack::{Stack, StackSlice};
 pub unsafe fn coroutine_spawn<A: Alloc>(
     thread: &mut VMThread<A>,
     slice: &mut StackSlice,
-    func: usize,
+    func_id: usize,
     args: &[usize]
 ) -> Promise<A> {
     let thread: &'static mut VMThread<A> = transmute::<_, _>(thread);
-
-    let func: Value = slice.get_value(func);
-    let arg_values = args.iter().map(|arg: &usize| slice.get_value(*arg));
-
-    let (func_id, args): (usize, Box<[Value]>) = if func.is_value() {
-        let func_id: usize = func.vt_data.inner.int_value as usize;
-        (func_id, arg_values.collect())
-    } else {
-        let closure: &Closure = &*(func.get_as_mut_ptr::<Closure>() as *const _);
-        (closure.func_id, closure.captures.iter().map(|value: &Value| *value).chain(arg_values).collect())
-    };
-
+    let args: Box<[Value]> = args.iter().map(|arg: &usize| slice.get_value(*arg)).collect();
     let program: NonNull<CompiledProgram<A>> = thread.program;
-
     let arg_pack: UncheckedSendSync<_> = UncheckedSendSync::new((args, program));
+
     let get_join_handle = async move {
         let join_handle: JoinHandle<AsyncReturnType> = thread.vm.co_spawn_task(
             |child_context, (func_id, arg_pack)| UncheckedSendFut::new(async move {
