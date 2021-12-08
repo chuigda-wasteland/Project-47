@@ -562,7 +562,7 @@ pub fn async_spawn_program<A: Alloc>() -> CompiledProgram<A> {
         let code: Box<[Insc]> = boxed_slice![
                                                                // application_start()
             /*00*/ Insc::MakeIntConst(1, 0),                   // %0 = $1
-            /*01*/ Insc::Spawn(0, arena.unsafe_make(&[])),     // spawn %0, []
+            /*01*/ Insc::Spawn(1, arena.unsafe_make(&[])),     // spawn $1, []
             /*02*/ Insc::Await(0, arena.unsafe_make(&[0])),    // %0 = #spawn-result
             /*03*/ Insc::LoadConst(0, 1),                      // %1 = load-const .string1
             /*04*/ Insc::FFICallRtlc(0,                        // ffi-call print(%1)
