@@ -17,9 +17,6 @@ pub const OWN_INFO_COLLECT_MASK: u8 = 0b00_0_0_0_0_1_0;
 pub const OWN_INFO_OWNED_MASK: u8   = 0b00_0_0_0_0_0_1;
 
 /// Ownership information
-///
-/// At one time, a Pr47 heap value may be *owned by the VM*, *shared/mutably shared from Rust*,
-/// *shared/mutably shared to Rust* or *moved to Rust* while only having a vacant shell.
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum OwnershipInfo {

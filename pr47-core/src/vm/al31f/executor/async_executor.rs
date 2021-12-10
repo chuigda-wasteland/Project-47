@@ -1,6 +1,7 @@
 use std::future::Future;
 use std::pin::Pin;
 use std::ptr::NonNull;
+use std::marker::PhantomPinned;
 use std::task::{Context, Poll};
 
 use unchecked_unwrap::UncheckedUnwrap;
@@ -50,13 +51,23 @@ pub struct VMThread<A: Alloc> {
     pub vm: AL31F<A>,
 
     pub program: NonNull<CompiledProgram<A>>,
-    pub stack: Stack
+    pub stack: Stack,
+
+    pub _phantom: PhantomPinned
+}
+
+impl<A: Alloc> Drop for VMThread<A> {
+    fn drop(&mut self) {
+        unsafe {
+            self.vm.get_shared_data_mut().alloc.remove_stack(&self.stack);
+        }
+    }
 }
 
 unsafe impl<A: Alloc> Send for VMThread<A> {}
 unsafe impl<A: Alloc> Sync for VMThread<A> {}
 
-#[must_use = "VM thread are effective iff a function gets run on it"]
+#[must_use = "VM threads are effective iff a function gets run on it"]
 #[cfg(feature = "async")]
 pub async fn create_vm_main_thread<A: Alloc>(
     alloc: A,
@@ -65,7 +76,24 @@ pub async fn create_vm_main_thread<A: Alloc>(
     let mut ret = Box::new(VMThread {
         vm: CoroutineContext::main_context(AL31F::new(alloc)).await,
         program: NonNull::from(program),
-        stack: Stack::new()
+        stack: Stack::new(),
+        _phantom: PhantomPinned::default()
+    });
+    unsafe { ret.vm.get_shared_data_mut().alloc.add_stack(&ret.stack) };
+    ret
+}
+
+#[must_use = "VM threads are effective iff a function gets run on it"]
+#[cfg(feature = "async")]
+pub fn create_vm_child_thread<A: Alloc>(
+    child_context: CoroutineContext<AL31F<A>>,
+    program: NonNull<CompiledProgram<A>>
+) -> Box<VMThread<A>> {
+    let mut ret = Box::new(VMThread {
+        vm: child_context,
+        program,
+        stack: Stack::new(),
+        _phantom: PhantomPinned::default()
     });
     unsafe { ret.vm.get_shared_data_mut().alloc.add_stack(&ret.stack) };
     ret

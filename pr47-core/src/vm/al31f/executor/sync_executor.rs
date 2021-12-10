@@ -1,3 +1,4 @@
+use std::marker::PhantomPinned;
 use std::ptr::NonNull;
 
 use xjbutil::unchecked::UncheckedSendSync;
@@ -27,7 +28,8 @@ pub unsafe fn vm_run_function_sync<A: Alloc>(
         let mut thread: VMThread<A> = VMThread {
             vm,
             program: NonNull::new_unchecked(program as *const _ as *mut _),
-            stack: Stack::new()
+            stack: Stack::new(),
+            _phantom: PhantomPinned::default()
         };
         vm_thread_run_function::<_, true>(UncheckedSendSync::new((&mut thread, func_id, args)))?
             .await

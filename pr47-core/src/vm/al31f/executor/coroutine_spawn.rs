@@ -6,15 +6,14 @@ use tokio::task::{JoinError, JoinHandle};
 use xjbutil::boxed_slice;
 use xjbutil::unchecked::{UncheckedSendFut, UncheckedSendSync};
 
-use crate::builtins::closure::Closure;
 use crate::data::exception::UncheckedException;
 use crate::data::Value;
 use crate::ffi::async_fn::{AsyncReturnType, Promise, PromiseContext, PromiseGuard};
 use crate::ffi::FFIException;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::CompiledProgram;
-use crate::vm::al31f::executor::{vm_thread_run_function, VMThread};
-use crate::vm::al31f::stack::{Stack, StackSlice};
+use crate::vm::al31f::executor::{create_vm_child_thread, vm_thread_run_function, VMThread};
+use crate::vm::al31f::stack::StackSlice;
 
 #[inline(never)]
 pub unsafe fn coroutine_spawn<A: Alloc>(
@@ -33,13 +32,11 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
             |child_context, (func_id, arg_pack)| UncheckedSendFut::new(async move {
                 let (args, program): (Box<[Value]>, NonNull<CompiledProgram<A>>)
                     = arg_pack.into_inner();
-                let mut new_thread: VMThread<A> = VMThread {
-                    vm: child_context,
-                    program,
-                    stack: Stack::new()
-                };
-
-                let arg_pack = UncheckedSendSync::new((&mut new_thread, func_id, args.as_ref()));
+                let mut new_thread: Box<VMThread<A>> =
+                    create_vm_child_thread(child_context, program);
+                let arg_pack = UncheckedSendSync::new(
+                    (new_thread.as_mut(), func_id, args.as_ref())
+                );
                 AsyncReturnType(match vm_thread_run_function::<_, false>(arg_pack) {
                     Ok(f) => f.await.into_inner().map_or_else(
                         |exception| Err(exception.inner),
