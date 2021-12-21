@@ -4,16 +4,15 @@ use std::ptr::NonNull;
 use tokio::fs::read_to_string;
 use xjbutil::boxed_slice;
 
+use crate::data::exception::ExceptionInner;
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::data::Value;
 use crate::ffi::async_fn::{
     AsyncFunctionBase,
-    AsyncOwnershipGuard,
     AsyncReturnType,
+    AsyncShareGuard,
     AsyncVMContext,
     Promise,
-    PromiseContext,
-    PromiseGuard,
     VMDataTrait
 };
 use crate::ffi::{DataOption, FFIException, Signature};
@@ -40,27 +39,45 @@ impl AsyncFunctionBase for AsyncReadToStringBind {
         _context: &ACTX,
         args: &[Value]
     ) -> Result<Promise<A>, FFIException> {
+        struct AsyncRet {
+            g: AsyncShareGuard,
+            result: tokio::io::Result<String>
+        }
+
+        impl<A: Alloc> AsyncReturnType<A> for AsyncRet {
+            fn is_err(&self) -> bool {
+                self.result.is_err()
+            }
+
+            fn resolve(self, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
+                match self.result {
+                    Ok(data) => {
+                        let value: Value = Value::new_owned(data);
+                        unsafe {
+                            alloc.add_managed(value.ptr_repr);
+                            **dests.get_unchecked(0) = value;
+                        }
+                        Ok(1)
+                    }
+                    Err(e) => {
+                        let err_value: Value = Value::new_owned(e);
+                        unsafe {
+                            alloc.add_managed(err_value.ptr_repr);
+                        }
+                        Err(ExceptionInner::Checked(err_value))
+                    }
+                }
+            }
+        }
+
         let (r, g) = value_into_ref::<String>(*args.get_unchecked(0))?;
 
         let fut = async move {
-            AsyncReturnType(match read_to_string(r).await {
-                Ok(s) => Ok(boxed_slice![Value::new_owned(s)]),
-                Err(e) => Err(FFIException::Checked(Value::new_owned(e))),
-            })
+            let result = read_to_string(r).await;
+            Box::new(AsyncRet { g, result }) as Box<dyn AsyncReturnType<A>>
         };
 
-        Ok(Promise {
-            fut: Box::pin(fut),
-            ctx: PromiseContext {
-                guard: PromiseGuard {
-                    guards: boxed_slice![AsyncOwnershipGuard { share_guard: g }],
-                    reset_guard_count: 0
-                },
-                resolver: Some(|alloc: &mut A, values: &[Value]| {
-                    alloc.add_managed(values.get_unchecked(0).ptr_repr)
-                })
-            }
-        })
+        Ok(Promise(Box::pin(fut)))
     }
 }
 

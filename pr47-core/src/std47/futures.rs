@@ -4,24 +4,18 @@ use std::pin::Pin;
 use std::ptr::NonNull;
 use std::time::Duration;
 use futures::future::select_all;
-use smallvec::{SmallVec, smallvec};
+use smallvec::SmallVec;
+use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::boxed_slice;
 use xjbutil::async_utils::join_all;
+use crate::data::exception::ExceptionInner;
 
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::data::Value;
-use crate::ffi::async_fn::{
-    AsyncFunctionBase,
-    AsyncReturnType,
-    AsyncVMContext,
-    Promise,
-    PromiseContext,
-    PromiseGuard,
-    VMDataTrait
-};
+use crate::ffi::async_fn::{AsyncFunctionBase, AsyncReturnType, AsyncVMContext, Promise, PromiseResult, VMDataTrait};
 use crate::ffi::async_fn::{value_move_out_check_norm_noalias, value_move_out_norm_noalias};
 use crate::ffi::{FFIException, Signature};
-use crate::util::serializer::{CoroutineSharedData, Serializer, SerializerLock};
+use crate::util::serializer::{CoroutineSharedData, Serializer};
 use crate::vm::al31f::alloc::Alloc;
 
 pub struct JoinBind();
@@ -37,59 +31,51 @@ impl AsyncFunctionBase for JoinBind {
         context: &ACTX,
         args: &[Value]
     ) -> Result<Promise<A>, FFIException> {
+        struct AsyncRet<A: Alloc> {
+            results: Vec<PromiseResult<A>>
+        }
+
+        impl<A: Alloc> AsyncReturnType<A> for AsyncRet<A> {
+            fn is_err(&self) -> bool {
+                self.results.iter().any(|x| x.is_err())
+            }
+
+            fn resolve(self, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
+                for result in self.results {
+                    if result.is_err() {
+                        return result.resolve(alloc, &[])
+                    }
+                }
+
+                let mut resolved_size: usize = 0;
+                for result in self.results {
+                    resolved_size += unsafe {
+                        result.resolve(alloc, &dests[resolved_size..]).unchecked_unwrap()
+                    }
+                }
+                Ok(resolved_size)
+            }
+        }
+
         for arg in args {
             value_move_out_check_norm_noalias(*arg)?;
         }
 
-        let mut ctx: SmallVec<[PromiseContext<A>; 4]> = smallvec![];
-        let mut futs: SmallVec<[Pin<Box<dyn Future<Output = AsyncReturnType> + Send>>; 4]>
-            = smallvec![];
-
-        for promise in args.into_iter()
-            .map(|arg: &Value| value_move_out_norm_noalias::<Promise<A>>(*arg))
-        {
-            ctx.push(promise.ctx);
-            futs.push(promise.fut);
-        }
+        let mut futs: SmallVec<[Pin<Box<dyn Future<Output=PromiseResult<A>> + Send>>; 4]> =
+            args.into_iter()
+                .map(|arg: &Value| value_move_out_norm_noalias::<Promise<A>>(*arg))
+                .map(|Promise(fut)| fut)
+                .collect();
 
         let serializer: Serializer<(CoroutineSharedData, ACTX::VMData)> =
             context.serializer().clone();
 
         let fut = async move {
-            let results: Vec<AsyncReturnType> = join_all(futs).await;
-            let mut serialized: SerializerLock<(CoroutineSharedData, ACTX::VMData)> =
-                serializer.lock().await;
-            let alloc: &mut <ACTX::VMData as VMDataTrait>::Alloc = serialized.1.get_alloc();
-
-            let x = results.into_iter().zip(ctx.into_iter())
-                .map(|(result, ctx): (AsyncReturnType, _)| {
-                    match result.0 {
-                        Ok(values) => {
-                            if let Some(resolver) = ctx.resolver {
-                                resolver(alloc, &values);
-                            }
-                            Ok(values)
-                        },
-                        Err(e) => Err(e),
-                    }
-                }).fold(Ok(vec![]), |collected, incoming| {
-                    if let Ok(mut values) = collected {
-                        values.extend_from_slice(&incoming?);
-                        Ok(values)
-                    } else {
-                        collected
-                    }
-                }).map(|vec| vec.into_boxed_slice());
-            AsyncReturnType(x)
+            let results: Vec<PromiseResult<A>> = join_all(futs).await;
+            Box::new(AsyncRet { results }) as Box<dyn AsyncReturnType<A>>
         };
 
-        Ok(Promise {
-            fut: Box::pin(fut),
-            ctx: PromiseContext {
-                guard: PromiseGuard { guards: boxed_slice![], reset_guard_count: 0 },
-                resolver: None
-            }
-        })
+        Ok(Promise(Box::pin(fut)))
     }
 }
 
@@ -106,50 +92,43 @@ impl AsyncFunctionBase for SelectBind {
         context: &ACTX,
         args: &[Value]
     ) -> Result<Promise<A>, FFIException> {
+        struct AsyncRet<A: Alloc> {
+            result: Box<dyn AsyncReturnType<A>>,
+            idx: usize
+        }
+
+        impl<A: Alloc> AsyncReturnType<A> for AsyncRet<A> {
+            fn is_err(&self) -> bool {
+                self.result.is_err()
+            }
+
+            fn resolve(self, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
+                unsafe {
+                    **dests.get_unchecked(0) = Value::new_int(self.idx as i64);
+                }
+                self.result.resolve(alloc, &dests[1..])
+            }
+        }
+
         for arg in args {
             value_move_out_check_norm_noalias(*arg)?;
         }
 
-        let mut ctx: SmallVec<[PromiseContext<A>; 4]> = smallvec![];
-        let mut futs: SmallVec<[Pin<Box<dyn Future<Output = AsyncReturnType> + Send>>; 4]>
-            = smallvec![];
-
-        for promise in args.into_iter()
-            .map(|arg: &Value| value_move_out_norm_noalias::<Promise<A>>(*arg))
-        {
-            ctx.push(promise.ctx);
-            futs.push(promise.fut);
-        }
+        let futs: SmallVec<[Pin<Box<dyn Future<Output=PromiseResult<A>> + Send>>; 4]> =
+            args.into_iter()
+                .map(|arg: &Value| value_move_out_norm_noalias::<Promise<A>>(*arg))
+                .map(|Promise(fut)| fut)
+                .collect();
 
         let serializer: Serializer<(CoroutineSharedData, ACTX::VMData)> =
             context.serializer().clone();
 
         let fut = async move {
             let (result, idx, _rest) = select_all(futs).await;
-            let mut serialized: SerializerLock<(CoroutineSharedData, ACTX::VMData)> =
-                serializer.lock().await;
-            let alloc: &mut <ACTX::VMData as VMDataTrait>::Alloc = serialized.1.get_alloc();
-
-            match result.0 {
-                Ok(data) => {
-                    if let Some(resolver) = ctx[idx].resolver {
-                        resolver(alloc, &data);
-                    }
-                    let mut values: Vec<Value> = vec![Value::new_int(idx as i64)];
-                    values.extend_from_slice(&data);
-                    AsyncReturnType(Ok(values.into_boxed_slice()))
-                },
-                Err(e) => AsyncReturnType(Err(e))
-            }
+            Box::new(AsyncRet { result, idx }) as Box<dyn AsyncReturnType<A>>
         };
 
-        Ok(Promise {
-            fut: Box::pin(fut),
-            ctx: PromiseContext {
-                guard: PromiseGuard { guards: boxed_slice![], reset_guard_count: 0 },
-                resolver: None
-            }
-        })
+        Ok(Promise(Box::pin(fut)))
     }
 }
 
@@ -172,19 +151,27 @@ impl AsyncFunctionBase for SleepMillisBind {
         _context: &ACTX,
         args: &[Value]
     ) -> Result<Promise<A>, FFIException> {
+        struct AsyncRet();
+
+        impl<A: Alloc> AsyncReturnType<A> for AsyncRet {
+            fn is_err(&self) -> bool {
+                false
+            }
+
+            fn resolve(self, _alloc: &mut A, _dests: &[*mut Value])
+                -> Result<usize, ExceptionInner>
+            {
+                Ok(0)
+            }
+        }
+
         let int_value: i64 = args.get_unchecked(0).vt_data.inner.int_value;
         let fut = async move {
             tokio::time::sleep(Duration::from_millis(int_value as u64)).await;
-            AsyncReturnType(Ok(boxed_slice![]))
+            Box::new(AsyncRet()) as Box<dyn AsyncReturnType<A>>
         };
 
-        Ok(Promise {
-            fut: Box::pin(fut),
-            ctx: PromiseContext {
-                guard: PromiseGuard { guards: boxed_slice![], reset_guard_count: 0 },
-                resolver: None
-            }
-        })
+        Ok(Promise(Box::pin(fut)))
     }
 }
 

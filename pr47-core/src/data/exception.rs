@@ -1,4 +1,5 @@
 use std::any::TypeId;
+use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
@@ -31,6 +32,16 @@ pub type CheckedException = Value;
 pub enum ExceptionInner {
     Unchecked(UncheckedException),
     Checked(CheckedException)
+}
+
+impl Debug for ExceptionInner {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // TODO should we provide prettier printing?
+        match self {
+            ExceptionInner::Unchecked(_) => write!(f, "ExceptionInner::Unchecked"),
+            ExceptionInner::Checked(_) => write!(f, "ExceptionInner::Checked")
+        }
+    }
 }
 
 #[derive(Clone, Copy)]

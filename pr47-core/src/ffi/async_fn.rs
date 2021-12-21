@@ -4,7 +4,7 @@ use std::pin::Pin;
 use xjbutil::void::Void;
 
 use crate::data::Value;
-use crate::data::exception::UncheckedException;
+use crate::data::exception::{ExceptionInner, UncheckedException};
 use crate::data::generic::GenericTypeRef;
 use crate::data::traits::{StaticBase};
 use crate::data::wrapper::{OWN_INFO_GLOBAL_MASK, OwnershipInfo, Wrapper};
@@ -58,32 +58,28 @@ impl<AFBase, A, VD, ACTX> AsyncFunction<A, VD, ACTX> for AFBase where
     }
 }
 
-#[derive(Copy, Clone)]
 pub struct AsyncResetGuard {
     wrapper_ptr: *mut Wrapper<()>,
     original: u8
 }
 
-#[derive(Copy, Clone)]
+impl Drop for AsyncResetGuard {
+    fn drop(&mut self) {
+        let wrapper_ref: &mut Wrapper<()> = unsafe { &mut *self.wrapper_ptr };
+        wrapper_ref.ownership_info = unsafe { self.original }
+    }
+}
+
+unsafe impl Send for AsyncResetGuard {}
+unsafe impl Sync for AsyncResetGuard {}
+
 pub struct AsyncShareGuard {
     wrapper_ptr: *mut Wrapper<()>
 }
 
-pub union AsyncOwnershipGuard {
-    pub reset_guard: AsyncResetGuard,
-    pub share_guard: AsyncShareGuard
-}
-
-impl AsyncOwnershipGuard {
-    #[cfg_attr(not(debug_assertions), inline(always))]
-    pub fn reset(&self) {
-        let wrapper_ref: &mut Wrapper<()> = unsafe { &mut *self.reset_guard.wrapper_ptr };
-        wrapper_ref.ownership_info = unsafe { self.reset_guard.original }
-    }
-
-    #[cfg_attr(not(debug_assertions), inline(always))]
-    pub fn un_share(&self) {
-        let wrapper_ref: &mut Wrapper<()> = unsafe { &mut *self.share_guard.wrapper_ptr };
+impl Drop for AsyncShareGuard {
+    fn drop(&mut self) {
+        let wrapper_ref: &mut Wrapper<()> = unsafe { &mut *self.wrapper_ptr };
         if wrapper_ref.ownership_info & OWN_INFO_GLOBAL_MASK == 0 {
             wrapper_ref.refcount -= 1;
             if wrapper_ref.refcount == 0 {
@@ -93,55 +89,18 @@ impl AsyncOwnershipGuard {
     }
 }
 
-impl From<AsyncResetGuard> for AsyncOwnershipGuard {
-    fn from(reset_guard: AsyncResetGuard) -> Self {
-        Self { reset_guard }
-    }
+unsafe impl Send for AsyncShareGuard {}
+unsafe impl Sync for AsyncShareGuard {}
+
+pub trait AsyncReturnType<A: Alloc> : Send + Sync {
+    fn is_err(&self) -> bool;
+
+    fn resolve(self, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner>;
 }
 
-impl From<AsyncShareGuard> for AsyncOwnershipGuard {
-    #[inline(always)]
-    fn from(share_guard: AsyncShareGuard) -> Self {
-        Self { share_guard }
-    }
-}
+pub type PromiseResult<A: Alloc> = Box<dyn AsyncReturnType<A>>;
 
-pub struct AsyncReturnType(pub Result<Box<[Value]>, FFIException>);
-
-unsafe impl Send for AsyncReturnType {}
-unsafe impl Sync for AsyncReturnType {}
-
-pub struct PromiseGuard {
-    pub guards: Box<[AsyncOwnershipGuard]>,
-    pub reset_guard_count: usize
-}
-
-impl Drop for PromiseGuard {
-    fn drop(&mut self) {
-        let guard_count: usize = self.guards.len();
-        for i in 0..self.reset_guard_count {
-            unsafe { self.guards.get_unchecked(i).reset() }
-        }
-        for i in self.reset_guard_count..guard_count {
-            unsafe { self.guards.get_unchecked(i).un_share() }
-        }
-    }
-}
-
-pub type AsyncRetValueResolver<A> = Option<fn(&mut A, &[Value])>;
-
-pub struct PromiseContext<A: Alloc> {
-    pub guard: PromiseGuard,
-    pub resolver: AsyncRetValueResolver<A>
-}
-
-unsafe impl<A: Alloc> Send for PromiseContext<A> {}
-unsafe impl<A: Alloc> Sync for PromiseContext<A> {}
-
-pub struct Promise<A: Alloc> {
-    pub fut: Pin<Box<dyn Future<Output=AsyncReturnType> + Send>>,
-    pub ctx: PromiseContext<A>
-}
+pub struct Promise<A: Alloc>(pub Pin<Box<dyn Future<Output=PromiseResult<A>> + Send>>);
 
 impl<A: Alloc> StaticBase<Promise<A>> for Void {
     fn type_name() -> String {

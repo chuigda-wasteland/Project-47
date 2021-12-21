@@ -4,7 +4,7 @@ use std::ptr::NonNull;
 use std::marker::PhantomPinned;
 use std::task::{Context, Poll};
 
-use unchecked_unwrap::UncheckedUnwrap;
+use smallvec::{SmallVec, smallvec};
 use xjbutil::unchecked::{UncheckedCellOps, UncheckedSendSync};
 use xjbutil::wide_ptr::WidePointer;
 
@@ -12,7 +12,7 @@ use crate::builtins::closure::Closure;
 use crate::builtins::object::Object;
 use crate::builtins::vec::VMGenericVec;
 use crate::data::Value;
-use crate::data::exception::{Exception, UncheckedException};
+use crate::data::exception::{Exception, ExceptionInner, UncheckedException};
 use crate::data::value_typed::INT_TYPE_TAG;
 use crate::ffi::FFIException;
 use crate::ffi::sync_fn::Function as FFIFunction;
@@ -32,9 +32,8 @@ use crate::vm::al31f::stack::{Stack, StackSlice};
 #[cfg(feature = "async")] use std::mem::transmute;
 #[cfg(feature = "async")] use futures::FutureExt;
 #[cfg(feature = "async")] use crate::data::wrapper::{Wrapper, OwnershipInfo};
-#[cfg(feature = "async")] use crate::ffi::async_fn::{AsyncReturnType, Promise};
+#[cfg(feature = "async")] use crate::ffi::async_fn::{Promise, PromiseResult};
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
-#[cfg(feature = "async")] use crate::ffi::async_fn::PromiseContext;
 #[cfg(feature = "async")] use crate::util::serializer::CoroutineContext;
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
@@ -105,7 +104,7 @@ pub struct VMThreadRunFunctionFut<'a, A: Alloc, const S: bool> {
     insc_ptr: usize,
 
     #[cfg(feature = "async")]
-    awaiting_promise: Option<(Pin<Box<dyn Future<Output = AsyncReturnType>>>, PromiseContext<A>)>,
+    awaiting_promise: Option<Pin<Box<dyn Future<Output=PromiseResult<A>>>>>,
 }
 
 unsafe impl<'a, A: Alloc, const S: bool> Send for VMThreadRunFunctionFut<'a, A, S> {}
@@ -117,52 +116,36 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
     #[cfg(not(feature = "async"))] _cx: &mut Context<'_>
 ) -> Poll<Result<Vec<Value>, Exception>> {
     #[cfg(feature = "async")]
-    if let Some((fut, _)) = &mut this.awaiting_promise {
+    if let Some(fut) = &mut this.awaiting_promise {
         if let Poll::Ready(promise_result) = fut.poll_unpin(cx) {
-            let (_, mut ctx) = this.awaiting_promise.take().unchecked_unwrap();
+            let insc: &Insc = &this.thread.program.as_ref().code[this.insc_ptr - 1];
+            let mut value_dests: SmallVec<[*mut Value; 4]> = smallvec![];
+            if let Insc::Await(_, dests) = insc {
+                for i in 0..dests.len() {
+                    value_dests.push(this.slice.get_value_mut_ref(*dests.get_unchecked(i)));
+                }
+            } else {
+                unreachable_unchecked()
+            };
 
-            let AsyncReturnType(result) = promise_result;
-            match result {
-                Ok(values) => {
-                    if let Some(resolver) = ctx.resolver.take() {
-                        resolver(
-                            &mut this.thread.vm.get_shared_data_mut().alloc,
-                            &values
-                        );
-                    }
-
-                    let insc: &Insc = &this.thread.program.as_ref().code[this.insc_ptr - 1];
-                    let dests: &[usize] = if let Insc::Await(_, dests) = insc {
-                        dests
-                    } else {
-                        unreachable_unchecked()
-                    };
-
-                    debug_assert_eq!(values.len(), dests.len());
-                    for i in 0..dests.len() {
-                        let dest: usize = *dests.get_unchecked(i);
-                        this.slice.set_value(dest, *values.get_unchecked(i));
-                    }
-                },
-                Err(e) => {
-                    match e {
-                        FFIException::Checked(checked) => {
-                            let (new_slice, insc_ptr_next): (StackSlice, usize) =
-                                checked_exception_unwind_stack(
-                                    get_vm!(this.thread),
-                                    this.thread.program.as_ref(),
-                                    checked,
-                                    &mut this.thread.stack,
-                                    this.insc_ptr
-                                )?;
-                            this.slice = new_slice;
-                            this.insc_ptr = insc_ptr_next;
-                        },
-                        FFIException::Unchecked(unchecked) => {
-                            return Poll::Ready(Err(unchecked_exception_unwind_stack(
-                                unchecked, &mut this.thread.stack, this.insc_ptr
-                            )));
-                        }
+            if let Err(e) = promise_result.resolve(&mut get_vm!(this.thread).alloc, &value_dests) {
+                match e {
+                    ExceptionInner::Checked(checked) => {
+                        let (new_slice, insc_ptr_next): (StackSlice, usize) =
+                            checked_exception_unwind_stack(
+                                get_vm!(this.thread),
+                                this.thread.program.as_ref(),
+                                checked,
+                                &mut this.thread.stack,
+                                this.insc_ptr
+                            )?;
+                        this.slice = new_slice;
+                        this.insc_ptr = insc_ptr_next;
+                    },
+                    ExceptionInner::Unchecked(unchecked) => {
+                        return Poll::Ready(Err(unchecked_exception_unwind_stack(
+                            unchecked, &mut this.thread.stack, this.insc_ptr
+                        )));
                     }
                 }
             }
@@ -692,20 +675,20 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     )));
                 }
 
-                let Promise { fut, ctx } = promise.move_out::<Promise<A>>();
+                let Promise(fut) = promise.move_out::<Promise<A>>();
                 (*wrapper).ownership_info = OwnershipInfo::MovedToRust as u8;
 
                 this.insc_ptr = insc_ptr;
 
                 let thread: &'static VMThread<A> = transmute::<_, _>(thread);
-                this.awaiting_promise = Some((Box::pin(thread.vm.co_await(fut)), ctx));
+                this.awaiting_promise = Some(Box::pin(thread.vm.co_await(fut)));
                 cx.waker().wake_by_ref();
                 return Poll::Pending;
             },
             #[cfg(all(feature = "async", feature = "al31f-builtin-ops"))]
             Insc::Spawn(func, args) => {
-                let promise: Promise<A> = coroutine_spawn(thread, slice, *func, args);
-                this.awaiting_promise = Some((promise.fut, promise.ctx));
+                let Promise(fut) = coroutine_spawn(thread, slice, *func, args);
+                this.awaiting_promise = Some(fut);
                 this.insc_ptr = insc_ptr + 1;
                 cx.waker().wake_by_ref();
                 return Poll::Pending;

@@ -8,7 +8,7 @@ use xjbutil::unchecked::{UncheckedSendFut, UncheckedSendSync};
 
 use crate::data::exception::UncheckedException;
 use crate::data::Value;
-use crate::ffi::async_fn::{AsyncReturnType, Promise, PromiseContext, PromiseGuard};
+use crate::ffi::async_fn::{AsyncReturnType, Promise};
 use crate::ffi::FFIException;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::CompiledProgram;

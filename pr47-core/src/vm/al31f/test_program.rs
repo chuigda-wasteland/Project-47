@@ -3,6 +3,7 @@ use xjbutil::slice_arena::SliceArena;
 use xjbutil::void::Void;
 
 use crate::builtins::object::Object;
+use crate::data::exception::ExceptionInner;
 use crate::data::Value;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfoPool;
@@ -16,10 +17,9 @@ use crate::vm::al31f::insc::Insc;
     AsyncFunctionBase,
     AsyncReturnType,
     AsyncVMContext,
-    Promise,
-    PromiseGuard
+    Promise
 };
-#[cfg(feature = "async")] use crate::ffi::async_fn::{PromiseContext, VMDataTrait};
+#[cfg(feature = "async")] use crate::ffi::async_fn::VMDataTrait;
 use crate::std47::futures::SLEEP_MS_BIND;
 use crate::std47::io::PRINT_BIND;
 
@@ -486,30 +486,42 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
         _context: &ACTX,
         _args: &[Value]
     ) -> Result<Promise<A>, FFIException> {
+        struct AsyncRet {
+            r: Result<String, std::io::Error>
+        }
+
+        impl<A: Alloc> AsyncReturnType<A> for AsyncRet {
+            fn is_err(&self) -> bool {
+                self.r.is_err()
+            }
+
+            fn resolve(self, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
+                match self.r {
+                    Ok(data) => {
+                        let value: Value = Value::new_owned(data);
+                        unsafe {
+                            alloc.add_managed(value.ptr_repr);
+                            **dests.get_unchecked(0) = value;
+                        }
+                        Ok(1)
+                    },
+                    Err(e) => {
+                        let err_value: Value = Value::new_owned(e);
+                        unsafe {
+                            alloc.add_managed(err_value.ptr_repr);
+                        }
+                        Err(ExceptionInner::Checked(err_value))
+                    }
+                }
+            }
+        }
+
         let fut = async move {
             let r: Result<String, std::io::Error> = async_ffi_function().await;
-            match r {
-                Ok(data) => AsyncReturnType(Ok(boxed_slice![
-                    Value::new_owned(data)
-                ])),
-                Err(e) => AsyncReturnType(Err(FFIException::Checked(
-                    Value::new_owned(e)
-                )))
-            }
+            Box::new(AsyncRet { r }) as Box<dyn AsyncReturnType<A>>
         };
 
-        Ok(Promise {
-            fut: Box::pin(fut),
-            ctx: PromiseContext {
-                guard: PromiseGuard {
-                    guards: boxed_slice![],
-                    reset_guard_count: 0
-                },
-                resolver: Some(|alloc: &mut A, values: &[Value]| {
-                    alloc.add_managed(values.get_unchecked(0).ptr_repr)
-                })
-            }
-        })
+        Ok(Promise(Box::pin(fut)))
     }
 }
 
