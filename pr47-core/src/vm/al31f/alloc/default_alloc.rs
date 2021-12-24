@@ -159,6 +159,10 @@ impl Alloc for DefaultAlloc {
             }
         }
 
+        for pinned /*: &Value*/ in self.pinned.iter() {
+            to_scan.push_back(*pinned);
+        }
+
         while !to_scan.is_empty() {
             let value: Value = to_scan.pop_front().unwrap();
             let ownership_info: u8 = value.ownership_info() as u8;
