@@ -3,11 +3,11 @@ use std::iter::Iterator;
 use std::ptr::NonNull;
 
 use xjbutil::void::Void;
-use xjbutil::wide_ptr::WidePointer;
 
+use crate::data::Value;
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 
-pub type ChildrenType = Option<Box<dyn Iterator<Item=WidePointer> + 'static>>;
+pub type ChildrenType = Option<Box<dyn Iterator<Item=Value> + 'static>>;
 
 pub trait StaticBase<T: 'static> {
     fn type_id() -> TypeId {

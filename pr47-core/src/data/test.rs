@@ -3,7 +3,6 @@ use std::mem::MaybeUninit;
 use std::ptr::{NonNull, addr_of, null_mut};
 
 use xjbutil::mem::move_to_heap;
-use xjbutil::wide_ptr::WidePointer;
 use xjbutil::void::Void;
 
 use crate::builtins::test_container::{
@@ -248,8 +247,8 @@ impl StaticBase<TestStruct2> for Void {
 
     let mut test_container: TestContainer<TestStruct2> = TestContainer::new();
     unsafe {
-        test_container.inner.elements.push(value1.ptr_repr);
-        test_container.inner.elements.push(value2.ptr_repr);
+        test_container.inner.elements.push(value1);
+        test_container.inner.elements.push(value2);
     }
 
     let v: Value = Value::new_owned(test_container);
@@ -271,10 +270,10 @@ impl StaticBase<TestStruct2> for Void {
             <Void as StaticBase<TestContainer<TestStruct2>>>::tyck_info(&mut tyck_info_pool);
         assert!(dyn_base.dyn_tyck(tyck_info.as_ref()));
 
-        let children: Vec<WidePointer> = dyn_base.children().unwrap().collect::<Vec<_>>();
+        let children: Vec<Value> = dyn_base.children().unwrap().collect::<Vec<_>>();
         assert_eq!(children.len(), 2);
-        assert_eq!(children[0], value1.ptr_repr);
-        assert_eq!(children[1], value2.ptr_repr);
+        assert_eq!(children[0].ptr_repr, value1.ptr_repr);
+        assert_eq!(children[1].ptr_repr, value2.ptr_repr);
     }
 
     unsafe {
@@ -300,8 +299,8 @@ impl StaticBase<TestStruct2> for Void {
 
     let mut test_container: TestContainer<TestStruct2> = TestContainer::new();
     unsafe {
-        test_container.inner.elements.push(value1.ptr_repr);
-        test_container.inner.elements.push(value2.ptr_repr);
+        test_container.inner.elements.push(value1);
+        test_container.inner.elements.push(value2);
     }
 
     let test_container_vt: GenericTypeVT =

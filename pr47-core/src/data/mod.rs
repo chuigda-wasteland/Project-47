@@ -305,8 +305,7 @@ impl Value {
     /// get a pointer to the referenced data
     #[cfg_attr(not(debug_assertions), inline)]
     pub unsafe fn get_as_mut_ptr<T>(&self) -> *mut T
-        where T: 'static,
-              Void: StaticBase<T>
+        where T: 'static
     {
         debug_assert!(self.ownership_info().is_readable());
         let data_offset: usize = *((self.untagged_ptr_field() + 6usize) as *mut u8) as usize;
@@ -322,8 +321,7 @@ impl Value {
     /// pointer to the referenced data
     #[cfg_attr(not(debug_assertions), inline)]
     pub unsafe fn get_as_mut_ptr_norm<T>(&self) -> *mut T
-        where T: 'static,
-              Void: StaticBase<T>
+        where T: 'static
     {
         debug_assert!(self.ownership_info().is_readable());
         let data_offset: usize = *((self.ptr_repr.ptr + 6usize) as *mut u8) as usize;

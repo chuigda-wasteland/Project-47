@@ -1,5 +1,4 @@
 use xjbutil::void::Void;
-use xjbutil::wide_ptr::WidePointer;
 
 use crate::data::Value;
 use crate::data::generic::GenericTypeRef;
@@ -15,8 +14,8 @@ use crate::data::wrapper::{
 use crate::ffi::{FFIException, Signature};
 
 pub trait VMContext: 'static + Sized {
-    fn add_heap_managed(&mut self, wide_ptr: WidePointer);
-    fn mark(&mut self, wide_ptr: WidePointer);
+    fn add_heap_managed(&mut self, wide_ptr: Value);
+    fn mark(&mut self, wide_ptr: Value);
 }
 
 pub trait FunctionBase: 'static {

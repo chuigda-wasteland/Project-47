@@ -96,7 +96,7 @@ impl StaticBase<Exception> for Void {
         match unsafe { &(*vself).inner } {
             ExceptionInner::Unchecked(_) => None,
             ExceptionInner::Checked(checked) => {
-                Some(Box::new(std::iter::once(unsafe { checked.ptr_repr })))
+                Some(Box::new(std::iter::once(*checked)))
             }
         }
     }
@@ -146,7 +146,7 @@ impl<E> StaticBase<ExceptionContainer<E>> for Void
         match r.exception.inner {
             ExceptionInner::Unchecked(_) => None,
             ExceptionInner::Checked(checked) => {
-                Some(Box::new(std::iter::once(unsafe { checked.ptr_repr })))
+                Some(Box::new(std::iter::once(checked)))
             }
         }
     }

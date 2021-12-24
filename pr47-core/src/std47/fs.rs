@@ -54,7 +54,7 @@ impl AsyncFunctionBase for AsyncReadToStringBind {
                     Ok(data) => {
                         let value: Value = Value::new_owned(data);
                         unsafe {
-                            alloc.add_managed(value.ptr_repr);
+                            alloc.add_managed(value);
                             **dests.get_unchecked(0) = value;
                         }
                         Ok(1)
@@ -62,7 +62,7 @@ impl AsyncFunctionBase for AsyncReadToStringBind {
                     Err(e) => {
                         let err_value: Value = Value::new_owned(e);
                         unsafe {
-                            alloc.add_managed(err_value.ptr_repr);
+                            alloc.add_managed(err_value);
                         }
                         Err(ExceptionInner::Checked(err_value))
                     }

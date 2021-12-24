@@ -47,7 +47,7 @@ impl FunctionBase for DurationForMillisBind {
         let duration: Duration = Duration::from_millis(millis as u64);
 
         let value: Value = Value::new_owned(duration);
-        context.add_heap_managed(value.ptr_repr);
+        context.add_heap_managed(value);
         **rets.get_unchecked(0) = value;
 
         Ok(())
