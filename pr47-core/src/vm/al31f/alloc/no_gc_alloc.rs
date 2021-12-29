@@ -1,5 +1,5 @@
 use crate::data::Value;
-use crate::vm::al31f::alloc::Alloc;
+use crate::vm::al31f::alloc::{Alloc, AllocPin};
 use crate::vm::al31f::stack::Stack;
 
 pub struct NoGCAlloc {
@@ -33,7 +33,7 @@ impl Alloc for NoGCAlloc {
 
     #[inline(always)] unsafe fn mark_object(&mut self, _data: Value) {}
 
-    #[inline(always)] unsafe fn pin_object(&mut self, _data: Value) {}
+    #[inline(always)] unsafe fn pin_objects(&mut self, _pinned: AllocPin) {}
 
     #[inline(always)] unsafe fn collect(&mut self) {}
 

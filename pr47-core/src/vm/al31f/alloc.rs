@@ -1,8 +1,11 @@
 pub mod default_alloc;
 pub mod no_gc_alloc;
 
+use xjbutil::flex::FlexArray;
 use crate::data::Value;
 use crate::vm::al31f::stack::Stack;
+
+pub type AllocPin = FlexArray<bool, Value>;
 
 /// Abstract memory manager of `AL31F` engine
 pub trait Alloc: 'static + Send + Sync {
@@ -20,10 +23,10 @@ pub trait Alloc: 'static + Send + Sync {
     unsafe fn mark_object(&mut self, data: Value);
 
     /// Pin the object denoted by `data` pointer, thus it is scanned every turn. This effect
-    /// lasts until the object is no more "shared" or "global".
+    /// lasts until the `non_flex` part of `AllocPin` is cleared.
     ///
-    /// This "pin" is irrelevant with `std::pin`
-    unsafe fn pin_object(&mut self, data: Value);
+    /// This "pin" is irrelevant with `std::pin`.
+    unsafe fn pin_objects(&mut self, pinned: AllocPin);
 
     /// Perform garbage collection
     unsafe fn collect(&mut self);

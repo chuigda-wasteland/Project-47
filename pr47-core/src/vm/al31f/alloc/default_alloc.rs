@@ -5,14 +5,14 @@ use unchecked_unwrap::UncheckedUnwrap;
 use crate::data::Value;
 use crate::data::generic::GenericTypeVT;
 use crate::data::wrapper::{DynBase, OWN_INFO_COLLECT_MASK, OWN_INFO_GLOBAL_MASK};
-use crate::vm::al31f::alloc::Alloc;
+use crate::vm::al31f::alloc::{Alloc, AllocPin};
 use crate::vm::al31f::stack::Stack;
 
 /// Default allocator for `AL31F`, with STW GC.
 pub struct DefaultAlloc {
     stacks: Vec<*const Stack>,
     managed: Vec<Value>,
-    pinned: Vec<Value>,
+    pinned: Vec<AllocPin>,
     debt: usize,
     pin_debt: usize,
     max_debt: usize,
@@ -31,11 +31,7 @@ pub const DEFAULT_MAX_PIN_DEBT: usize = 128;
 
 impl DefaultAlloc {
     unsafe fn cleanup_pins(&mut self) {
-        self.pinned.retain(|value: &Value| {
-            let ownership_info: u8 = value.ownership_info() as u8;
-            ownership_info & OWN_INFO_COLLECT_MASK == 0
-            || ownership_info & OWN_INFO_GLOBAL_MASK != 0
-        });
+        self.pinned.retain(|pinned: &AllocPin| *pinned.as_ref().fixed);
         self.pin_debt = 0;
     }
 }
@@ -123,12 +119,12 @@ impl Alloc for DefaultAlloc {
         // do nothing
     }
 
-    unsafe fn pin_object(&mut self, data: Value) {
+    unsafe fn pin_objects(&mut self, pinned: AllocPin) {
         self.pin_debt += 1;
         if self.pin_debt > self.max_pin_debt {
             self.cleanup_pins();
         }
-        self.pinned.push(data);
+        self.pinned.push(pinned);
     }
 
     unsafe fn collect(&mut self) {
@@ -159,8 +155,12 @@ impl Alloc for DefaultAlloc {
             }
         }
 
-        for pinned /*: &Value*/ in self.pinned.iter() {
-            to_scan.push_back(*pinned);
+        for pin /*: &AllocPin*/ in self.pinned.iter() {
+            for pinned_object /*: &Value*/ in pin.flex().iter() {
+                if !pinned_object.is_null() && !pinned_object.is_value() {
+                    to_scan.push_back(*pinned_object);
+                }
+            }
         }
 
         while !to_scan.is_empty() {

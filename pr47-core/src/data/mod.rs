@@ -85,11 +85,7 @@ impl Value {
         let ptr: usize = (wrapper as usize) | (GENERIC_TYPE_MASK as usize);
         let trivia: usize = vt as _;
 
-        Self {
-            ptr_repr: WidePointer {
-                ptr, trivia
-            }
-        }
+        Self { ptr_repr: WidePointer::new(ptr, trivia) }
     }
 
     /// Create a new "shared" `Value`
