@@ -85,11 +85,7 @@ impl Value {
         let ptr: usize = (wrapper as usize) | (GENERIC_TYPE_MASK as usize);
         let trivia: usize = vt as _;
 
-        Self {
-            ptr_repr: WidePointer {
-                ptr, trivia
-            }
-        }
+        Self { ptr_repr: WidePointer::new(ptr, trivia) }
     }
 
     /// Create a new "shared" `Value`
@@ -305,15 +301,15 @@ impl Value {
     /// get a pointer to the referenced data
     #[cfg_attr(not(debug_assertions), inline)]
     pub unsafe fn get_as_mut_ptr<T>(&self) -> *mut T
-        where T: 'static,
-              Void: StaticBase<T>
+        where T: 'static
     {
         debug_assert!(self.ownership_info().is_readable());
-        let data_offset: usize = *((self.untagged_ptr_field() + 6usize) as *mut u8) as usize;
+        let untagged_ptr_field: usize = self.untagged_ptr_field();
+        let data_offset: usize = *((untagged_ptr_field + 6usize) as *mut u8) as usize;
         if self.ownership_info().is_owned() {
-            (self.untagged_ptr_field() + data_offset as usize) as *mut T
+            (untagged_ptr_field + data_offset as usize) as *mut T
         } else {
-            let ptr: *const *mut T = (self.untagged_ptr_field() + data_offset) as *const *mut T;
+            let ptr: *const *mut T = (untagged_ptr_field + data_offset) as *const *mut T;
             *ptr
         }
     }
@@ -322,8 +318,7 @@ impl Value {
     /// pointer to the referenced data
     #[cfg_attr(not(debug_assertions), inline)]
     pub unsafe fn get_as_mut_ptr_norm<T>(&self) -> *mut T
-        where T: 'static,
-              Void: StaticBase<T>
+        where T: 'static
     {
         debug_assert!(self.ownership_info().is_readable());
         let data_offset: usize = *((self.ptr_repr.ptr + 6usize) as *mut u8) as usize;

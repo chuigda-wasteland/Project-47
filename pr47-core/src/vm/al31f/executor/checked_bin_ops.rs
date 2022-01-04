@@ -42,7 +42,7 @@ include!("get_vm_makro.rs");
                 let src2: *const String = src2.get_as_mut_ptr_norm::<String>() as *const _;
                 let result: String = format!("{}{}", *src1, *src2);
                 let result: Value = Value::new_owned(result);
-                get_vm!(thread).alloc.add_managed(result.ptr_repr);
+                get_vm!(thread).alloc.add_managed(result);
                 *dest = result;
                 return Ok(())
             }

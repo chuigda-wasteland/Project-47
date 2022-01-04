@@ -66,7 +66,7 @@ pub struct AsyncResetGuard {
 impl Drop for AsyncResetGuard {
     fn drop(&mut self) {
         let wrapper_ref: &mut Wrapper<()> = unsafe { &mut *self.wrapper_ptr };
-        wrapper_ref.ownership_info = unsafe { self.original }
+        wrapper_ref.ownership_info = self.original;
     }
 }
 
@@ -95,10 +95,14 @@ unsafe impl Sync for AsyncShareGuard {}
 pub trait AsyncReturnType<A: Alloc> : Send + Sync {
     fn is_err(&self) -> bool;
 
-    fn resolve(self, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner>;
+    fn resolve(
+        self: Box<Self>,
+        alloc: &mut A,
+        dests: &[*mut Value]
+    ) -> Result<usize, ExceptionInner>;
 }
 
-pub type PromiseResult<A: Alloc> = Box<dyn AsyncReturnType<A>>;
+pub type PromiseResult<A> = Box<dyn AsyncReturnType<A>>;
 
 pub struct Promise<A: Alloc>(pub Pin<Box<dyn Future<Output=PromiseResult<A>> + Send>>);
 

@@ -57,7 +57,7 @@ pub unsafe fn checked_exception_unwind_stack<A: Alloc>(
                 {
                     let frame_size: usize = frame.frame_end - frame.frame_start;
                     let exception_value: Value = Value::new_owned(exception);
-                    vm.alloc.add_managed(exception_value.ptr_repr);
+                    vm.alloc.add_managed(exception_value);
                     let mut stack_slice: StackSlice = stack.last_frame_slice();
                     stack_slice.set_value(frame_size - 1, exception_value);
 

@@ -10,15 +10,14 @@ pub mod stack;
 
 use std::ptr::NonNull;
 
-use xjbutil::wide_ptr::WidePointer;
-
+use crate::data::Value;
 use crate::ffi::sync_fn::VMContext;
 use crate::vm::al31f::alloc::Alloc;
+use crate::vm::al31f::compiled::CompiledProgram;
 
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncVMContext;
 #[cfg(feature = "async")] use crate::ffi::async_fn::VMDataTrait;
 #[cfg(feature = "async")] use crate::util::serializer::{CoroutineSharedData, Serializer};
-use crate::vm::al31f::compiled::CompiledProgram;
 
 pub struct AL31F<A: Alloc> {
     pub alloc: A
@@ -50,12 +49,12 @@ impl<A: Alloc> Combustor<A> {
 }
 
 impl<A: Alloc> VMContext for Combustor<A> {
-    fn add_heap_managed(&mut self, wide_ptr: WidePointer) {
-        unsafe { self.vm.as_mut().alloc.add_managed(wide_ptr); }
+    fn add_heap_managed(&mut self, value: Value) {
+        unsafe { self.vm.as_mut().alloc.add_managed(value); }
     }
 
-    fn mark(&mut self, wide_ptr: WidePointer) {
-        unsafe { self.vm.as_mut().alloc.mark_object(wide_ptr); }
+    fn mark(&mut self, value: Value) {
+        unsafe { self.vm.as_mut().alloc.mark_object(value); }
     }
 }
 

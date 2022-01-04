@@ -495,21 +495,19 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
                 self.r.is_err()
             }
 
-            fn resolve(self, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
+            fn resolve(self: Box<Self>, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
                 match self.r {
                     Ok(data) => {
                         let value: Value = Value::new_owned(data);
                         unsafe {
-                            alloc.add_managed(value.ptr_repr);
+                            alloc.add_managed(value);
                             **dests.get_unchecked(0) = value;
                         }
                         Ok(1)
                     },
                     Err(e) => {
                         let err_value: Value = Value::new_owned(e);
-                        unsafe {
-                            alloc.add_managed(err_value.ptr_repr);
-                        }
+                        unsafe { alloc.add_managed(err_value); }
                         Err(ExceptionInner::Checked(err_value))
                     }
                 }

@@ -30,7 +30,7 @@ impl StaticBase<Object> for Void {
         unsafe {
             let iter = Box::new((*vself).fields.get_ref_unchecked()
                 .iter()
-                .map(|x| x.1.ptr_repr.clone()));
+                .map(|(_, value): (_, &Value)| *value));
             Some(iter)
         }
     }

@@ -1,6 +1,7 @@
 /target
 /*/target
 Cargo.lock
+.cargo/
 
 .idea
 

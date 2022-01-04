@@ -15,7 +15,6 @@ use crate::data::Value;
 use crate::ffi::async_fn::{AsyncFunctionBase, AsyncReturnType, AsyncVMContext, Promise, PromiseResult, VMDataTrait};
 use crate::ffi::async_fn::{value_move_out_check_norm_noalias, value_move_out_norm_noalias};
 use crate::ffi::{FFIException, Signature};
-use crate::util::serializer::{CoroutineSharedData, Serializer};
 use crate::vm::al31f::alloc::Alloc;
 
 pub struct JoinBind();
@@ -28,7 +27,7 @@ impl AsyncFunctionBase for JoinBind {
     }
 
     unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Alloc=A>, ACTX: AsyncVMContext<VMData=VD>> (
-        context: &ACTX,
+        _context: &ACTX,
         args: &[Value]
     ) -> Result<Promise<A>, FFIException> {
         struct AsyncRet<A: Alloc> {
@@ -40,10 +39,19 @@ impl AsyncFunctionBase for JoinBind {
                 self.results.iter().any(|x| x.is_err())
             }
 
-            fn resolve(self, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
-                for result in self.results {
-                    if result.is_err() {
-                        return result.resolve(alloc, &[])
+            fn resolve(
+                self: Box<Self>,
+                alloc: &mut A,
+                dests: &[*mut Value]
+            ) -> Result<usize, ExceptionInner> {
+                let len: usize = self.results.len();
+
+                for i in 0..len {
+                    unsafe {
+                        if (*self.results.get_unchecked(i)).is_err() {
+                            return std::ptr::read(self.results.get_unchecked(i))
+                                .resolve(alloc, &[]);
+                        }
                     }
                 }
 
@@ -61,14 +69,11 @@ impl AsyncFunctionBase for JoinBind {
             value_move_out_check_norm_noalias(*arg)?;
         }
 
-        let mut futs: SmallVec<[Pin<Box<dyn Future<Output=PromiseResult<A>> + Send>>; 4]> =
+        let futs: SmallVec<[Pin<Box<dyn Future<Output=PromiseResult<A>> + Send>>; 4]> =
             args.into_iter()
                 .map(|arg: &Value| value_move_out_norm_noalias::<Promise<A>>(*arg))
                 .map(|Promise(fut)| fut)
                 .collect();
-
-        let serializer: Serializer<(CoroutineSharedData, ACTX::VMData)> =
-            context.serializer().clone();
 
         let fut = async move {
             let results: Vec<PromiseResult<A>> = join_all(futs).await;
@@ -89,7 +94,7 @@ impl AsyncFunctionBase for SelectBind {
     }
 
     unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Alloc=A>, ACTX: AsyncVMContext<VMData=VD>>(
-        context: &ACTX,
+        _context: &ACTX,
         args: &[Value]
     ) -> Result<Promise<A>, FFIException> {
         struct AsyncRet<A: Alloc> {
@@ -102,7 +107,11 @@ impl AsyncFunctionBase for SelectBind {
                 self.result.is_err()
             }
 
-            fn resolve(self, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
+            fn resolve(
+                self: Box<Self>,
+                alloc: &mut A,
+                dests: &[*mut Value]
+            ) -> Result<usize, ExceptionInner> {
                 unsafe {
                     **dests.get_unchecked(0) = Value::new_int(self.idx as i64);
                 }
@@ -119,9 +128,6 @@ impl AsyncFunctionBase for SelectBind {
                 .map(|arg: &Value| value_move_out_norm_noalias::<Promise<A>>(*arg))
                 .map(|Promise(fut)| fut)
                 .collect();
-
-        let serializer: Serializer<(CoroutineSharedData, ACTX::VMData)> =
-            context.serializer().clone();
 
         let fut = async move {
             let (result, idx, _rest) = select_all(futs).await;
@@ -158,7 +164,7 @@ impl AsyncFunctionBase for SleepMillisBind {
                 false
             }
 
-            fn resolve(self, _alloc: &mut A, _dests: &[*mut Value])
+            fn resolve(self: Box<Self>, _alloc: &mut A, _dests: &[*mut Value])
                 -> Result<usize, ExceptionInner>
             {
                 Ok(0)

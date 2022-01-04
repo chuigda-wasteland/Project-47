@@ -4,14 +4,14 @@ use std::mem::transmute;
 use std::ptr::NonNull;
 
 use xjbutil::void::Void;
-use xjbutil::wide_ptr::WidePointer;
 
+use crate::data::Value;
 use crate::data::generic::GenericTypeVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{ContainerTyckInfo, TyckInfo, TyckInfoPool};
 
 pub struct GenericTestContainer {
-    pub elements: Vec<WidePointer>,
+    pub elements: Vec<Value>,
 }
 
 impl GenericTestContainer {
@@ -43,9 +43,9 @@ impl StaticBase<GenericTestContainer> for Void {
 
     fn children(vself: *const GenericTestContainer) -> ChildrenType {
         let vself: &GenericTestContainer = unsafe { &*vself };
-        let iter: Box<dyn Iterator<Item=WidePointer> + '_> =
-            Box::new(vself.elements.iter().map(|x: &WidePointer| *x));
-        let iter: Box<dyn Iterator<Item=WidePointer> + 'static> = unsafe { transmute::<>(iter) };
+        let iter: Box<dyn Iterator<Item=Value> + '_> =
+            Box::new(vself.elements.iter().map(|x: &Value| *x));
+        let iter: Box<dyn Iterator<Item=Value> + 'static> = unsafe { transmute::<>(iter) };
         Some(iter)
     }
 }

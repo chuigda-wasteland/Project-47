@@ -9,7 +9,7 @@ use xjbutil::void::Void;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::TyckInfo;
 
-pub const OWN_INFO_GLOBAL_MASK: u8  = 0b00_1_1_0_0_0_1;
+pub const OWN_INFO_GLOBAL_MASK: u8  = 0b00_1_0_0_0_0_0;
 pub const OWN_INFO_READ_MASK: u8    = 0b00_0_1_0_0_0_0;
 pub const OWN_INFO_WRITE_MASK: u8   = 0b00_0_0_1_0_0_0;
 pub const OWN_INFO_MOVE_MASK: u8    = 0b00_0_0_0_1_0_0;
