@@ -2,6 +2,7 @@ pub mod default_alloc;
 pub mod no_gc_alloc;
 
 use xjbutil::flex::FlexArray;
+
 use crate::data::Value;
 use crate::vm::al31f::stack::Stack;
 
@@ -26,7 +27,7 @@ pub trait Alloc: 'static + Send + Sync {
     /// lasts until the `non_flex` part of `AllocPin` is cleared.
     ///
     /// This "pin" is irrelevant with `std::pin`.
-    unsafe fn pin_objects(&mut self, pinned: AllocPin);
+    unsafe fn pin_objects(&mut self, pinned: &[Value]) -> *mut bool;
 
     /// Perform garbage collection
     unsafe fn collect(&mut self);

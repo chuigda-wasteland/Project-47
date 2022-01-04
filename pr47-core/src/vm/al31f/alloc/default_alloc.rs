@@ -31,7 +31,7 @@ pub const DEFAULT_MAX_PIN_DEBT: usize = 128;
 
 impl DefaultAlloc {
     unsafe fn cleanup_pins(&mut self) {
-        self.pinned.retain(|pinned: &AllocPin| *pinned.as_ref().fixed);
+        self.pinned.retain(|pinned: &AllocPin| *pinned.fixed());
         self.pin_debt = 0;
     }
 }
@@ -119,12 +119,16 @@ impl Alloc for DefaultAlloc {
         // do nothing
     }
 
-    unsafe fn pin_objects(&mut self, pinned: AllocPin) {
+    unsafe fn pin_objects(&mut self, pinned: &[Value]) -> *mut bool {
         self.pin_debt += 1;
         if self.pin_debt > self.max_pin_debt {
             self.cleanup_pins();
         }
-        self.pinned.push(pinned);
+
+        let pin: AllocPin = AllocPin::new(true, pinned);
+        let ret_ptr: *mut bool = pin.as_ptr().ptr_fixed.as_ptr();
+        self.pinned.push(pin);
+        ret_ptr
     }
 
     unsafe fn collect(&mut self) {
