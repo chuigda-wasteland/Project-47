@@ -495,7 +495,7 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
                 self.r.is_err()
             }
 
-            fn resolve(self, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
+            fn resolve(self: Box<Self>, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
                 match self.r {
                     Ok(data) => {
                         let value: Value = Value::new_owned(data);

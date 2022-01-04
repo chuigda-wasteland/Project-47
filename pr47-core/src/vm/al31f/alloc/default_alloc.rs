@@ -56,7 +56,7 @@ impl DefaultAlloc {
 
     #[cfg(test)]
     pub fn contains_ptr(&self, ptr: xjbutil::wide_ptr::WidePointer) -> bool {
-        self.managed.iter().map(|x| x.ptr_repr).any(|x| x == ptr)
+        self.managed.iter().map(|x| unsafe { x.ptr_repr }).any(|x| x == ptr)
     }
 }
 
@@ -72,9 +72,11 @@ impl Drop for DefaultAlloc {
         for value /*: &Value*/ in self.managed.iter() {
             let ownership_info: u8 = unsafe { value.ownership_info() as u8 };
 
-            if ownership_info & OWN_INFO_COLLECT_MASK != 0 {
+            if ownership_info & OWN_INFO_COLLECT_MASK == 0 {
                 // TODO use `log` or `trace` here, don't panic. Memory leak is safe.
-                panic!("failed to re-claim object {:?} on destruction", value.ptr_repr);
+                panic!("failed to re-claim object {:?} on destruction, ownership_info = {:0b}",
+                       unsafe { value.ptr_repr },
+                       ownership_info);
             }
 
             if value.is_container() {
@@ -251,11 +253,9 @@ mod test {
         let str3: Value = Value::new_owned::<String>("1919810".into());
 
         let mut container: TestContainer<String> = TestContainer::new();
-        unsafe {
-            container.inner.elements.push(str1);
-            container.inner.elements.push(str2);
-            container.inner.elements.push(str3);
-        }
+        container.inner.elements.push(str1);
+        container.inner.elements.push(str2);
+        container.inner.elements.push(str3);
 
         let container: Value = Value::new_owned::<TestContainer<String>>(container);
 
@@ -302,11 +302,9 @@ mod test {
         let str2: Value = Value::new_owned::<String>("514".into());
         let str3: Value = Value::new_owned::<String>("1919810".into());
         let mut container: TestContainer<String> = TestContainer::new();
-        unsafe {
-            container.inner.elements.push(str1);
-            container.inner.elements.push(str2);
-            container.inner.elements.push(str3);
-        }
+        container.inner.elements.push(str1);
+        container.inner.elements.push(str2);
+        container.inner.elements.push(str3);
         let vt: GenericTypeVT = create_test_container_vt::<String>(&mut tyck_info_pool);
 
         let container: Value = Value::new_container(

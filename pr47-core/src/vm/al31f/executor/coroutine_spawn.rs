@@ -1,5 +1,6 @@
 use std::mem::transmute;
 use std::ptr::NonNull;
+use futures::TryFutureExt;
 
 use tokio::task::{JoinError, JoinHandle};
 use xjbutil::unchecked::{UncheckedSendFut, UncheckedSendSync};
@@ -19,9 +20,20 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
     func_id: usize,
     args: &[usize]
 ) -> Promise<A> {
+    pub struct ResetPtr(*mut bool);
+
+    impl Drop for ResetPtr {
+        fn drop(&mut self) {
+            if !self.0.is_null() {
+                unsafe { *self.0 = false; }
+            }
+        }
+    }
+
     pub struct AsyncRet {
         ret: Result<Vec<Value>, Exception>,
-        pinned: *mut bool
+        #[allow(dead_code)]
+        pinned: ResetPtr
     }
 
     impl AsyncRet {
@@ -34,13 +46,13 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
                 }
             };
 
-            Self { ret, pinned }
+            Self { ret, pinned: ResetPtr(pinned) }
         }
 
         pub unsafe fn new_unchecked_exc(unchecked: Exception) -> Self {
             Self {
                 ret: Err(unchecked),
-                pinned: std::ptr::null_mut()
+                pinned: ResetPtr(std::ptr::null_mut())
             }
         }
     }
@@ -50,7 +62,11 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
             self.ret.is_err()
         }
 
-        fn resolve(self, _alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
+        fn resolve(
+            self: Box<Self>,
+            _alloc: &mut A,
+            dests: &[*mut Value]
+        ) -> Result<usize, ExceptionInner> {
             match self.ret {
                 Ok(values) => {
                     let len: usize = values.len();
@@ -60,14 +76,6 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
                     Ok(len)
                 },
                 Err(e) => Err(e.inner)
-            }
-        }
-    }
-
-    impl Drop for AsyncRet {
-        fn drop(&mut self) {
-            if !self.pinned.is_null() {
-                unsafe { *self.pinned = false };
             }
         }
     }
@@ -83,10 +91,6 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
         pub fn new(join_handle: Promise<A>) -> Self {
             Self { result: Ok(join_handle) }
         }
-
-        pub fn new_err(err: JoinError) -> Self {
-            Self { result: Err(err) }
-        }
     }
 
     impl<A: Alloc> AsyncReturnType<A> for AsyncRet2<A> {
@@ -94,7 +98,11 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
             self.result.is_err()
         }
 
-        fn resolve(self, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
+        fn resolve(
+            self: Box<Self>,
+            alloc: &mut A,
+            dests: &[*mut Value]
+        ) -> Result<usize, ExceptionInner> {
             match self.result {
                 Ok(join_handle) => {
                     let join_handle_value: Value = Value::new_owned(join_handle);
@@ -131,13 +139,19 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
                 match vm_thread_run_function::<_, false>(arg_pack) {
                     Ok(f) => Box::new(AsyncRet::new_in(
                         f.await.into_inner(),
-                        &mut thread.vm.get_shared_data_mut().alloc
+                        &mut new_thread.vm.get_shared_data_mut().alloc
                     )) as _,
                     Err(err) => Box::new(AsyncRet::new_unchecked_exc(err)) as _
                 }
             }),
             (func_id, arg_pack)
         ).await;
+
+        let join_handle = join_handle.map_ok_or_else(
+            |e| Box::new(AsyncRet::new_unchecked_exc(Exception::unchecked_exc(
+                UncheckedException::JoinError { inner: e }
+            ))) as _,
+            |data| data);
 
         let join_handle_promise: Promise<A> = Promise(Box::pin(join_handle));
         Box::new(AsyncRet2::new(join_handle_promise)) as Box<dyn AsyncReturnType<A>>

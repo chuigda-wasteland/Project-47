@@ -246,10 +246,8 @@ impl StaticBase<TestStruct2> for Void {
     let value2: Value = Value::new_owned(TestStruct2());
 
     let mut test_container: TestContainer<TestStruct2> = TestContainer::new();
-    unsafe {
-        test_container.inner.elements.push(value1);
-        test_container.inner.elements.push(value2);
-    }
+    test_container.inner.elements.push(value1);
+    test_container.inner.elements.push(value2);
 
     let v: Value = Value::new_owned(test_container);
 
@@ -298,10 +296,8 @@ impl StaticBase<TestStruct2> for Void {
     let value2: Value = Value::new_owned(TestStruct2());
 
     let mut test_container: TestContainer<TestStruct2> = TestContainer::new();
-    unsafe {
-        test_container.inner.elements.push(value1);
-        test_container.inner.elements.push(value2);
-    }
+    test_container.inner.elements.push(value1);
+    test_container.inner.elements.push(value2);
 
     let test_container_vt: GenericTypeVT =
         create_test_container_vt::<TestStruct2>(&mut tyck_info_pool);

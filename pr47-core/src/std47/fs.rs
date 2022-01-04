@@ -40,6 +40,7 @@ impl AsyncFunctionBase for AsyncReadToStringBind {
         args: &[Value]
     ) -> Result<Promise<A>, FFIException> {
         struct AsyncRet {
+            #[allow(dead_code)]
             g: AsyncShareGuard,
             result: tokio::io::Result<String>
         }
@@ -49,7 +50,11 @@ impl AsyncFunctionBase for AsyncReadToStringBind {
                 self.result.is_err()
             }
 
-            fn resolve(self, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
+            fn resolve(
+                self: Box<Self>,
+                alloc: &mut A,
+                dests: &[*mut Value]
+            ) -> Result<usize, ExceptionInner> {
                 match self.result {
                     Ok(data) => {
                         let value: Value = Value::new_owned(data);
