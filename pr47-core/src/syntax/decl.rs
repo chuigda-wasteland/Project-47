@@ -1,3 +1,6 @@
+#![allow(unused_variables)]
+#![allow(dead_code)]
+
 //! # Concrete syntax tree of declarations
 //!
 //! Declaration syntax:

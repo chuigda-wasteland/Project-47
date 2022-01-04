@@ -1,3 +1,6 @@
+#![allow(unused_variables)]
+#![allow(dead_code)]
+
 use crate::diag::location::{SourceLoc, SourceRange};
 use super::Parser;
 
