@@ -304,11 +304,12 @@ impl Value {
         where T: 'static
     {
         debug_assert!(self.ownership_info().is_readable());
-        let data_offset: usize = *((self.untagged_ptr_field() + 6usize) as *mut u8) as usize;
+        let untagged_ptr_field: usize = self.untagged_ptr_field();
+        let data_offset: usize = *((untagged_ptr_field + 6usize) as *mut u8) as usize;
         if self.ownership_info().is_owned() {
-            (self.untagged_ptr_field() + data_offset as usize) as *mut T
+            (untagged_ptr_field + data_offset as usize) as *mut T
         } else {
-            let ptr: *const *mut T = (self.untagged_ptr_field() + data_offset) as *const *mut T;
+            let ptr: *const *mut T = (untagged_ptr_field + data_offset) as *const *mut T;
             *ptr
         }
     }

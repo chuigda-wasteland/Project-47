@@ -211,7 +211,7 @@ impl Alloc for DefaultAlloc {
                 (ownership_info & OWN_INFO_GLOBAL_MASK == 0)
             {
                 if value.is_container() {
-                    let container: *mut () = value.get_as_mut_ptr();
+                    let container: *mut () = value.untagged_ptr_field() as *mut _;
                     let vt: *const GenericTypeVT = value.ptr_repr.trivia as *const _;
                     ((*vt).drop_fn)(container);
                 } else {
@@ -312,6 +312,8 @@ mod test {
             move_to_heap(Wrapper::new_owned(container)).as_ptr() as *mut Wrapper<()>,
             &vt
         );
+
+        eprintln!("container.ptr_repr = {:?}", unsafe { container.ptr_repr });
 
         unsafe {
             alloc.add_stack(&stack);
