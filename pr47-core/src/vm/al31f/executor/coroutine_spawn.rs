@@ -1,7 +1,7 @@
 use std::mem::transmute;
 use std::ptr::NonNull;
-use futures::TryFutureExt;
 
+use futures::TryFutureExt;
 use tokio::task::{JoinError, JoinHandle};
 use xjbutil::unchecked::{UncheckedSendFut, UncheckedSendSync};
 

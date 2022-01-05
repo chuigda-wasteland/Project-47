@@ -4,9 +4,9 @@ use std::ptr::NonNull;
 use tokio::fs::read_to_string;
 use xjbutil::boxed_slice;
 
+use crate::data::Value;
 use crate::data::exception::ExceptionInner;
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
-use crate::data::Value;
 use crate::ffi::async_fn::{
     AsyncFunctionBase,
     AsyncReturnType,

@@ -7,8 +7,9 @@ use crate::data::Value;
 use crate::data::exception::{ExceptionInner, UncheckedException};
 use crate::data::generic::GenericTypeRef;
 use crate::data::traits::{StaticBase};
-use crate::data::wrapper::{OWN_INFO_GLOBAL_MASK, OwnershipInfo, Wrapper};
+use crate::data::wrapper::{OwnershipInfo, Wrapper};
 use crate::data::wrapper::{
+    OWN_INFO_GLOBAL_MASK,
     OWN_INFO_OWNED_MASK,
     OWN_INFO_READ_MASK,
     OWN_INFO_WRITE_MASK

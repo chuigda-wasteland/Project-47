@@ -3,8 +3,8 @@ use xjbutil::slice_arena::SliceArena;
 use xjbutil::void::Void;
 
 use crate::builtins::object::Object;
-use crate::data::exception::ExceptionInner;
 use crate::data::Value;
+use crate::data::exception::ExceptionInner;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfoPool;
 use crate::ffi::{FFIException, Signature};
