@@ -3,14 +3,14 @@ use crate::diag::location::SourceLoc;
 use crate::syntax::decl::ConcreteDecl;
 use crate::syntax::expr::ConcreteExpr;
 
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub enum ConcreteStmt<'a> {
     CompoundStmt(ConcreteCompoundStmt<'a>),
     ExprStmt(ConcreteExpr<'a>, SourceLoc),
     DeclStmt(ConcreteDecl<'a>, SourceLoc)
 }
 
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub struct ConcreteCompoundStmt<'a> {
     pub stmts: Vec<ConcreteStmt<'a>>,
 
