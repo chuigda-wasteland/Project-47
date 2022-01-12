@@ -358,7 +358,136 @@ impl<'a, 'b> Lexer<'a, 'b> {
     }
 
     pub fn lex_number_lit(&mut self) -> Token<'a> {
-        todo!("이 조선 이끄는 힘 억세다")
+        let start_loc: SourceLoc = self.current_loc();
+        let (ch, _) = self.cur_char().unwrap();
+        if ch == '0' {
+            if let Some(ch) = self.peek_char() {
+                if ch == 'x' || ch == 'X' {
+                    self.next_char();
+                    self.next_char();
+                    return self.lex_num_radix_lit(start_loc, 16);
+                } else if ch == 'o' || ch == 'O' {
+                    self.next_char();
+                    self.next_char();
+                    return self.lex_num_radix_lit(start_loc, 8);
+                } else if ch == 'b' || ch == 'B' {
+                    self.next_char();
+                    self.next_char();
+                    return self.lex_num_radix_lit(start_loc, 2);
+                } else if ch.is_ascii_digit() {
+                    self.diag.borrow_mut()
+                        .diag(self.current_loc(),
+                              diag_data::err_bad_num_literal_hex_oct_bin)
+                        .add_mark(self.current_loc().into())
+                        .emit();
+                }
+            }
+        }
+
+        let mut integral_part: String = String::new();
+        while let Some((ch, _)) = self.cur_char() {
+            if ch.is_ascii_digit() {
+                integral_part.push(ch);
+                self.next_char();
+            } else {
+                break;
+            }
+        }
+
+        if let Some((ch, _)) = self.cur_char() {
+            if ch == '.' || ch == 'e' || ch == 'E' {
+                return self.lex_float_lit(start_loc, integral_part);
+            }
+        }
+
+        let end_loc: SourceLoc = self.current_loc();
+        Token::new_lit_int(
+            integral_part.parse::<u64>().unwrap(),
+            SourceRange::from_loc_pair(start_loc, end_loc)
+        )
+    }
+
+    fn lex_num_radix_lit(&mut self, start_loc: SourceLoc, radix: u32) -> Token<'a> {
+        let mut hex_lit: String = String::new();
+        while let Some((ch, _)) = self.cur_char() {
+            if ch.is_digit(radix) {
+                hex_lit.push(ch);
+                self.next_char();
+            } else {
+                break;
+            }
+        }
+
+        let end_loc: SourceLoc = self.current_loc();
+
+        if hex_lit.len() == 0 {
+            self.diag.borrow_mut()
+                .diag(end_loc, diag_data::err_empty_literal)
+                .add_mark(end_loc.into())
+                .emit();
+            return Token::new_lit_int(0, SourceRange::from_loc_pair(start_loc, end_loc));
+        }
+        return Token::new_lit_int(
+            u64::from_str_radix(&hex_lit, radix).unwrap(),
+            SourceRange::from_loc_pair(start_loc, end_loc)
+        );
+    }
+
+    fn lex_float_lit(&mut self, start_loc: SourceLoc, integral_part: String) -> Token<'a> {
+        let mut fractional_part: String = String::new();
+        if let Some((ch, _)) = self.cur_char() {
+            if ch == '.' {
+                self.next_char();
+                while let Some((ch, _)) = self.cur_char() {
+                    if ch.is_ascii_digit() {
+                        fractional_part.push(ch);
+                        self.next_char();
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        let fractional_part: u64 = fractional_part.parse::<u64>().unwrap_or(0);
+
+        let mut exponent: String = String::new();
+        if let Some((ch, _)) = self.cur_char() {
+            if ch == 'e' || ch == 'E' {
+                self.next_char();
+                if let Some((ch, _)) = self.cur_char() {
+                    if ch == '-' || ch == '+' {
+                        exponent.push(ch);
+                        self.next_char();
+                    }
+                }
+                while let Some((ch, _)) = self.cur_char() {
+                    if ch.is_ascii_digit() {
+                        exponent.push(ch);
+                        self.next_char();
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        let exponent: u64 = if exponent == "" || exponent == "+" || exponent == "-" {
+            self.diag.borrow_mut()
+                .diag(self.current_loc(),
+                      diag_data::err_empty_float_exponent)
+                .add_mark(self.current_loc().into())
+                .emit();
+            0
+        } else {
+            exponent.parse::<u64>().unwrap()
+        };
+
+        let end_loc: SourceLoc = self.current_loc();
+        let float_lit: String = format!("{}.{}e{}", integral_part, fractional_part, exponent);
+
+        Token::new_lit_float(
+            float_lit.parse::<f64>().unwrap(),
+            SourceRange::from_loc_pair(start_loc, end_loc)
+        )
     }
 
     pub fn lex_char_lit(&mut self) -> Token<'a> {

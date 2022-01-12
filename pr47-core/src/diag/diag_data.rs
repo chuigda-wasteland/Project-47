@@ -17,6 +17,9 @@ pub const err_expected_any_of_0_got_1: u32 = 2009;
 pub const err_no_top_level_var_decl: u32 = 2010;
 pub const err_expected_unqual_id: u32 = 2011;
 pub const err_missing_type_got_0: u32 = 2012;
+pub const err_bad_num_literal_hex_oct_bin: u32 = 2013;
+pub const err_empty_literal: u32 = 2014;
+pub const err_empty_float_exponent: u32 = 2015;
 
 // warnings
 pub const warn_commence_placeholder: u32 = 4000;
@@ -32,7 +35,7 @@ pub const fn diag_message(code: u32) -> &'static str {
         match code {
             warn_space_character_0_ignored => "unicode space character '?0' ignored",
             warn_underscored_id_reserved =>
-                "identifiers starting with underscore (`_`) are considered special",
+                "identifiers starting with underscore (`_`) are considered reserved",
             _ => "INVALID_ERROR_CODE"
         }
     } else if code > err_commence_placeholder {
@@ -49,6 +52,10 @@ pub const fn diag_message(code: u32) -> &'static str {
             err_no_top_level_var_decl => "variable declaration cannot appear at top level",
             err_expected_unqual_id => "expected unqualified identifier",
             err_missing_type_got_0 => "missing type specifier, got ?0",
+            err_bad_num_literal_hex_oct_bin =>
+                "expected '0x', '0o' or '0b' for hex, oct or bin literals",
+            err_empty_literal => "empty literal",
+            err_empty_float_exponent => "empty float exponent",
             _ => "INVALID_ERROR_CODE"
         }
     } else /* if code > note_commence_placeholder */ {

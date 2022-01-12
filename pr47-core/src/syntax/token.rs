@@ -45,7 +45,7 @@ pub enum TokenInner<'a> {
 
     LitChar(char),
     LitFloat(f64),
-    LitInt(i64),
+    LitInt(u64),
     LitStr(&'a str),
 
     RsvAsm,
@@ -133,7 +133,7 @@ impl<'a> Token<'a> {
         Self::new(TokenInner::EndOfInput, range)
     }
 
-    pub fn new_lit_int(lit: i64, range: SourceRange) -> Self {
+    pub fn new_lit_int(lit: u64, range: SourceRange) -> Self {
         Self::new(TokenInner::LitInt(lit), range)
     }
 

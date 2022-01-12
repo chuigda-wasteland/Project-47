@@ -137,7 +137,8 @@ impl<'s, 'd> Parser<'s, 'd> {
                 })?;
                 Some(AttrValue::ident_value(ident))
             },
-            TokenInner::LitInt(int_value) => Some(AttrValue::int_value(int_value, range)),
+            // TODO use different ways to resolve this shit
+            TokenInner::LitInt(int_value) => Some(AttrValue::int_value(int_value as _, range)),
             TokenInner::LitFloat(float_value) => Some(AttrValue::float_value(float_value, range)),
             TokenInner::LitChar(char_value) => Some(AttrValue::char_value(char_value, range)),
             TokenInner::LitStr(str_value) => Some(AttrValue::string_value(str_value, range)),

@@ -111,7 +111,7 @@ pub struct ConcreteLiteralExpr<'a> {
 
 #[cfg_attr(test, derive(Debug))]
 pub enum LiteralExprContent<'a> {
-    Int(i64),
+    Int(u64),
     Float(f64),
     Char(char),
     String(&'a str),
@@ -119,7 +119,7 @@ pub enum LiteralExprContent<'a> {
 }
 
 impl<'a> ConcreteLiteralExpr<'a> {
-    pub fn new_lit_int(lit: i64, range: SourceRange) -> Self {
+    pub fn new_lit_int(lit: u64, range: SourceRange) -> Self {
         ConcreteLiteralExpr {
             content: LiteralExprContent::Int(lit),
             range
