@@ -46,6 +46,7 @@ pub enum TokenInner<'a> {
     LitChar(char),
     LitFloat(f64),
     LitInt(u64),
+    LitSignedInt(i64),
     LitStr(&'a str),
 
     RsvAsm,
@@ -137,6 +138,10 @@ impl<'a> Token<'a> {
         Self::new(TokenInner::LitInt(lit), range)
     }
 
+    pub fn new_lit_signed_int(lit: i64, range: SourceRange) -> Self {
+        Self::new(TokenInner::LitSignedInt(lit), range)
+    }
+
     pub fn new_lit_float(lit: f64, range: SourceRange) -> Self {
         Self::new(TokenInner::LitFloat(lit), range)
     }
@@ -207,6 +212,7 @@ impl<'a> Display for Token<'a> {
             LitChar(ch) => write!(f, "⟨char, '{}'⟩", ch),
             LitFloat(num) => write!(f, "⟨num, {}f⟩", num),
             LitInt(num) => write!(f, "⟨num, {}i⟩", num),
+            LitSignedInt(num) => write!(f, "⟨num, {}i⟩", num),
             LitStr(str) => write!(f, "⟨str, \"{}\"⟩", str),
 
             RsvAsm => write!(f, "⟨asm⟩"),
@@ -315,6 +321,7 @@ impl<'a> Display2 for TokenInner<'a> {
             TokenInner::LitChar(_) => write!(fmt, "char literal"),
             TokenInner::LitFloat(_) => write!(fmt, "float literal"),
             TokenInner::LitInt(_) => write!(fmt, "integer literal"),
+            TokenInner::LitSignedInt(_) => write!(fmt, "integer literal"),
             TokenInner::LitStr(_) => write!(fmt, "string literal"),
 
             TokenInner::RsvAsm => write!(fmt, "'asm'"),

@@ -63,7 +63,7 @@ impl<'s, 'd> Parser<'s, 'd> {
     {
         let func_kwd_range: SourceRange = kwd_token.range;
         let func_name: Identifier = self.parse_unqual_ident()
-            .or_else(|| { self.skip_to_any_of(failsafe_set); None } )?;
+            .or_else(|| { self.skip_to_any_of(failsafe_set); None })?;
         let lparen_loc: SourceLoc =
             self.expect_n_consume(TokenInner::SymLParen, failsafe_set)?.range.left();
         let (func_param_list, rparen_range): (Vec<FunctionParam>, SourceRange) =
