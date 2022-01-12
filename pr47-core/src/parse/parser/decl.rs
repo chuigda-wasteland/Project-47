@@ -198,8 +198,53 @@ mod test {
 
     use crate::diag::DiagContext;
     use crate::parse::parser::Parser;
-    use crate::syntax::decl::ConcreteFuncDecl;
+    use crate::syntax::decl::{ConcreteFuncDecl, ConcreteObjectDecl};
     use crate::syntax::token::Token;
+
+    #[test]
+    fn test_parse_object_decl() {
+        let source: &str = "const a = b::c::d.e().await;";
+
+        let diag: RefCell<DiagContext> = RefCell::new(DiagContext::new());
+        let mut parser: Parser = Parser::new(
+            0, source, &diag
+        );
+
+        let kwd_token: Token = parser.consume_token();
+        let decl: ConcreteObjectDecl = parser.parse_object_decl(kwd_token, &[]).unwrap();
+
+        dbg!(decl);
+    }
+
+    #[test]
+    fn test_parse_object_decl2() {
+        let source: &str = "const a vector<int> = b::c::d.e().await;";
+
+        let diag: RefCell<DiagContext> = RefCell::new(DiagContext::new());
+        let mut parser: Parser = Parser::new(
+            0, source, &diag
+        );
+
+        let kwd_token: Token = parser.consume_token();
+        let decl: ConcreteObjectDecl = parser.parse_object_decl(kwd_token, &[]).unwrap();
+
+        dbg!(decl);
+    }
+
+    #[test]
+    fn test_parse_object_decl3() {
+        let source: &str = "const a: vector<string> = b::c::d.e(f, g).await;";
+
+        let diag: RefCell<DiagContext> = RefCell::new(DiagContext::new());
+        let mut parser: Parser = Parser::new(
+            0, source, &diag
+        );
+
+        let kwd_token: Token = parser.consume_token();
+        let decl: ConcreteObjectDecl = parser.parse_object_decl(kwd_token, &[]).unwrap();
+
+        dbg!(decl);
+    }
 
     #[test]
     fn test_parse_func() {
