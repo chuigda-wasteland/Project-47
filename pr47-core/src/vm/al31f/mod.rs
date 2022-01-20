@@ -3,6 +3,7 @@ pub mod compiled;
 pub mod executor;
 pub mod insc;
 pub mod stack;
+pub mod analysis;
 
 #[cfg(all(test, feature = "async"))]      pub mod test_async;
 #[cfg(all(test, not(feature = "async")))] pub mod test_sync;
