@@ -10,7 +10,8 @@ use crate::data::Value;
 use crate::ffi::async_fn::{AsyncReturnType, Promise};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::CompiledProgram;
-use crate::vm::al31f::executor::{VMThread, create_vm_child_thread, vm_thread_run_function};
+use crate::vm::al31f::executor::{VMThread};
+use crate::vm::al31f::executor::{create_vm_child_thread, vm_thread_run_function};
 use crate::vm::al31f::stack::StackSlice;
 
 #[inline(never)]

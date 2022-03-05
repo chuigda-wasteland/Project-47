@@ -9,6 +9,8 @@ use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfoPool;
 use crate::ffi::{FFIException, Signature};
 use crate::ffi::sync_fn::{FunctionBase, OwnershipGuard, VMContext, value_into_ref};
+use crate::std47::futures::SLEEP_MS_BIND;
+use crate::std47::io::PRINT_BIND;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
 use crate::vm::al31f::insc::Insc;
@@ -20,8 +22,6 @@ use crate::vm::al31f::insc::Insc;
     Promise
 };
 #[cfg(feature = "async")] use crate::ffi::async_fn::VMDataTrait;
-use crate::std47::futures::SLEEP_MS_BIND;
-use crate::std47::io::PRINT_BIND;
 
 pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
     let (slice_arena, code) = unsafe {

@@ -1,0 +1,22 @@
+open import ffi.net using (*);
+
+func serve(address SocketAddr, responseText string) {
+    var tcpListener auto = bindListener(address);
+    while true {
+        var connection auto = accept(tcpListener);
+        go handleConnection(connection, responseText)
+    }
+}
+
+func handleConnection(stream TcpStream, responseText string) {
+    var bufReader auto = stream.toBuffered()
+    var line string = bufReader.readLine()
+
+    var parts vector<string> = line.split(" ")
+    if parts.size != 3 || parts[0] != "GET" || parts[2] != "HTTP/1.1" {
+        bufReader.writeAll("HTTP/1.1 400 Bad Request\r\n\r\n")
+        return
+    }
+
+    bufReader.writeAll("HTTP/1.1 200 OK\r\n\r\n" + responseText);
+}
