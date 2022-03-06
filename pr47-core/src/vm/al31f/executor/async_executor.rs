@@ -43,6 +43,7 @@ use crate::vm::al31f::executor::coroutine_spawn::coroutine_spawn;
 include!("get_vm_makro.rs");
 include!("impl_makro.rs");
 
+#[must_use = "VM threads are effective iff a function gets run on it"]
 pub struct VMThread<A: Alloc> {
     #[cfg(feature = "async")]
     pub vm: CoroutineContext<AL31F<A>>,
@@ -66,7 +67,6 @@ impl<A: Alloc> Drop for VMThread<A> {
 unsafe impl<A: Alloc> Send for VMThread<A> {}
 unsafe impl<A: Alloc> Sync for VMThread<A> {}
 
-#[must_use = "VM threads are effective iff a function gets run on it"]
 #[cfg(feature = "async")]
 pub async fn create_vm_main_thread<A: Alloc>(
     alloc: A,

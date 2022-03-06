@@ -20,6 +20,8 @@ pub const err_missing_type_got_0: u32 = 2012;
 pub const err_bad_num_literal_hex_oct_bin: u32 = 2013;
 pub const err_empty_literal: u32 = 2014;
 pub const err_empty_float_exponent: u32 = 2015;
+pub const err_bad_escape: u32 = 2016;
+pub const err_unclosed_string: u32 = 2017;
 
 // warnings
 pub const warn_commence_placeholder: u32 = 4000;
@@ -56,6 +58,8 @@ pub const fn diag_message(code: u32) -> &'static str {
                 "expected '0x', '0o' or '0b' for hex, oct or bin literals",
             err_empty_literal => "empty literal",
             err_empty_float_exponent => "empty float exponent",
+            err_bad_escape => "bad escape sequence \\?0",
+            err_unclosed_string => "unclosed string literal",
             _ => "INVALID_ERROR_CODE"
         }
     } else /* if code > note_commence_placeholder */ {

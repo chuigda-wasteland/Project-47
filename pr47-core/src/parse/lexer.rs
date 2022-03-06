@@ -495,7 +495,42 @@ impl<'a, 'b> Lexer<'a, 'b> {
     }
 
     pub fn lex_string_lit(&mut self) -> Token<'a> {
-        todo!("우리가 바라는 꿈과 리상")
+        let start_loc: SourceLoc = self.current_loc();
+        self.next_char();
+
+        while let Some((ch, _)) = self.cur_char() {
+            if ch == '"' {
+                let string_end_loc: SourceLoc = self.current_loc();
+                self.next_char();
+
+                let str: &'a str = unsafe { self.slice_source(start_loc.offset, string_end_loc.offset) };
+                return Token::new_lit_str(str, SourceRange::from_loc_pair(start_loc, self.current_loc()));
+            }
+
+            if ch == '\\' {
+                self.next_char();
+                if let Some((ch, _)) = self.cur_char() {
+                    match ch {
+                        'n' | 't' | 'r' | 'f' | 'v' | '"' | '\'' | '\\' => self.next_char(),
+                        _ => self.diag.borrow_mut()
+                            .diag(self.current_loc(), diag_data::err_bad_escape)
+                            .add_mark(self.current_loc().into())
+                            .add_arg(ch)
+                            .emit(),
+                    }
+                }
+            } else {
+                self.next_char();
+            }
+        }
+
+        let string_end_loc: SourceLoc = self.current_loc();
+        self.diag.borrow_mut()
+            .diag(self.current_loc(), diag_data::err_unclosed_string)
+            .add_mark(string_end_loc.into())
+            .emit();
+        let str: &'a str = unsafe { self.slice_source(start_loc.offset, string_end_loc.offset) };
+        return Token::new_lit_str(str, SourceRange::from_loc_pair(start_loc, string_end_loc));
     }
 
     pub fn lex_raw_string_lit(&mut self) -> Token<'a> {
@@ -563,6 +598,10 @@ impl<'a, 'b> Lexer<'a, 'b> {
             .emit();
         self.next_char();
         Token::new(token, SourceRange::from(location))
+    }
+
+    unsafe fn slice_source(&self, start_offset: u32, end_offset: u32) -> &'a str {
+        self.source.get_unchecked((start_offset as usize)..(end_offset as usize))
     }
 
     fn maybe_diag_reserved_keyword(
