@@ -28,10 +28,12 @@ fn main() {
     let mut tokens: Vec<Token> = Vec::new();
     loop {
         let token: Token = lexer.next_token();
-        if token.token_inner == TokenInner::EndOfInput {
+        let token_inner: TokenInner = token.token_inner;
+        tokens.push(token);
+
+        if token_inner == TokenInner::EndOfInput {
             break;
         }
-        tokens.push(token);
     }
 
     eprintln!("tokens = {:?}", tokens);
