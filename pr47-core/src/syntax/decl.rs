@@ -27,7 +27,7 @@
 //! identifier-list ::= non-empty-identifier-list
 //!                   | NIL
 //!
-//! non-empty-identifier-list ::= non-empty-identifier-list ',' identifier
+//! non-empty-identifier-list ::= non-empty-identifier-list ';' identifier
 //!                             | identifier
 //! ```
 
