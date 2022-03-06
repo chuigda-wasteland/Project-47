@@ -1,3 +1,5 @@
+pub mod anf;
+
 use std::ptr::NonNull;
 
 use crate::data::tyck::TyckInfo;
