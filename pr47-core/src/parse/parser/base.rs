@@ -25,6 +25,17 @@ impl<'s, 'd> Parser<'s, 'd> {
         Some(Identifier::Qual(token_buffer))
     }
 
+    pub fn parse_ident_with_skip(
+        &mut self,
+        failsafe_set: &[&[TokenInner<'_>]]
+    ) -> Option<Identifier<'s>> {
+        let parse_result: Option<Identifier<'s>> = self.parse_ident();
+        if let None = parse_result {
+            self.skip_to_any_of(failsafe_set);
+        }
+        parse_result
+    }
+
     pub fn parse_unqual_ident(&mut self) -> Option<Identifier<'s>> {
         let token: Token<'s> = self.expect_n_consume(TokenInner::Ident(""), &[])?;
         if self.current_token().token_inner == TokenInner::SymDColon {

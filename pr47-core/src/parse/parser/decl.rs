@@ -3,17 +3,12 @@
 
 use super::Parser;
 
+use xjbutil::either::Either;
+
 use crate::diag::diag_data;
 use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::attr::Attribute;
-use crate::syntax::decl::{
-    ConcreteExportDecl,
-    ConcreteFuncDecl,
-    ConcreteImportDecl,
-    ConcreteObjectDecl,
-    ConcreteOpenImportDecl,
-    FunctionParam
-};
+use crate::syntax::decl::{ConcreteExportDecl, ConcreteFuncDecl, ConcreteImportDecl, ConcreteObjectDecl, ConcreteOpenImportDecl, FunctionParam, OpenImportUsingAny, OpenImportUsingList};
 use crate::syntax::expr::ConcreteExpr;
 use crate::syntax::id::Identifier;
 use crate::syntax::stmt::ConcreteCompoundStmt;
@@ -171,24 +166,87 @@ impl<'s, 'd> Parser<'s, 'd> {
         }
     }
 
-    pub fn parse_export_decl(&mut self, kwd_token: Token<'s>, _failsafe_set: &[&[TokenInner<'_>]])
+    pub fn parse_export_decl(&mut self, kwd_token: Token<'s>, failsafe_set: &[&[TokenInner<'_>]])
         -> Option<ConcreteExportDecl<'s>>
     {
-        todo!()
+        let left_paren_loc: SourceLoc =
+            self.expect_n_consume(TokenInner::SymLParen, failsafe_set)?.range.left();
+        let (idents, right_paren_range): (Vec<Identifier<'s>>, SourceRange) =
+            self.parse_list_alike_nonnull(
+                Self::parse_ident_with_skip,
+                failsafe_set,
+                TokenInner::SymSemicolon,
+                TokenInner::SymRParen,
+                failsafe_set
+            )?;
+        let right_paren_loc: SourceLoc = right_paren_range.left();
+
+        Some(ConcreteExportDecl {
+            exported_idents: idents,
+            export_kwd_range: kwd_token.range,
+            left_paren_loc,
+            right_paren_loc
+        })
     }
 
-    pub fn parse_import_decl(&mut self, kwd_token: Token<'s>, _failsafe_set: &[&[TokenInner<'_>]])
-        -> Option<ConcreteImportDecl<'s>>
+    pub fn parse_import_decl(&mut self, kwd_token: Token<'s>, failsafe_set: &[&[TokenInner<'_>]])
+                             -> Option<ConcreteImportDecl<'s>>
     {
-        todo!()
+        let import_path: Identifier<'s> = self.parse_ident_with_skip(failsafe_set)?;
+        Some(ConcreteImportDecl {
+            import_path,
+            import_kwd_range: kwd_token.range
+        })
     }
 
     pub fn parse_open_import_decl(
         &mut self,
         kwd_token: Token<'s>,
-        _failsafe_set: &[&[TokenInner<'_>]]
+        failsafe_set: &[&[TokenInner<'_>]]
     ) -> Option<ConcreteOpenImportDecl<'s>> {
-        todo!()
+        let import_kwd_range: SourceRange =
+            self.expect_n_consume(TokenInner::KwdImport, failsafe_set)?.range;
+        let import_path: Identifier<'s> = self.parse_ident_with_skip(failsafe_set)?;
+        let using_kwd_range: SourceRange =
+            self.expect_n_consume(TokenInner::KwdUsing, failsafe_set)?.range;
+        let left_paren_loc: SourceLoc =
+            self.expect_n_consume(TokenInner::SymLParen, failsafe_set)?.range.left();
+
+        if self.current_token().token_inner == TokenInner::SymAster {
+            let aster_loc: SourceLoc = self.consume_token().range.left();
+            let right_paren_loc: SourceLoc =
+                self.expect_n_consume(TokenInner::SymRParen, failsafe_set)?.range.left();
+            Some(ConcreteOpenImportDecl {
+                import_path,
+                open_kwd_range: kwd_token.range,
+                import_kwd_range,
+                using_kwd_range,
+                used_content: Either::Left(OpenImportUsingAny {
+                    aster_loc
+                })
+            })
+        } else {
+            let (used_idents, right_paren_range): (Vec<Identifier<'s>>, SourceRange) =
+                self.parse_list_alike_nonnull(
+                    Self::parse_ident_with_skip,
+                    failsafe_set,
+                    TokenInner::SymComma,
+                    TokenInner::SymRParen,
+                    failsafe_set
+                )?;
+            let right_paren_loc: SourceLoc = right_paren_range.left();
+            Some(ConcreteOpenImportDecl {
+                import_path,
+                open_kwd_range: kwd_token.range,
+                import_kwd_range,
+                using_kwd_range,
+                used_content: Either::Right(OpenImportUsingList {
+                    used_idents,
+                    left_paren_loc,
+                    right_paren_loc
+                })
+            })
+        }
     }
 }
 

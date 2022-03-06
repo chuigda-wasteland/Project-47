@@ -102,14 +102,14 @@ pub struct ConcreteImportDecl<'a> {
 
 #[cfg_attr(test, derive(Debug))]
 pub struct OpenImportUsingAny {
-    aster_loc: SourceLoc
+    pub aster_loc: SourceLoc
 }
 
 #[cfg_attr(test, derive(Debug))]
 pub struct OpenImportUsingList<'a> {
-    used_idents: Vec<Identifier<'a>>,
-    left_paren_loc: SourceLoc,
-    right_paren_loc: SourceLoc
+    pub used_idents: Vec<Identifier<'a>>,
+    pub left_paren_loc: SourceLoc,
+    pub right_paren_loc: SourceLoc
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -123,6 +123,8 @@ pub struct ConcreteOpenImportDecl<'a> {
 
 #[cfg_attr(test, derive(Debug))]
 pub struct ConcreteExportDecl<'a> {
-    pub export_path: Identifier<'a>,
-    pub export_kwd_range: SourceRange
+    pub exported_idents: Vec<Identifier<'a>>,
+    pub export_kwd_range: SourceRange,
+    pub left_paren_loc: SourceLoc,
+    pub right_paren_loc: SourceLoc
 }

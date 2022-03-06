@@ -47,6 +47,7 @@ static DEFAULT_KEYWORDS_MAP: phf::Map<&'static str, TokenInner<'static>> = phf_m
     "try" => TokenInner::KwdTry,
     "type" => TokenInner::KwdType,
     "typeof" => TokenInner::KwdTypeOf,
+    "using" => TokenInner::KwdUsing,
     "var" => TokenInner::KwdVar,
     "vector" => TokenInner::KwdVector,
     "void" => TokenInner::KwdVoid,
