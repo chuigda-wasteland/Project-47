@@ -179,6 +179,7 @@ impl<'s, 'd> Parser<'s, 'd> {
                 TokenInner::SymRParen,
                 failsafe_set
             )?;
+        self.expect_n_consume(TokenInner::SymSemicolon, failsafe_set)?;
         let right_paren_loc: SourceLoc = right_paren_range.left();
 
         Some(ConcreteExportDecl {
@@ -193,6 +194,7 @@ impl<'s, 'd> Parser<'s, 'd> {
                              -> Option<ConcreteImportDecl<'s>>
     {
         let import_path: Identifier<'s> = self.parse_ident_with_skip(failsafe_set)?;
+        self.expect_n_consume(TokenInner::SymSemicolon, failsafe_set)?;
         Some(ConcreteImportDecl {
             import_path,
             import_kwd_range: kwd_token.range
@@ -216,6 +218,7 @@ impl<'s, 'd> Parser<'s, 'd> {
             let aster_loc: SourceLoc = self.consume_token().range.left();
             let right_paren_loc: SourceLoc =
                 self.expect_n_consume(TokenInner::SymRParen, failsafe_set)?.range.left();
+            self.expect_n_consume(TokenInner::SymSemicolon, failsafe_set)?;
             Some(ConcreteOpenImportDecl {
                 import_path,
                 open_kwd_range: kwd_token.range,
@@ -230,11 +233,12 @@ impl<'s, 'd> Parser<'s, 'd> {
                 self.parse_list_alike_nonnull(
                     Self::parse_ident_with_skip,
                     failsafe_set,
-                    TokenInner::SymComma,
+                    TokenInner::SymSemicolon,
                     TokenInner::SymRParen,
                     failsafe_set
                 )?;
             let right_paren_loc: SourceLoc = right_paren_range.left();
+            self.expect_n_consume(TokenInner::SymSemicolon, failsafe_set)?;
             Some(ConcreteOpenImportDecl {
                 import_path,
                 open_kwd_range: kwd_token.range,
@@ -256,7 +260,7 @@ mod test {
 
     use crate::diag::DiagContext;
     use crate::parse::parser::Parser;
-    use crate::syntax::decl::{ConcreteFuncDecl, ConcreteObjectDecl};
+    use crate::syntax::decl::{ConcreteExportDecl, ConcreteFuncDecl, ConcreteImportDecl, ConcreteObjectDecl, ConcreteOpenImportDecl};
     use crate::syntax::token::Token;
 
     #[test]
@@ -317,5 +321,62 @@ mod test {
         let func: ConcreteFuncDecl = parser.parse_func_decl(kwd_token, &[]).unwrap();
 
         dbg!(func);
+    }
+
+    #[test]
+    fn test_parse_export() {
+        let source: &str = "export (foo; bar::baz);";
+
+        let diag: RefCell<DiagContext> = RefCell::new(DiagContext::new());
+        let mut parser: Parser = Parser::new(
+            0, source, &diag
+        );
+
+        let kwd_token: Token = parser.consume_token();
+        let export: ConcreteExportDecl = parser.parse_export_decl(kwd_token, &[]).unwrap();
+
+        dbg!(export);
+    }
+
+    #[test]
+    fn test_parse_import() {
+        let source: &str = "import foo::bar::baz;";
+
+        let diag: RefCell<DiagContext> = RefCell::new(DiagContext::new());
+        let mut parser: Parser = Parser::new(
+            0, source, &diag
+        );
+        let kwd_token: Token = parser.consume_token();
+        let import: ConcreteImportDecl = parser.parse_import_decl(kwd_token, &[]).unwrap();
+
+        dbg!(import);
+    }
+
+    #[test]
+    fn test_parse_open_import() {
+        let source: &str = "open import foo::bar::baz using (f; g);";
+
+        let diag: RefCell<DiagContext> = RefCell::new(DiagContext::new());
+        let mut parser: Parser = Parser::new(
+            0, source, &diag
+        );
+        let kwd_token: Token = parser.consume_token();
+        let import: ConcreteOpenImportDecl = parser.parse_open_import_decl(kwd_token, &[]).unwrap();
+
+        dbg!(import);
+    }
+
+    #[test]
+    fn test_parse_open_import2() {
+        let source: &str = "open import foo::bar::baz using (*);";
+
+        let diag: RefCell<DiagContext> = RefCell::new(DiagContext::new());
+        let mut parser: Parser = Parser::new(
+            0, source, &diag
+        );
+        let kwd_token: Token = parser.consume_token();
+        let import: ConcreteOpenImportDecl = parser.parse_open_import_decl(kwd_token, &[]).unwrap();
+
+        dbg!(import);
     }
 }
