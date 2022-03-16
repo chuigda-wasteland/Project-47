@@ -152,12 +152,6 @@ impl<'a> ConcreteLiteralExpr<'a> {
 }
 
 #[cfg_attr(test, derive(Debug))]
-pub struct ConcreteStringLiteralExpr<'a> {
-    pub value: &'a str,
-    pub range: SourceRange
-}
-
-#[cfg_attr(test, derive(Debug))]
 pub struct ConcreteUnaryExpr<'a> {
     pub op: Token<'a>,
     pub operand: Box<ConcreteExpr<'a>>,

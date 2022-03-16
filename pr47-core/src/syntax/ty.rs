@@ -31,6 +31,9 @@ use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::id::Identifier;
 use crate::syntax::token::Token;
 
+// TODO use some arena to store type information. Concrete tree of the same type occurred in
+// TODO different locations should share the same instance, with different source location attached.
+
 #[cfg_attr(test, derive(Debug))]
 pub enum ConcreteType<'a> {
     PrimitiveType(Token<'a>),
