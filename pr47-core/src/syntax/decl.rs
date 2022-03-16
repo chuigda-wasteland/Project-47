@@ -103,13 +103,19 @@ pub struct ConcreteFuncDecl<'a> {
 #[cfg_attr(test, derive(Debug))]
 pub struct ConcreteImportDecl<'a> {
     pub import_path: Identifier<'a>,
-    pub import_kwd_range: SourceRange
+    pub import_kwd_range: SourceRange,
+
+    pub is_syntax_action: bool
 }
 
 #[cfg_attr(test, derive(Debug))]
 pub enum OpenImportUsingItem<'a> {
     UsingAny { aster_loc: SourceLoc },
-    UsingIdent { ident: Identifier<'a>, as_ident: Option<Identifier<'a>> }
+    UsingIdent {
+        ident: Identifier<'a>,
+        as_ident: Option<Identifier<'a>>,
+        is_syntax_action: bool
+    }
 }
 
 #[cfg_attr(test, derive(Debug))]

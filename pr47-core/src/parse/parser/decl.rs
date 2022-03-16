@@ -196,7 +196,9 @@ impl<'s, 'd> Parser<'s, 'd> {
         self.expect_n_consume(TokenInner::SymSemicolon, failsafe_set)?;
         Some(ConcreteImportDecl {
             import_path,
-            import_kwd_range: kwd_token.range
+            import_kwd_range: kwd_token.range,
+
+            is_syntax_action: false
         })
     }
 
@@ -244,11 +246,11 @@ impl<'s, 'd> Parser<'s, 'd> {
                     self.consume_token();
                     let as_ident: Identifier<'s> = self.parse_unqual_ident_with_skip(failsafe_set)?;
                     Some(OpenImportUsingItem::UsingIdent {
-                        ident, as_ident: Some(as_ident)
+                        ident, as_ident: Some(as_ident), is_syntax_action: false
                     })
                 } else {
                     Some(OpenImportUsingItem::UsingIdent {
-                        ident, as_ident: None
+                        ident, as_ident: None, is_syntax_action: false
                     })
                 }
             },
