@@ -385,7 +385,7 @@ mod test {
 
     #[test]
     fn test_parse_open_import2() {
-        let source: &str = "open import foo::bar::baz using (*);";
+        let source: &str = "open import foo::bar::baz using (*, a, b::c, d::e::f as nothing);";
 
         let diag: RefCell<DiagContext> = RefCell::new(DiagContext::new());
         let mut parser: Parser = Parser::new(
