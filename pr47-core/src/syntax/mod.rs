@@ -1,3 +1,4 @@
+pub mod action;
 pub mod attr;
 pub mod decl;
 pub mod expr;

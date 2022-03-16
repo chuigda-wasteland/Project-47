@@ -3,6 +3,7 @@ use std::mem::discriminant;
 
 use smallvec::alloc::fmt::Debug;
 use xjbutil::display2::Display2;
+use xjbutil::slice_arena::SliceArena;
 
 use crate::diag::location::SourceRange;
 
@@ -155,8 +156,32 @@ impl<'a> Token<'a> {
         Self::new(TokenInner::LitStr(lit), range)
     }
 
+    pub fn new_lit_str_in<const DS: usize, const A: usize>(
+        lit: &str,
+        arena: &'a mut SliceArena<DS, A>,
+        range: SourceRange
+    ) -> Self {
+        let slice: &'a [u8] = arena.make(lit.as_bytes());
+        Self::new(
+            TokenInner::LitStr(unsafe { std::str::from_utf8_unchecked(slice) }),
+            range
+        )
+    }
+
     pub fn new_id(id: &'a str, range: SourceRange) -> Self {
         Self::new(TokenInner::Ident(id), range)
+    }
+
+    pub fn new_id_in<const DS: usize, const A: usize>(
+        id: &str,
+        arena: &'a mut SliceArena<DS, A>,
+        range: SourceRange
+    ) -> Self {
+        let slice: &'a [u8] = arena.make(id.as_bytes());
+        Self::new(
+            TokenInner::Ident(unsafe { std::str::from_utf8_unchecked(slice) }),
+            range
+        )
     }
 
     pub fn is_eoi(&self) -> bool {
