@@ -4,11 +4,11 @@ use xjbutil::slice_arena::SliceArena;
 pub use xjbutil::value::Value;
 
 use crate::diag::DiagContext;
+use crate::syntax::ConcreteProgram;
 use crate::syntax::decl::{ConcreteDecl, ConcreteImportDecl, ConcreteOpenImportDecl};
 
 pub type SyntaxActionNamespace = &'static [&'static str];
 pub use Value as GValue;
-use crate::syntax::ConcreteProgram;
 
 pub type TokenLitArena = SliceArena<8192, 1>;
 

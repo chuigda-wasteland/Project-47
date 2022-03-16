@@ -3,12 +3,11 @@
 
 use super::Parser;
 
-use xjbutil::either::Either;
-
+use crate::awa;
 use crate::diag::diag_data;
 use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::attr::Attribute;
-use crate::syntax::decl::{ConcreteExportDecl, ConcreteFuncDecl, ConcreteImportDecl, ConcreteObjectDecl, ConcreteOpenImportDecl, FunctionParam, OpenImportUsingAny, OpenImportUsingList};
+use crate::syntax::decl::{ConcreteExportDecl, ConcreteFuncDecl, ConcreteImportDecl, ConcreteObjectDecl, ConcreteOpenImportDecl, FunctionParam, OpenImportUsingItem};
 use crate::syntax::expr::ConcreteExpr;
 use crate::syntax::id::Identifier;
 use crate::syntax::stmt::ConcreteCompoundStmt;
@@ -175,7 +174,7 @@ impl<'s, 'd> Parser<'s, 'd> {
             self.parse_list_alike_nonnull(
                 Self::parse_ident_with_skip,
                 failsafe_set,
-                TokenInner::SymSemicolon,
+                TokenInner::SymComma,
                 TokenInner::SymRParen,
                 failsafe_set
             )?;
@@ -213,43 +212,61 @@ impl<'s, 'd> Parser<'s, 'd> {
             self.expect_n_consume(TokenInner::KwdUsing, failsafe_set)?.range;
         let left_paren_loc: SourceLoc =
             self.expect_n_consume(TokenInner::SymLParen, failsafe_set)?.range.left();
+        let (use_item_list, right_paren_range): (Vec<OpenImportUsingItem<'s>>, SourceRange) =
+            self.parse_list_alike_nonnull(
+                Self::parse_open_import_using_item,
+                failsafe_set,
+                TokenInner::SymComma,
+                TokenInner::SymRParen,
+                failsafe_set
+            )?;
+        let right_paren_loc: SourceLoc = right_paren_range.left();
 
-        if self.current_token().token_inner == TokenInner::SymAster {
-            let aster_loc: SourceLoc = self.consume_token().range.left();
-            let right_paren_loc: SourceLoc =
-                self.expect_n_consume(TokenInner::SymRParen, failsafe_set)?.range.left();
-            self.expect_n_consume(TokenInner::SymSemicolon, failsafe_set)?;
-            Some(ConcreteOpenImportDecl {
-                import_path,
-                open_kwd_range: kwd_token.range,
-                import_kwd_range,
-                using_kwd_range,
-                used_content: Either::Left(OpenImportUsingAny {
-                    aster_loc
-                })
-            })
-        } else {
-            let (used_idents, right_paren_range): (Vec<Identifier<'s>>, SourceRange) =
-                self.parse_list_alike_nonnull(
-                    Self::parse_ident_with_skip,
-                    failsafe_set,
-                    TokenInner::SymSemicolon,
-                    TokenInner::SymRParen,
-                    failsafe_set
-                )?;
-            let right_paren_loc: SourceLoc = right_paren_range.left();
-            self.expect_n_consume(TokenInner::SymSemicolon, failsafe_set)?;
-            Some(ConcreteOpenImportDecl {
-                import_path,
-                open_kwd_range: kwd_token.range,
-                import_kwd_range,
-                using_kwd_range,
-                used_content: Either::Right(OpenImportUsingList {
-                    used_idents,
-                    left_paren_loc,
-                    right_paren_loc
-                })
-            })
+        Some(ConcreteOpenImportDecl {
+            import_path,
+            use_item_list,
+            open_kwd_range: kwd_token.range,
+            import_kwd_range,
+            using_kwd_range,
+            using_list_left_paren_loc: left_paren_loc,
+            using_list_right_paren_loc: right_paren_loc
+        })
+    }
+
+    pub fn parse_open_import_using_item(
+        &mut self,
+        failsafe_set: &[&[TokenInner<'_>]]
+    ) -> Option<OpenImportUsingItem<'s>> {
+        match self.current_token().token_inner {
+            TokenInner::Ident(_) => {
+                let ident: Identifier<'s> = self.parse_ident_with_skip(failsafe_set)?;
+                if self.current_token().token_inner == TokenInner::KwdAs {
+                    self.consume_token();
+                    let as_ident: Identifier<'s> = self.parse_unqual_ident_with_skip(failsafe_set)?;
+                    Some(OpenImportUsingItem::UsingIdent {
+                        ident, as_ident: Some(as_ident)
+                    })
+                } else {
+                    Some(OpenImportUsingItem::UsingIdent {
+                        ident, as_ident: None
+                    })
+                }
+            },
+            TokenInner::SymAster => {
+                let aster_loc: SourceLoc = self.consume_token().range.left();
+                Some(OpenImportUsingItem::UsingAny { aster_loc })
+            },
+            _ => {
+                let current_token_range: SourceRange = self.current_token().range;
+                self.diag.borrow_mut()
+                    .diag(current_token_range.left(), diag_data::err_expected_any_of_0_got_1)
+                    .add_arg2(awa![TokenInner::Ident(""), TokenInner::SymAster])
+                    .add_arg2(self.current_token().token_inner)
+                    .add_mark(current_token_range.into())
+                    .emit();
+                self.skip_to_any_of(failsafe_set);
+                None
+            }
         }
     }
 }
@@ -325,7 +342,7 @@ mod test {
 
     #[test]
     fn test_parse_export() {
-        let source: &str = "export (foo; bar::baz);";
+        let source: &str = "export (foo, bar::baz);";
 
         let diag: RefCell<DiagContext> = RefCell::new(DiagContext::new());
         let mut parser: Parser = Parser::new(
@@ -354,7 +371,7 @@ mod test {
 
     #[test]
     fn test_parse_open_import() {
-        let source: &str = "open import foo::bar::baz using (f; g);";
+        let source: &str = "open import foo::bar::baz using (f, g as h);";
 
         let diag: RefCell<DiagContext> = RefCell::new(DiagContext::new());
         let mut parser: Parser = Parser::new(

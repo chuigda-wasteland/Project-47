@@ -20,19 +20,25 @@
 //!
 //! import-declaration ::= 'import' identifier ';'
 //!
-//! open-import-declaration ::= 'open' 'import' identifier 'using' '(' identifier-list ')';
+//! open-import-declaration ::= 'open' 'import' identifier 'using' '(' use-item-list ')';
 //!
 //! export-declaration ::= 'export' '(' non-empty-identifier-list ')' ';'
 //!
-//! identifier-list ::= non-empty-identifier-list
-//!                   | NIL
+//! use-item-list ::= use-item use-item-list-tail
+//!                  | use-item
 //!
-//! non-empty-identifier-list ::= non-empty-identifier-list ';' identifier
+//! use-item-list-tail ::= ',' use-item use-item-list-tail
+//!                      | NIL
+//!
+//! use-item ::= '*'
+//!            | identifier
+//!            | identifier 'as' ID
+//!
+//! non-empty-identifier-list ::= non-empty-identifier-list ',' identifier
 //!                             | identifier
 //! ```
 
 use smallvec::SmallVec;
-use xjbutil::either::Either;
 
 use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::attr::Attribute;
@@ -101,24 +107,21 @@ pub struct ConcreteImportDecl<'a> {
 }
 
 #[cfg_attr(test, derive(Debug))]
-pub struct OpenImportUsingAny {
-    pub aster_loc: SourceLoc
-}
-
-#[cfg_attr(test, derive(Debug))]
-pub struct OpenImportUsingList<'a> {
-    pub used_idents: Vec<Identifier<'a>>,
-    pub left_paren_loc: SourceLoc,
-    pub right_paren_loc: SourceLoc
+pub enum OpenImportUsingItem<'a> {
+    UsingAny { aster_loc: SourceLoc },
+    UsingIdent { ident: Identifier<'a>, as_ident: Option<Identifier<'a>> }
 }
 
 #[cfg_attr(test, derive(Debug))]
 pub struct ConcreteOpenImportDecl<'a> {
     pub import_path: Identifier<'a>,
+    pub use_item_list: Vec<OpenImportUsingItem<'a>>,
+
     pub open_kwd_range: SourceRange,
     pub import_kwd_range: SourceRange,
     pub using_kwd_range: SourceRange,
-    pub used_content: Either<OpenImportUsingAny, OpenImportUsingList<'a>>
+    pub using_list_left_paren_loc: SourceLoc,
+    pub using_list_right_paren_loc: SourceLoc
 }
 
 #[cfg_attr(test, derive(Debug))]

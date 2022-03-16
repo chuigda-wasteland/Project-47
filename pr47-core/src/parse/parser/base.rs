@@ -48,6 +48,17 @@ impl<'s, 'd> Parser<'s, 'd> {
         Some(Identifier::Unqual(token))
     }
 
+    pub fn parse_unqual_ident_with_skip(
+        &mut self,
+        failsafe_set: &[&[TokenInner<'_>]]
+    ) -> Option<Identifier<'s>> {
+        let parse_result: Option<Identifier<'s>> = self.parse_unqual_ident();
+        if let None = parse_result {
+            self.skip_to_any_of(failsafe_set);
+        }
+        parse_result
+    }
+
     pub fn parse_list_alike<I, F, V>(
         &mut self,
         parse_item_fn: F,
