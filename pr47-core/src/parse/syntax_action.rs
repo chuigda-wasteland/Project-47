@@ -6,10 +6,16 @@ pub use xjbutil::value::Value;
 
 use crate::diag::{DiagContext, diag_data};
 use crate::syntax::ConcreteProgram;
-use crate::syntax::decl::{ConcreteDecl, ConcreteImportDecl, ConcreteOpenImportDecl, OpenImportUsingItem};
+use crate::syntax::attr::AttrItem;
+use crate::syntax::decl::{
+    ConcreteDecl,
+    ConcreteImportDecl,
+    ConcreteOpenImportDecl,
+    OpenImportUsingItem
+};
+use crate::syntax::id::Identifier;
 
 pub use Value as GValue;
-use crate::syntax::id::Identifier;
 
 pub type TokenLitArena = SliceArena<8192, 1>;
 
@@ -41,12 +47,13 @@ impl<'a> DataMapLens<'a> {
 }
 
 pub type GlobalSyntaxAction = fn(
+    attr: &'_ AttrItem<'_>,
     data_map: DataMapLens<'_>,
     diag: &'_ mut DiagContext
 );
 
 pub type SyntaxAction<'a> = fn(
-    decl: &'_ mut ConcreteDecl<'_>,
+    decl: &'_ mut ConcreteDecl<'a>,
     data_map: DataMapLens<'_>,
     arena: &'a TokenLitArena,
     diag: &'_ mut DiagContext
@@ -83,7 +90,9 @@ impl<'s, 'd> SyntaxActionApplier<'s, 'd> {
             }
         }
     }
+}
 
+impl <'s, 'd> SyntaxActionApplier<'s, 'd> {
     fn resolve_import(
         &mut self,
         imported_items: &mut HashMap<&'s str, (&'s str, &'s str)>,

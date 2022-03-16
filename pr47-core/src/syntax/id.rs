@@ -11,6 +11,7 @@
 //!             | ID
 //! ```
 
+use std::hint::unreachable_unchecked;
 use smallvec::SmallVec;
 
 use crate::syntax::token::Token;
@@ -18,6 +19,64 @@ use crate::syntax::token::Token;
 pub enum Identifier<'a> {
     Unqual(Token<'a>),
     Qual(SmallVec<[Token<'a>; 2]>)
+}
+
+impl<'a> Identifier<'a> {
+    pub fn as_unqual(&self) -> Option<&Token<'a>> {
+        match self {
+            Identifier::Unqual(t) => Some(t),
+            _ => None
+        }
+    }
+
+    pub fn as_qual(&self) -> Option<&SmallVec<[Token<'a>; 2]>> {
+        match self {
+            Identifier::Qual(t) => Some(t),
+            _ => None
+        }
+    }
+
+    pub fn as_qual_mut(&mut self) -> Option<&mut SmallVec<[Token<'a>; 2]>> {
+        match self {
+            Identifier::Qual(t) => Some(t),
+            _ => None
+        }
+    }
+
+    pub fn as_unqual_mut(&mut self) -> Option<&mut Token<'a>> {
+        match self {
+            Identifier::Unqual(t) => Some(t),
+            _ => None
+        }
+    }
+
+    pub unsafe fn as_unqual_unchecked(&self) -> &Token<'a> {
+        match self {
+            Identifier::Unqual(t) => t,
+            _ => unreachable_unchecked()
+        }
+    }
+
+    pub unsafe fn as_qual_unchecked(&self) -> &SmallVec<[Token<'a>; 2]> {
+        match self {
+            Identifier::Qual(t) => t,
+            _ => unreachable_unchecked()
+        }
+    }
+
+    pub unsafe fn as_qual_mut_unchecked(&mut self) -> &mut SmallVec<[Token<'a>; 2]> {
+        match self {
+            Identifier::Qual(t) => t,
+            _ => unreachable_unchecked()
+        }
+    }
+
+    pub unsafe fn as_unqual_mut_unchecked(&mut self) -> &mut Token<'a> {
+        match self {
+            Identifier::Unqual(t) => t,
+            _ => unreachable_unchecked()
+        }
+    }
 }
 
 #[cfg(test)]
