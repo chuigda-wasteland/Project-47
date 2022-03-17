@@ -13,20 +13,24 @@ pub unsafe trait DynCast<T> {
 }
 
 unsafe impl<'s> DynCast<ObjectDecl<'s>> for ASTNode<'s> {
+    #[inline(always)]
     unsafe fn dyn_cast(&self) -> &ObjectDecl<'s> {
         if let ASTNode::ObjectDeclNode(obj) = self { obj } else { unreachable_unchecked() }
     }
 
+    #[inline(always)]
     unsafe fn dyn_cast_mut(&mut self) -> &mut ObjectDecl<'s> {
         if let ASTNode::ObjectDeclNode(obj) = self { obj } else { unreachable_unchecked() }
     }
 }
 
 unsafe impl<'s> DynCast<FuncDecl<'s>> for ASTNode<'s> {
+    #[inline(always)]
     unsafe fn dyn_cast(&self) -> &FuncDecl<'s> {
         if let ASTNode::FuncDeclNode(func) = self { func } else { unreachable_unchecked() }
     }
 
+    #[inline(always)]
     unsafe fn dyn_cast_mut(&mut self) -> &mut FuncDecl<'s> {
         if let ASTNode::FuncDeclNode(func) = self { func } else { unreachable_unchecked() }
     }
