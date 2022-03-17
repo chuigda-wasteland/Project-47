@@ -3,6 +3,10 @@ pub type DefineSymbol = String; // todo
 pub type LocalSymbol = String; // todo
 pub type SymbolRef = String; // todo
 
+// #[cfg_attr(debug_assertions, ...)]
+// #[cfg_attr(not(debug_assertions), ...)]
+// #[cfg(debug_assertions)]
+// #[cfg(not(debug_assertions))]
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionAttr {
@@ -66,22 +70,14 @@ pub struct While(pub Value, pub Box<Expr>, pub Option<Store>);  // cond, body, a
 pub struct Begin (pub Vec<Expr>);
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Store (pub SymbolRef, pub StoreType, pub Box<Expr>);  // name, value
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum StoreType {
-    Volatile,
-    Atomic,
-}
-
-use std::sync::Arc;
+pub struct Store (pub SymbolRef, pub Box<Expr>);  // name, value
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Var(SymbolRef),
     Lit(ConstantValue),
     Call(Call),
-    Fun(Arc<Fun>),
+    Fun(Box<Fun>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -93,7 +89,7 @@ pub struct Call {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
     ConstVal(ConstantValue),
-    Fun(Arc<Fun>)
+    Fun(Box<Fun>)
 }
 
 #[derive(Debug, Clone, PartialEq)]
