@@ -1,5 +1,7 @@
 pub mod arena;
 pub mod decl;
+pub mod decl_context;
+pub mod expr;
 pub mod dyn_cast;
 pub mod scope;
 pub mod visitor;
