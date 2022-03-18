@@ -8,11 +8,21 @@ pub struct Arena<'s> {
     inner: TypedArena<ASTNode<'s>, 1024>
 }
 
-#[derive(Clone, Copy)]
 pub struct ArenaPtr<'s, T: 's> {
     inner: TypedArenaPtr<ASTNode<'s>>,
     _phantom: PhantomData<T>
 }
+
+impl<'s, T: 's> Clone for ArenaPtr<'s, T> {
+    fn clone(&self) -> Self {
+        ArenaPtr {
+            inner: self.inner.clone(),
+            _phantom: PhantomData
+        }
+    }
+}
+
+impl<'s, T: 's> Copy for ArenaPtr<'s, T> {}
 
 impl<'s, T> ArenaPtr<'s, T>
     where T: 's,

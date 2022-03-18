@@ -3,14 +3,25 @@ use std::ptr::NonNull;
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::diag::DiagContext;
 use crate::sema::arena::{Arena, ArenaPtr};
+use crate::sema::decl::ObjectDecl;
 use crate::sema::expr::{Expr, LiteralExpr};
 use crate::sema::scope::Scope;
-use crate::syntax::expr::{ConcreteAsExpr, ConcreteAwaitExpr, ConcreteBinaryExpr, ConcreteFieldRefExpr, ConcreteFuncCallExpr, ConcreteLiteralExpr, ConcreteSubscriptExpr, ConcreteUnaryExpr, LiteralExprContent};
+use crate::syntax::expr::{
+    ConcreteAsExpr,
+    ConcreteAwaitExpr,
+    ConcreteBinaryExpr,
+    ConcreteFieldRefExpr,
+    ConcreteFuncCallExpr,
+    ConcreteLiteralExpr,
+    ConcreteSubscriptExpr,
+    ConcreteUnaryExpr,
+    LiteralExprContent
+};
 use crate::syntax::id::Identifier;
 use crate::syntax::visitor::ExprVisitor;
 
 pub struct SemaPhase2<'s, 'd> {
-    scope: Option<Scope<'s>>,
+    scope: Scope<'s>,
     arena: &'s mut Arena<'s>,
     tyck_info_pool: &'s TyckInfoPool,
 
@@ -39,6 +50,11 @@ impl<'s, 'd> ExprVisitor<'s> for SemaPhase2<'s, 'd> {
     }
 
     fn visit_id_ref_expr(&mut self, id: &'s Identifier<'s>) -> Self::ExprResult {
+        let name: &'s str = id.as_unqual().unwrap().get_str_value();
+        let decl: ArenaPtr<'s, ObjectDecl<'s>> = self.scope.lookup_var_decl(name).or_else(|| {
+            // TODO
+            None
+        })?;
         todo!()
     }
 
