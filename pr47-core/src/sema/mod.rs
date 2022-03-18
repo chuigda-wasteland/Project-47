@@ -13,7 +13,7 @@ pub struct SemaPhase1<'d> {
     diag: &'d mut DiagContext
 }
 
-pub struct SemaPhase2<'d> {
-    tyck_info_pool: TyckInfoPool,
+pub struct SemaPhase2<'s, 'd> {
+    tyck_info_pool: &'s TyckInfoPool,
     diag: &'d mut DiagContext
 }

@@ -188,41 +188,62 @@ impl Eq for TyckInfo {}
 
 pub struct TyckInfoPool {
     pool: HashSet<Korobka<TyckInfo>>,
-    any_type: NonNull<TyckInfo>,
-    object_type: NonNull<TyckInfo>,
-    string_type: NonNull<TyckInfo>
+    tyck_info_int: TyckInfo,
+    tyck_info_float: TyckInfo,
+    tyck_info_char: TyckInfo,
+    tyck_info_bool: TyckInfo,
+    tyck_info_string: TyckInfo,
+    tyck_info_object: TyckInfo,
+    tyck_info_any: TyckInfo
 }
 
 impl TyckInfoPool {
     pub fn new() -> Self {
-        let mut pool: HashSet<Korobka<TyckInfo>> = HashSet::new();
-
-        pool.insert(Korobka::new(TyckInfo::AnyType));
-        let any_type: NonNull<TyckInfo> = pool.get(&TyckInfo::AnyType).unwrap().as_nonnull();
-
-        let mut ret = Self {
-            pool,
-            any_type,
-            object_type: NonNull::dangling(),
-            string_type: NonNull::dangling()
-        };
-
-        ret.object_type = ret.create_plain_type(TypeId::of::<Object>());
-        ret.string_type = ret.create_plain_type(TypeId::of::<String>());
-
-        ret
+        Self {
+            pool: HashSet::new(),
+            tyck_info_int: TyckInfo::Plain(TypeId::of::<i64>()),
+            tyck_info_float: TyckInfo::Plain(TypeId::of::<f64>()),
+            tyck_info_char: TyckInfo::Plain(TypeId::of::<char>()),
+            tyck_info_bool: TyckInfo::Plain(TypeId::of::<bool>()),
+            tyck_info_string: TyckInfo::Plain(TypeId::of::<String>()),
+            tyck_info_object: TyckInfo::Plain(TypeId::of::<Object>()),
+            tyck_info_any: TyckInfo::AnyType
+        }
     }
 
-    pub fn get_any_type(&self) -> NonNull<TyckInfo> {
-        self.any_type
+    #[inline(always)]
+    pub fn get_int_type(&self) -> NonNull<TyckInfo> {
+        unsafe { NonNull::new_unchecked(&self.tyck_info_int as *const _ as *mut _) }
     }
 
-    pub fn get_object_type(&self) -> NonNull<TyckInfo> {
-        self.object_type
+    #[inline(always)]
+    pub fn get_float_type(&self) -> NonNull<TyckInfo> {
+        unsafe { NonNull::new_unchecked(&self.tyck_info_float as *const _ as *mut _) }
     }
 
+    #[inline(always)]
+    pub fn get_char_type(&self) -> NonNull<TyckInfo> {
+        unsafe { NonNull::new_unchecked(&self.tyck_info_char as *const _ as *mut _) }
+    }
+
+    #[inline(always)]
+    pub fn get_bool_type(&self) -> NonNull<TyckInfo> {
+        unsafe { NonNull::new_unchecked(&self.tyck_info_bool as *const _ as *mut _) }
+    }
+
+    #[inline(always)]
     pub fn get_string_type(&self) -> NonNull<TyckInfo> {
-        self.string_type
+        unsafe { NonNull::new_unchecked(&self.tyck_info_string as *const _ as *mut _) }
+    }
+
+    #[inline(always)]
+    pub fn get_object_type(&self) -> NonNull<TyckInfo> {
+        unsafe { NonNull::new_unchecked(&self.tyck_info_object as *const _ as *mut _) }
+    }
+
+    #[inline(always)]
+    pub fn get_any_type(&self) -> NonNull<TyckInfo> {
+        unsafe { NonNull::new_unchecked(&self.tyck_info_any as *const _ as *mut _) }
     }
 
     pub fn create_plain_type(&mut self, type_id: TypeId) -> NonNull<TyckInfo> {
@@ -259,7 +280,7 @@ impl TyckInfoPool {
             params: unsafe { NonNull::new_unchecked(params as *const _ as *mut _) }
         });
 
-        let ret: NonNull<TyckInfo> = 
+        let ret: NonNull<TyckInfo> =
             if let Some(tyck_info /*: &Korobka<TyckInfo>*/) = self.pool.get(&query_tyck_info) {
                 tyck_info.as_nonnull()
             } else {
@@ -307,7 +328,6 @@ impl TyckInfoPool {
         forget(query_tyck_info);
         ret
     }
-
 }
 
 #[cfg(test)]
