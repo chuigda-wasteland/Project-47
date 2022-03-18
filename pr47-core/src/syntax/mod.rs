@@ -5,6 +5,7 @@ pub mod id;
 pub mod stmt;
 pub mod token;
 pub mod ty;
+pub mod visitor;
 
 pub struct ConcreteProgram<'a> {
     pub global_attrs: Vec<attr::Attribute<'a>>,

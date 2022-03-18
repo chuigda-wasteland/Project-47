@@ -3,6 +3,7 @@ use xjbutil::value::Value;
 
 use crate::data::tyck::TyckInfo;
 use crate::sema::arena::{Arena, ArenaPtr};
+use crate::sema::decl::ObjectDecl;
 use crate::syntax::expr::{
     ConcreteAsExpr,
     ConcreteAwaitExpr,
@@ -13,9 +14,11 @@ use crate::syntax::expr::{
     ConcreteUnaryExpr,
     LiteralExprContent
 };
+use crate::syntax::id::Identifier;
 
 pub enum Expr<'s> {
     LiteralExpr(ArenaPtr<'s, LiteralExpr<'s>>),
+    IdRefExpr(ArenaPtr<'s, IdRefExpr<'s>>),
     UnaryExpr(ArenaPtr<'s, UnaryExpr<'s>>),
     BinaryExpr(ArenaPtr<'s, BinaryExpr<'s>>),
     SubscriptExpr(ArenaPtr<'s, BinaryExpr<'s>>),
@@ -31,6 +34,7 @@ impl<'s> Expr<'s> {
     ) -> Option<&'a Value> {
         (match &self {
             Expr::LiteralExpr(_) => return None,
+            Expr::IdRefExpr(expr) => &expr.get_tricky(arena).maybe_constant_folding,
             Expr::UnaryExpr(expr) => &expr.get_tricky(arena).maybe_constant_folding,
             Expr::BinaryExpr(expr) => &expr.get_tricky(arena).maybe_constant_folding,
             Expr::SubscriptExpr(expr) => &expr.get_tricky(arena).maybe_constant_folding,
@@ -46,6 +50,7 @@ impl<'s> Expr<'s> {
     ) -> Option<NonNull<TyckInfo>> {
         match self {
             Expr::LiteralExpr(expr) => Some(expr.get_tricky(arena).ty),
+            Expr::IdRefExpr(expr) => Some(expr.get_tricky(arena).ty),
             Expr::UnaryExpr(expr) => expr.get_tricky(arena).ty,
             Expr::BinaryExpr(expr) => expr.get_tricky(arena).ty,
             Expr::SubscriptExpr(expr) => expr.get_tricky(arena).ty,
@@ -61,6 +66,14 @@ pub struct LiteralExpr<'s> {
     pub ty: NonNull<TyckInfo>,
 
     pub concrete: &'s ConcreteLiteralExpr<'s>
+}
+
+pub struct IdRefExpr<'s> {
+    pub decl: ArenaPtr<'s, ObjectDecl<'s>>,
+    pub ty: NonNull<TyckInfo>,
+
+    pub maybe_constant_folding: Option<Value>,
+    pub concrete: &'s Identifier<'s>
 }
 
 #[cfg_attr(test, derive(Debug))]

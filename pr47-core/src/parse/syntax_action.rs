@@ -27,7 +27,7 @@ pub struct DataMapLens<'a> {
 }
 
 impl<'a> DataMapLens<'a> {
-    fn new(namespace: &'static str, data_map_ref: &'a mut DataMap) -> Self {
+    pub(crate) fn new(namespace: &'static str, data_map_ref: &'a mut DataMap) -> Self {
         DataMapLens { namespace, data_map_ref }
     }
 }
@@ -92,7 +92,7 @@ impl<'s, 'd> SyntaxActionApplier<'s, 'd> {
     }
 }
 
-impl <'s, 'd> SyntaxActionApplier<'s, 'd> {
+impl<'s, 'd> SyntaxActionApplier<'s, 'd> {
     fn resolve_import(
         &mut self,
         imported_items: &mut HashMap<&'s str, (&'s str, &'s str)>,

@@ -17,10 +17,10 @@ use crate::syntax::stmt::{ConcreteCompoundStmt, ConcreteStmt};
 use crate::syntax::token::Token;
 use crate::syntax::ty::{ConcreteGenericType, ConcreteNullableType, ConcreteType};
 
-pub trait DeclVisitor {
+pub trait DeclVisitor<'s> {
     type DeclResult;
 
-    fn visit_decl(&mut self, decl: &'_ ConcreteDecl<'_>) -> Option<Self::DeclResult> {
+    fn visit_decl(&mut self, decl: &'s ConcreteDecl<'s>) -> Option<Self::DeclResult> {
         Some(match decl {
             ConcreteDecl::ConstDecl(const_decl) => self.visit_const_decl(const_decl),
             ConcreteDecl::FuncDecl(func_decl) => self.visit_func_decl(func_decl),
@@ -31,15 +31,15 @@ pub trait DeclVisitor {
         })
     }
 
-    fn visit_const_decl(&mut self, const_decl: &'_ ConcreteObjectDecl<'_>) -> Self::DeclResult;
-    fn visit_func_decl(&mut self, func_decl: &'_ ConcreteFuncDecl<'_>) -> Self::DeclResult;
-    fn visit_var_decl(&mut self, var_decl: &'_ ConcreteObjectDecl<'_>) -> Self::DeclResult;
+    fn visit_const_decl(&mut self, const_decl: &'s ConcreteObjectDecl<'s>) -> Self::DeclResult;
+    fn visit_func_decl(&mut self, func_decl: &'s ConcreteFuncDecl<'s>) -> Self::DeclResult;
+    fn visit_var_decl(&mut self, var_decl: &'s ConcreteObjectDecl<'s>) -> Self::DeclResult;
 }
 
-pub trait ExprVisitor {
+pub trait ExprVisitor<'s> {
     type ExprResult;
 
-    fn visit_expr(&mut self, expr: &'_ ConcreteExpr<'_>) -> Self::ExprResult {
+    fn visit_expr(&mut self, expr: &'s ConcreteExpr<'s>) -> Self::ExprResult {
         match expr {
             ConcreteExpr::LiteralExpr(literal_expr) => self.visit_literal_expr(literal_expr),
             ConcreteExpr::IdRefExpr(id) => self.visit_id_ref_expr(id),
@@ -54,24 +54,42 @@ pub trait ExprVisitor {
         }
     }
 
-    fn visit_literal_expr(&mut self, literal_expr: &'_ ConcreteLiteralExpr<'_>) -> Self::ExprResult;
-    fn visit_id_ref_expr(&mut self, id: &'_ Identifier<'_>) -> Self::ExprResult;
-    fn visit_unary_expr(&mut self, unary_expr: &'_ ConcreteUnaryExpr<'_>) -> Self::ExprResult;
-    fn visit_binary_expr(&mut self, binary_expr: &'_ ConcreteBinaryExpr<'_>) -> Self::ExprResult;
-    fn visit_func_call_expr(&mut self, func_call_expr: &'_ ConcreteFuncCallExpr<'_>) -> Self::ExprResult;
-    fn visit_subscript_expr(&mut self, subscript_expr: &'_ ConcreteSubscriptExpr<'_>) -> Self::ExprResult;
-    fn visit_field_ref_expr(&mut self, field_ref_expr: &'_ ConcreteFieldRefExpr<'_>) -> Self::ExprResult;
-    fn visit_as_expr(&mut self, as_expr: &'_ ConcreteAsExpr<'_>) -> Self::ExprResult;
-    fn visit_await_expr(&mut self, await_expr: &'_ ConcreteAwaitExpr<'_>) -> Self::ExprResult;
-    fn visit_parenthesized_expr(&mut self, paren_expr: &'_ ConcreteParenthesizedExpr<'_>) -> Self::ExprResult {
+    fn visit_literal_expr(
+        &mut self,
+        literal_expr: &'s ConcreteLiteralExpr<'s>
+    ) -> Self::ExprResult;
+    fn visit_id_ref_expr(&mut self, id: &'s Identifier<'s>) -> Self::ExprResult;
+    fn visit_unary_expr(
+        &mut self,
+        unary_expr: &'s ConcreteUnaryExpr<'s>
+    ) -> Self::ExprResult;
+    fn visit_binary_expr(&mut self, binary_expr: &'s ConcreteBinaryExpr<'s>) -> Self::ExprResult;
+    fn visit_func_call_expr(
+        &mut self,
+        func_call_expr: &'s ConcreteFuncCallExpr<'s>
+    ) -> Self::ExprResult;
+    fn visit_subscript_expr(
+        &mut self,
+        subscript_expr: &'s ConcreteSubscriptExpr<'s>
+    ) -> Self::ExprResult;
+    fn visit_field_ref_expr(
+        &mut self,
+        field_ref_expr: &'s ConcreteFieldRefExpr<'s>
+    ) -> Self::ExprResult;
+    fn visit_as_expr(&mut self, as_expr: &'s ConcreteAsExpr<'s>) -> Self::ExprResult;
+    fn visit_await_expr(&mut self, await_expr: &'s ConcreteAwaitExpr<'s>) -> Self::ExprResult;
+    fn visit_parenthesized_expr(
+        &mut self,
+        paren_expr: &'s ConcreteParenthesizedExpr<'s>
+    ) -> Self::ExprResult {
         self.visit_expr(&paren_expr.inner)
     }
 }
 
-pub trait StmtVisitor {
+pub trait StmtVisitor<'s> {
     type StmtResult;
 
-    fn visit_stmt(&mut self, stmt: &'_ ConcreteStmt<'_>) -> Self::StmtResult {
+    fn visit_stmt(&mut self, stmt: &'s ConcreteStmt<'s>) -> Self::StmtResult {
         match stmt {
             ConcreteStmt::CompoundStmt(compound_stmt) => self.visit_compound_stmt(compound_stmt),
             ConcreteStmt::ExprStmt(expr_stmt, _) => self.visit_expr_stmt(expr_stmt),
@@ -81,17 +99,17 @@ pub trait StmtVisitor {
 
     fn visit_compound_stmt(
         &mut self,
-        compound_stmt: &'_ ConcreteCompoundStmt<'_>
+        compound_stmt: &'s ConcreteCompoundStmt<'s>
     ) -> Self::StmtResult;
 
-    fn visit_expr_stmt(&mut self, expr: &'_ ConcreteExpr<'_>) -> Self::StmtResult;
-    fn visit_decl_stmt(&mut self, decl: &'_ ConcreteDecl<'_>) -> Self::StmtResult;
+    fn visit_expr_stmt(&mut self, expr: &'s ConcreteExpr<'s>) -> Self::StmtResult;
+    fn visit_decl_stmt(&mut self, decl: &'s ConcreteDecl<'s>) -> Self::StmtResult;
 }
 
-pub trait TypeVisitor {
+pub trait TypeVisitor<'s> {
     type TypeResult;
 
-    fn visit_type(&mut self, ty: &'_ ConcreteType<'_>) -> Self::TypeResult {
+    fn visit_type(&mut self, ty: &'s ConcreteType<'s>) -> Self::TypeResult {
         match ty {
             ConcreteType::PrimitiveType(primitive_type) => self.visit_primitive_type(primitive_type),
             ConcreteType::GenericType(generic_type) => self.visit_generic_type(generic_type),
@@ -101,9 +119,9 @@ pub trait TypeVisitor {
         }
     }
 
-    fn visit_primitive_type(&mut self, primitive_type: &'_ Token<'_>) -> Self::TypeResult;
-    fn visit_generic_type(&mut self, generic_type: &'_ ConcreteGenericType<'_>) -> Self::TypeResult;
-    fn visit_nullable_type(&mut self, nullable_type: &'_ ConcreteNullableType<'_>) -> Self::TypeResult;
+    fn visit_primitive_type(&mut self, primitive_type: &'s Token<'s>) -> Self::TypeResult;
+    fn visit_generic_type(&mut self, generic_type: &'s ConcreteGenericType<'s>) -> Self::TypeResult;
+    fn visit_nullable_type(&mut self, nullable_type: &'s ConcreteNullableType<'s>) -> Self::TypeResult;
     fn visit_deduced_type(&mut self, deduced_type_source_range: SourceRange) -> Self::TypeResult;
-    fn visit_user_type(&mut self, user_type: &'_ Identifier<'_>) -> Self::TypeResult;
+    fn visit_user_type(&mut self, user_type: &'s Identifier<'s>) -> Self::TypeResult;
 }

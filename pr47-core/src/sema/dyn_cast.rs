@@ -6,6 +6,7 @@ use crate::sema::expr::{
     AwaitExpr,
     BinaryExpr,
     FieldRefExpr,
+    IdRefExpr,
     LiteralExpr,
     SubscriptExpr,
     UnaryExpr
@@ -15,6 +16,7 @@ pub enum ASTNode<'s> {
     ObjectDeclNode(ObjectDecl<'s>),
     FuncDeclNode(FuncDecl<'s>),
     LiteralExprNode(LiteralExpr<'s>),
+    IdRefExprNode(IdRefExpr<'s>),
     UnaryExprNode(UnaryExpr<'s>),
     BinaryExprNode(BinaryExpr<'s>),
     SubscriptExprNode(SubscriptExpr<'s>),
@@ -53,6 +55,7 @@ macro_rules! impl_dyn_cast {
 impl_dyn_cast!(ObjectDeclNode, ObjectDecl);
 impl_dyn_cast!(FuncDeclNode, FuncDecl);
 impl_dyn_cast!(LiteralExprNode, LiteralExpr);
+impl_dyn_cast!(IdRefExprNode, IdRefExpr);
 impl_dyn_cast!(UnaryExprNode, UnaryExpr);
 impl_dyn_cast!(BinaryExprNode, BinaryExpr);
 impl_dyn_cast!(SubscriptExprNode, SubscriptExpr);

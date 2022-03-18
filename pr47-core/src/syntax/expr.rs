@@ -109,6 +109,7 @@ pub struct ConcreteLiteralExpr<'a> {
     pub range: SourceRange
 }
 
+#[derive(Clone, Copy)]
 #[cfg_attr(test, derive(Debug))]
 pub enum LiteralExprContent<'a> {
     Int(u64),
