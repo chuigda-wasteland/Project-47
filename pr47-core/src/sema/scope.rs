@@ -59,4 +59,14 @@ impl<'s> Scope<'s> {
             None
         }
     }
+
+    pub fn check_name_collision(&self, name: &str) -> bool {
+        if self.object_decls.contains_key(name) {
+            true
+        } else if self.func_decls.contains_key(name) {
+            true
+        } else {
+            false
+        }
+    }
 }

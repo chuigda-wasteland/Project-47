@@ -34,7 +34,10 @@ pub struct SemaPhase2<'s, 'd> {
 impl<'s, 'd> ExprVisitor<'s> for SemaPhase2<'s, 'd> {
     type ExprResult = Option<Expr<'s>>;
 
-    fn visit_literal_expr(&mut self, literal_expr: &'s ConcreteLiteralExpr<'s>) -> Self::ExprResult {
+    fn visit_literal_expr(
+        &mut self,
+        literal_expr: &'s ConcreteLiteralExpr<'s>
+    ) -> Self::ExprResult {
         let ty: NonNull<TyckInfo> = match literal_expr.content {
             LiteralExprContent::Int(_) => self.tyck_info_pool.get_int_type(),
             LiteralExprContent::Float(_) => self.tyck_info_pool.get_float_type(),
@@ -67,8 +70,8 @@ impl<'s, 'd> ExprVisitor<'s> for SemaPhase2<'s, 'd> {
         let is_const: bool = decl_ref.is_const;
 
         let maybe_constant_folding: Option<Value> = decl_ref.init
-                .get_const_fold_value(&self.arena)
-                .map(Clone::clone);
+            .get_const_fold_value(&self.arena)
+            .map(Clone::clone);
         let id_ref_expr: ArenaPtr<'s, IdRefExpr<'s>> = ArenaPtr::new_in(IdRefExpr {
             decl,
             ty,

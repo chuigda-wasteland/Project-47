@@ -8,6 +8,14 @@ pub struct Arena<'s> {
     inner: TypedArena<ASTNode<'s>, 1024>
 }
 
+impl<'s> Arena<'s> {
+    pub fn new() -> Self {
+        Self {
+            inner: TypedArena::new()
+        }
+    }
+}
+
 pub struct ArenaPtr<'s, T: 's> {
     inner: TypedArenaPtr<ASTNode<'s>>,
     _phantom: PhantomData<T>
