@@ -23,6 +23,7 @@ pub const err_empty_float_exponent: u32 = 2015;
 pub const err_bad_escape: u32 = 2016;
 pub const err_unclosed_string: u32 = 2017;
 pub const err_duplicate_syntax_action_name_0: u32 = 2018;
+pub const err_undefined_identifier_0: u32 = 2019;
 
 // warnings
 pub const warn_commence_placeholder: u32 = 4000;
@@ -62,6 +63,7 @@ pub const fn diag_message(code: u32) -> &'static str {
             err_bad_escape => "bad escape sequence \\?0",
             err_unclosed_string => "unclosed string literal",
             err_duplicate_syntax_action_name_0 => "duplicate syntax action name `?0`",
+            err_undefined_identifier_0 => "undefined identifier `?0`",
             _ => "INVALID_ERROR_CODE"
         }
     } else /* if code > note_commence_placeholder */ {

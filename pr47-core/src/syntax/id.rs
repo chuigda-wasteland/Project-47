@@ -12,7 +12,10 @@
 //! ```
 
 use std::hint::unreachable_unchecked;
+
 use smallvec::SmallVec;
+
+use crate::diag::location::SourceRange;
 
 use crate::syntax::token::Token;
 
@@ -22,6 +25,13 @@ pub enum Identifier<'a> {
 }
 
 impl<'a> Identifier<'a> {
+    pub fn source_range(&self) -> SourceRange {
+        match self {
+            Identifier::Unqual(token) => token.range,
+            Identifier::Qual(tokens) => unsafe { tokens.get_unchecked(0) }.range
+        }
+    }
+
     pub fn as_unqual(&self) -> Option<&Token<'a>> {
         match self {
             Identifier::Unqual(t) => Some(t),

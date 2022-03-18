@@ -2,12 +2,14 @@ use std::ptr::NonNull;
 
 use crate::data::tyck::TyckInfo;
 use crate::sema::decl_context::DeclContext;
+use crate::sema::expr::Expr;
 use crate::syntax::decl::{ConcreteFuncDecl, ConcreteObjectDecl};
 
 pub struct ObjectDecl<'s> {
     pub name: &'s str,
     pub is_const: bool,
     pub ty: NonNull<TyckInfo>,
+    pub init: Expr<'s>,
 
     pub concrete: &'s ConcreteObjectDecl<'s>
 }
