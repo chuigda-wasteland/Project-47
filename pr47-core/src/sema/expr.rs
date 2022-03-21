@@ -1,9 +1,11 @@
 use std::ptr::NonNull;
+
+use xjbutil::either::Either;
 use xjbutil::value::Value;
 
 use crate::data::tyck::TyckInfo;
 use crate::sema::arena::{Arena, ArenaPtr};
-use crate::sema::decl::ObjectDecl;
+use crate::sema::decl::{FuncDecl, ObjectDecl};
 use crate::syntax::expr::{
     ConcreteAsExpr,
     ConcreteAwaitExpr,
@@ -69,7 +71,7 @@ pub struct LiteralExpr<'s> {
 }
 
 pub struct IdRefExpr<'s> {
-    pub decl: ArenaPtr<'s, ObjectDecl<'s>>,
+    pub decl: Either<ArenaPtr<'s, ObjectDecl<'s>>, ArenaPtr<'s, FuncDecl<'s>>>,
     pub ty: NonNull<TyckInfo>,
 
     pub maybe_constant_folding: Option<Value>,

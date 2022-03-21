@@ -3,15 +3,24 @@ use std::ptr::NonNull;
 
 use crate::data::tyck::TyckInfo;
 use crate::sema::arena::ArenaPtr;
-use crate::sema::decl::{FuncDecl, ObjectDecl};
+use crate::sema::decl::{FuncDecl, ModuleDecl, ObjectDecl};
 
 #[derive(Clone, Copy)]
 #[cfg_attr(test, derive(Debug))]
 #[repr(u8)]
 pub enum ScopeKind {
     Global,
+    Module,
     Function,
     Local
+}
+
+#[derive(Clone, Copy)]
+#[cfg_attr(test, derive(Debug))]
+#[repr(u8)]
+pub enum LookupFailure {
+    DuplicateItem,
+    ItemNotFound
 }
 
 pub struct Scope<'s> {
@@ -20,6 +29,7 @@ pub struct Scope<'s> {
 
     pub object_decls: HashMap<&'s str, ArenaPtr<'s, ObjectDecl<'s>>>,
     pub func_decls: HashMap<&'s str, Vec<ArenaPtr<'s, FuncDecl<'s>>>>,
+    pub module_decls: HashMap<&'s str, ArenaPtr<'s, ModuleDecl<'s>>>,
     pub types: HashMap<&'s str, NonNull<TyckInfo>>
 }
 
@@ -31,6 +41,7 @@ impl<'s> Scope<'s> {
 
             object_decls: HashMap::new(),
             func_decls: HashMap::new(),
+            module_decls: HashMap::new(),
             types: HashMap::new()
         }
     }
@@ -42,6 +53,7 @@ impl<'s> Scope<'s> {
 
             object_decls: HashMap::new(),
             func_decls: HashMap::new(),
+            module_decls: HashMap::new(),
             types: HashMap::new()
         }
     }

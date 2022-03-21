@@ -3,6 +3,7 @@ use std::ptr::NonNull;
 use crate::data::tyck::TyckInfo;
 use crate::sema::decl_context::DeclContext;
 use crate::sema::expr::Expr;
+use crate::sema::scope::Scope;
 use crate::syntax::decl::{ConcreteFuncDecl, ConcreteObjectDecl};
 
 pub struct ObjectDecl<'s> {
@@ -22,4 +23,9 @@ pub struct FuncDecl<'s> {
     pub func_body: (), // TODO
 
     pub concrete: &'s ConcreteFuncDecl<'s>
+}
+
+pub struct ModuleDecl<'s> {
+    pub name: &'s str,
+    pub scope: Scope<'s>
 }
