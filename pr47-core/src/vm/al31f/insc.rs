@@ -472,6 +472,8 @@ pub enum Insc {
 
     CreateContainer(GenericTypeCtor, NonNull<GenericTypeVT>, usize),
 
+    CreateClosure(usize, &'static [usize], NonNull<GenericTypeVT>, usize),
+
     #[cfg(feature = "al31f-builtin-ops")] CreateString(usize),
     #[cfg(feature = "al31f-builtin-ops")] CreateObject(usize),
 

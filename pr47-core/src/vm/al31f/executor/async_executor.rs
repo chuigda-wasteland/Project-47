@@ -5,6 +5,7 @@ use std::marker::PhantomPinned;
 use std::task::{Context, Poll};
 
 use smallvec::{SmallVec, smallvec};
+use xjbutil::mem::move_to_heap;
 use xjbutil::unchecked::{UncheckedCellOps, UncheckedSendSync};
 use xjbutil::wide_ptr::WidePointer;
 
@@ -724,6 +725,22 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             Insc::CreateContainer(ctor, vt, dest) => {
                 let container: Value = Value::new_container(ctor(), vt.as_ref());
+                get_vm!(thread).alloc.add_managed(container);
+                slice.set_value(*dest, container);
+            },
+            Insc::CreateClosure(func_id, capture_idx, vt, dest) => {
+                let mut captures: SmallVec<[Value; 4]> = SmallVec::new();
+                for i in 0..capture_idx.len() {
+                    let capture_idx: usize = capture_idx[i];
+                    let capture: Value = slice.get_value(capture_idx);
+                    captures.push(capture);
+                }
+
+                let closure: Closure = Closure::new(captures, *func_id);
+                let container: Value = Value::new_container(
+                    move_to_heap(Wrapper::new_owned(closure)).as_ptr() as _,
+                    vt.as_ref()
+                );
                 get_vm!(thread).alloc.add_managed(container);
                 slice.set_value(*dest, container);
             },
