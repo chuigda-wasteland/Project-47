@@ -530,6 +530,29 @@ impl Insc {
                 }
                 result
             },
+            Insc::FFICall(ffi_func_id, args, rets) => {
+                let mut result: String = String::from("[");
+                for (i, ret) /*: (usize, &usize)*/ in rets.iter().enumerate() {
+                    result.push('%');
+                    result.push_str(&ret.to_string());
+                    if i != rets.len() - 1 {
+                        result.push(',');
+                        result.push(' ');
+                    }
+                }
+                result.push_str("] = ffi-call F.");
+                result.push_str(&ffi_func_id.to_string());
+                result.push(' ');
+                for (i, arg) /*: (usize, &usize)*/ in args.iter().enumerate() {
+                    result.push('%');
+                    result.push_str(&arg.to_string());
+                    if i != args.len() - 1 {
+                        result.push(',');
+                        result.push(' ');
+                    }
+                }
+                result
+            },
             Insc::ReturnNothing => "ret".into(),
             Insc::ReturnOne(ret_value_loc) => format!("ret %{}", ret_value_loc),
             Insc::Return(ret_value_locs) => {
