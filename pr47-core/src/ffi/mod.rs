@@ -8,6 +8,7 @@ pub mod sync_fn;
 #[cfg(feature = "async")]
 pub mod async_fn;
 
+#[derive(Clone, Copy, Eq, PartialEq)]
 #[repr(u8)]
 pub enum DataOption {
     Share,
