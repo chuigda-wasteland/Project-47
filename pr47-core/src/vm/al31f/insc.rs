@@ -1,5 +1,6 @@
 //! ## `insc.rs`: defines instruction set for the VM.
 
+use std::fmt::format;
 use std::ptr::NonNull;
 
 use crate::data::generic::{GenericTypeCtor, GenericTypeVT};
@@ -536,6 +537,29 @@ impl Insc {
                 }
                 result
             },
+            Insc::CallPtr(func, args, rets) => {
+                let mut result: String = String::from("[");
+                for (i, ret) /*: (usize, &usize)*/ in rets.iter().enumerate() {
+                    result.push('%');
+                    result.push_str(&ret.to_string());
+                    if i != rets.len() - 1 {
+                        result.push(',');
+                        result.push(' ');
+                    }
+                }
+                result.push_str("] = call %");
+                result.push_str(&func.to_string());
+                result.push(' ');
+                for (i, arg) /*: (usize, &usize)*/ in args.iter().enumerate() {
+                    result.push('%');
+                    result.push_str(&arg.to_string());
+                    if i != args.len() - 1 {
+                        result.push(',');
+                        result.push(' ');
+                    }
+                }
+                result
+            },
             Insc::FFICall(ffi_func_id, args, rets) => {
                 let mut result: String = String::from("[");
                 for (i, ret) /*: (usize, &usize)*/ in rets.iter().enumerate() {
@@ -578,7 +602,24 @@ impl Insc {
             Insc::JumpIfTrue(condition, dest) => format!("if %{} goto L.{}", condition, dest),
             Insc::JumpIfFalse(condition, dest) => format!("if not %{} goto L.{}", condition, dest),
             Insc::Jump(dest) => format!("goto L.{}", dest),
-            _ => todo!()
+            Insc::CreateClosure(func_id, captures, _, dest) => {
+                let mut result: String = String::from("%");
+                result.push_str(&dest.to_string());
+                result.push_str(" = make-closure F.");
+                result.push_str(&func_id.to_string());
+                result.push(' ');
+                for (i, capture) /*: (usize, &usize)*/ in captures.iter().enumerate() {
+                    result.push('%');
+                    result.push_str(&capture.to_string());
+                    if i != captures.len() - 1 {
+                        result.push(',');
+                        result.push(' ');
+                    }
+                }
+                result
+            },
+            Insc::TypeCheck(value_loc, _) => format!("type-check %{}", value_loc),
+            _ => "unimplemented insc".to_string()
         }
     }
 }
