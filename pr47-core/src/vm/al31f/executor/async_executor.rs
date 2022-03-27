@@ -455,7 +455,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     );
                     insc_ptr = compiled.start_addr;
                 } else {
-                    let closure: &Closure = &*(func.get_as_mut_ptr_norm::<Closure>() as *const _);
+                    let closure: &Closure = &*(func.get_as_mut_ptr::<Closure>() as *const _);
                     let func_id: usize = closure.func_id;
 
                     #[cfg(not(debug_assertions))]
@@ -765,7 +765,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecIndex(src, index, dst) => {
                 let vec_value: Value = slice.get_value(*src);
-                let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr_norm() as *const _);
+                let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr() as *const _);
                 let index: i64 = slice.get_value(*index).vt_data.inner.int_value;
                 if let Some(data) = vec.inner.get_ref_unchecked().get(index as usize) {
                     slice.set_value(*dst, *data);
@@ -782,7 +782,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecIndexPut(src, index, value) => {
                 let vec_value: Value = slice.get_value(*src);
-                let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr_norm() as *const _);
+                let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr() as *const _);
                 let index: i64 = slice.get_value(*index).vt_data.inner.int_value;
                 if let Some(data) = vec.inner.get_mut_ref_unchecked().get_mut(index as usize) {
                     let value: Value = slice.get_value(*value);
@@ -801,7 +801,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecPush(src, data) => {
                 let vec_value: Value = slice.get_value(*src);
-                let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr_norm() as *const _);
+                let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr() as *const _);
                 let data: Value = slice.get_value(*data);
                 get_vm!(thread).alloc.mark_object(data);
                 vec.inner.get_mut_ref_unchecked().push(data);
@@ -809,7 +809,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecLen(src, dst) => {
                 let vec_value: Value = slice.get_value(*src);
-                let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr_norm() as *const _);
+                let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr() as *const _);
                 slice.set_value(*dst, Value::new_int(vec.inner.get_ref_unchecked().len() as i64));
             },
 
