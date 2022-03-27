@@ -10,6 +10,11 @@ use crate::data::tyck::TyckInfo;
 /// This is a tri-address like instruction set for register machine.
 #[cfg_attr(test, derive(Debug), derive(VariantCount))]
 pub enum Insc {
+    /// `MOV` [SRC] [DEST]
+    ///
+    /// Move the value in register `SRC` to `DEST`
+    Move(usize, usize),
+
     /// `ADD-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Add integers in register `SRC1` and `SRC2`, put result to register `DEST`,
@@ -497,6 +502,7 @@ pub enum Insc {
 impl Insc {
     pub unsafe fn unsafe_to_string(&self) -> String {
         match self {
+            Insc::Move(src, dst) => format!("%{} = %{}", dst, src),
             Insc::AddInt(src1, src2, dst) => format!("%{} = add int %{}, %{}", dst, src1, src2),
             Insc::AddFloat(src1, src2, dst) => format!("%{} = add float %{}, %{}", dst, src1, src2),
             Insc::AddAny(src1, src2, dst) =>format!("%{} = add ? %{}, %{}", dst, src1, src2),

@@ -184,6 +184,10 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
         insc_ptr += 1;
 
         match insc {
+            Insc::Move(src, dst) => {
+                let value: Value = slice.get_value(*src);
+                slice.set_value(*dst, value);
+            },
             Insc::AddInt(src1, src2, dst) =>
                 impl_int_binop![slice, src1, src2, dst, wrapping_add],
             Insc::AddFloat(src1, src2, dst) =>
