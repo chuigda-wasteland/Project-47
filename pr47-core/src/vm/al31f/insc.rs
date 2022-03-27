@@ -573,6 +573,7 @@ impl Insc {
                 }
                 result
             },
+            Insc::Raise(exception_loc) => format!("raise %{}", exception_loc),
             Insc::CreateObject(dest) => format!("%{} = new object", dest),
             Insc::JumpIfTrue(condition, dest) => format!("if %{} goto L.{}", condition, dest),
             Insc::JumpIfFalse(condition, dest) => format!("if not %{} goto L.{}", condition, dest),

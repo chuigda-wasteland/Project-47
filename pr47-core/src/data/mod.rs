@@ -294,7 +294,7 @@ impl Value {
     pub unsafe fn get_as_dyn_base(&self) -> *mut dyn DynBase {
         debug_assert!(self.is_ref());
         debug_assert!(!self.is_container());
-        transmute::<WidePointer, &mut dyn DynBase>(self.ptr_repr)
+        transmute::<WidePointer, *mut dyn DynBase>(self.ptr_repr)
     }
 
     /// Given that `self` **MUST** be a reference, assuming that `self` may be a custom pointer,
