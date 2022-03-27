@@ -32,9 +32,17 @@ pub unsafe fn check_type(value: Value, tyck_info: NonNull<TyckInfo>) -> bool {
                 check_type(value, *inner)
             }
         }
-        TyckInfo::Container(_) => {
+        TyckInfo::Container(inner) => {
             if value.is_container() {
-                todo!()
+                let vt: *const GenericTypeVT = value.ptr_repr.trivia as *const GenericTypeVT;
+                let vt: &GenericTypeVT = &*vt;
+
+                if vt.tyck_info.as_ref().type_id != inner.type_id {
+                    return false;
+                }
+
+                // TODO this is temporary patch for LY testing
+                vt.tyck_info.as_ref().params.as_ref().len() == inner.params.as_ref().len()
             } else if value.is_ref() {
                 value.get_as_dyn_base().as_ref().unchecked_unwrap().dyn_tyck(tyck_info.as_ref())
             } else {

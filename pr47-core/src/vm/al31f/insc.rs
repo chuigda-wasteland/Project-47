@@ -1,6 +1,5 @@
 //! ## `insc.rs`: defines instruction set for the VM.
 
-use std::fmt::format;
 use std::ptr::NonNull;
 
 use crate::data::generic::{GenericTypeCtor, GenericTypeVT};
