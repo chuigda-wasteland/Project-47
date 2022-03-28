@@ -505,7 +505,7 @@ impl Insc {
             Insc::Move(src, dst) => format!("%{} = %{}", dst, src),
             Insc::AddInt(src1, src2, dst) => format!("%{} = add int %{}, %{}", dst, src1, src2),
             Insc::AddFloat(src1, src2, dst) => format!("%{} = add float %{}, %{}", dst, src1, src2),
-            Insc::AddAny(src1, src2, dst) =>format!("%{} = add ? %{}, %{}", dst, src1, src2),
+            Insc::AddAny(src1, src2, dst) => format!("%{} = add ? %{}, %{}", dst, src1, src2),
             Insc::SubInt(src1, src2, dst) => format!("%{} = sub int %{}, %{}", dst, src1, src2),
             Insc::EqValue(src1, src2, dst) => format!("%{} = eq value %{}, %{}", dst, src1, src2),
             Insc::EqRef(src1, src2, dst) => format!("%{} = eq ref %{}, %{}", dst, src1, src2),
@@ -559,7 +559,7 @@ impl Insc {
                 }
                 result
             },
-            Insc::FFICall(ffi_func_id, args, rets) => {
+            Insc::FFICallRtlc(ffi_func_id, args, rets) => {
                 let mut result: String = String::from("[");
                 for (i, ret) /*: (usize, &usize)*/ in rets.iter().enumerate() {
                     result.push('%');

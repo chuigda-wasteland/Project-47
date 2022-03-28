@@ -186,8 +186,7 @@ impl PartialEq for TyckInfo {
 
 impl Eq for TyckInfo {}
 
-pub struct TyckInfoPool {
-    pool: HashSet<Korobka<TyckInfo>>,
+pub struct TyckInfoCommons {
     tyck_info_int: TyckInfo,
     tyck_info_float: TyckInfo,
     tyck_info_char: TyckInfo,
@@ -197,10 +196,9 @@ pub struct TyckInfoPool {
     tyck_info_any: TyckInfo
 }
 
-impl TyckInfoPool {
+impl TyckInfoCommons {
     pub fn new() -> Self {
         Self {
-            pool: HashSet::new(),
             tyck_info_int: TyckInfo::Plain(TypeId::of::<i64>()),
             tyck_info_float: TyckInfo::Plain(TypeId::of::<f64>()),
             tyck_info_char: TyckInfo::Plain(TypeId::of::<char>()),
@@ -210,40 +208,54 @@ impl TyckInfoPool {
             tyck_info_any: TyckInfo::AnyType
         }
     }
+}
+
+pub struct TyckInfoPool {
+    pool: HashSet<Korobka<TyckInfo>>,
+    commons: Korobka<TyckInfoCommons>
+}
+
+impl TyckInfoPool {
+    pub fn new() -> Self {
+        Self {
+            pool: HashSet::new(),
+            commons: Korobka::new(TyckInfoCommons::new())
+        }
+    }
 
     #[inline(always)]
     pub fn get_int_type(&self) -> NonNull<TyckInfo> {
-        unsafe { NonNull::new_unchecked(&self.tyck_info_int as *const _ as *mut _) }
+        unsafe { NonNull::new_unchecked(&self.commons.tyck_info_int as *const _ as *mut _) }
     }
 
     #[inline(always)]
     pub fn get_float_type(&self) -> NonNull<TyckInfo> {
-        unsafe { NonNull::new_unchecked(&self.tyck_info_float as *const _ as *mut _) }
+        unsafe { NonNull::new_unchecked(&self.commons.tyck_info_float as *const _ as *mut _) }
     }
 
     #[inline(always)]
     pub fn get_char_type(&self) -> NonNull<TyckInfo> {
-        unsafe { NonNull::new_unchecked(&self.tyck_info_char as *const _ as *mut _) }
+        unsafe { NonNull::new_unchecked(&self.commons.tyck_info_char as *const _ as *mut _) }
     }
 
     #[inline(always)]
     pub fn get_bool_type(&self) -> NonNull<TyckInfo> {
-        unsafe { NonNull::new_unchecked(&self.tyck_info_bool as *const _ as *mut _) }
+        unsafe { NonNull::new_unchecked(&self.commons.tyck_info_bool as *const _ as *mut _) }
     }
 
     #[inline(always)]
     pub fn get_string_type(&self) -> NonNull<TyckInfo> {
-        unsafe { NonNull::new_unchecked(&self.tyck_info_string as *const _ as *mut _) }
+        unsafe { NonNull::new_unchecked(&self.commons.tyck_info_string as *const _ as *mut _) }
     }
 
     #[inline(always)]
     pub fn get_object_type(&self) -> NonNull<TyckInfo> {
-        unsafe { NonNull::new_unchecked(&self.tyck_info_object as *const _ as *mut _) }
+        unsafe { NonNull::new_unchecked(&self.commons.tyck_info_object as *const _ as *mut _) }
     }
 
     #[inline(always)]
     pub fn get_any_type(&self) -> NonNull<TyckInfo> {
-        unsafe { NonNull::new_unchecked(&self.tyck_info_any as *const _ as *mut _) }
+        unsafe { NonNull::new_unchecked(&self.commons.tyck_info_any as *const _ as *mut _) }
     }
 
     pub fn create_plain_type(&mut self, type_id: TypeId) -> NonNull<TyckInfo> {
