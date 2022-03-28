@@ -9,6 +9,7 @@ use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
 use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
 
+#[inline(never)]
 pub unsafe fn unchecked_exception_unwind_stack(
     unchecked_exception: UncheckedException,
     stack: &mut Stack,
@@ -20,13 +21,14 @@ pub unsafe fn unchecked_exception_unwind_stack(
     while stack.frames.len() != 0 {
         let last_frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
         exception.push_stack_trace(last_frame.func_id, insc_ptr);
-        insc_ptr = last_frame.ret_addr - 1;
+        insc_ptr = last_frame.ret_addr.saturating_sub(1);
 
         stack.unwind_shrink_slice();
     }
     exception
 }
 
+#[inline(never)]
 pub unsafe fn checked_exception_unwind_stack<A: Alloc>(
     vm: &mut AL31F<A>,
     program: &CompiledProgram<A>,

@@ -58,7 +58,7 @@ impl StackTrace {
 
 pub struct Exception {
     pub inner: ExceptionInner,
-    trace: Vec<StackTrace>
+    pub trace: Vec<StackTrace>
 }
 
 impl Exception {
