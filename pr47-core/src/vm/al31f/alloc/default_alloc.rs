@@ -81,7 +81,7 @@ impl Drop for DefaultAlloc {
 
             if value.is_container() {
                 unsafe {
-                    let container: *mut () = value.ptr_repr.ptr as *mut _;
+                    let container: *mut () = value.untagged_ptr_field() as *mut _;
                     let vt: *const GenericTypeVT = value.ptr_repr.trivia as *const _;
                     ((*vt).drop_fn)(container);
                 }

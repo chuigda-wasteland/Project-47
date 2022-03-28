@@ -92,7 +92,6 @@ pub mod gen_impls {
     use crate::data::wrapper::{OwnershipInfo, Wrapper};
 
     #[cfg(debug_assertions)] use std::any::TypeId;
-    use crate::data::PTR_BITS_MASK_USIZE;
 
     #[cfg(debug_assertions)]
     #[inline(always)]
@@ -137,7 +136,7 @@ pub mod gen_impls {
         where T: 'static,
               Void: StaticBase<T>
     {
-        let boxed: Box<Wrapper<T>> = Box::from_raw((this as usize & PTR_BITS_MASK_USIZE) as *mut _);
+        let boxed: Box<Wrapper<T>> = Box::from_raw(this as *mut _);
         drop(boxed);
     }
 }

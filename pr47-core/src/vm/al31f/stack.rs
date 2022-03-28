@@ -19,7 +19,9 @@ impl StackSlice {
     }
 
     pub unsafe fn get_value_mut_ref(&self, idx: usize) -> *mut Value {
-        (*self.0)[idx].as_mut().unwrap() as *mut Value
+        // create empty, dummy value
+        let value: &mut Value = (*self.0)[idx].get_or_insert(Value::new_null());
+        value as *mut Value
     }
 }
 

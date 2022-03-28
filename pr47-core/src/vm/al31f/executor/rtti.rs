@@ -7,14 +7,14 @@ use crate::data::generic::GenericTypeVT;
 
 use crate::data::tyck::TyckInfo;
 use crate::data::Value;
-use crate::data::value_typed::ValueTypeTag;
+use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
 
 #[inline(never)]
 pub unsafe fn check_type(value: Value, tyck_info: NonNull<TyckInfo>) -> bool {
     match tyck_info.as_ref() {
         TyckInfo::AnyType => true,
         TyckInfo::Plain(plain) => if value.is_value() {
-            match ValueTypeTag::unsafe_from(value.vt_data.tag as u8) {
+            match ValueTypeTag::unsafe_from((value.vt_data.tag as u8) & VALUE_TYPE_TAG_MASK) {
                 ValueTypeTag::Int => *plain == TypeId::of::<i64>(),
                 ValueTypeTag::Float => *plain == TypeId::of::<f64>(),
                 ValueTypeTag::Char => *plain == TypeId::of::<char>(),

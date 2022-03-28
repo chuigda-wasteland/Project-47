@@ -177,7 +177,7 @@ impl Value {
 
     /// Assuming that `self` may be a custom pointer, get the untagged pointer
     #[inline(always)] pub unsafe fn untagged_ptr_field(&self) -> usize {
-        self.ptr_repr.ptr & !TAG_BITS_MASK_USIZE
+        self.ptr_repr.ptr & PTR_BITS_MASK_USIZE
     }
 
     /// Assuming that `self` may be a custom pointer, get the reference counting

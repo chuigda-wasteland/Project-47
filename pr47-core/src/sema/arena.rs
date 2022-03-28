@@ -60,6 +60,7 @@ impl<'s, T> ArenaPtr<'s, T>
     }
 
     #[inline(always)]
+    #[allow(unused)]
     pub(crate) fn get_tricky_mut<'a>(&self, arena: &'a mut Arena<'s>) -> &'a mut T {
         let r: &'a mut ASTNode<'s> = self.inner.get_tricky_mut(&mut arena.inner);
         unsafe { r.dyn_cast_mut() }
