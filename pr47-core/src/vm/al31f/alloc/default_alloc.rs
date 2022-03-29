@@ -171,12 +171,14 @@ impl Alloc for DefaultAlloc {
 
         while !to_scan.is_empty() {
             let value: Value = to_scan.pop_front().unwrap();
+            if value.is_null() || value.is_value() {
+                continue;
+            }
+
             let gc_info: u8 = value.gc_info() as u8;
             let ownership_info: u8 = value.ownership_info() as u8;
 
-            if value.is_null() ||
-                value.is_value() ||
-                (gc_info == DefaultGCStatus::Marked as u8) ||
+            if (gc_info == DefaultGCStatus::Marked as u8) ||
                 (ownership_info & OWN_INFO_COLLECT_MASK == 0) ||
                 (ownership_info & OWN_INFO_GLOBAL_MASK != 0)
             {
