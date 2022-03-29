@@ -2,11 +2,12 @@ use std::any::TypeId;
 use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
+
+use xjbutil::mem::move_to_heap;
 use xjbutil::unchecked::UncheckedCellOps;
-
 use xjbutil::void::Void;
-use crate::data::generic::GenericTypeVT;
 
+use crate::data::generic::GenericTypeVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::data::Value;
@@ -114,4 +115,10 @@ pub fn create_vm_vec_vt(
         children_fn: gen_impls::generic_children::<VMGenericVec>,
         drop_fn: gen_impls::generic_drop::<VMGenericVec>
     }
+}
+
+pub fn vec_ctor() -> *mut Wrapper<()> {
+    move_to_heap(Wrapper::new_owned(VMGenericVec {
+        inner: UnsafeCell::new(Vec::new())
+    })).as_ptr() as *mut _
 }
