@@ -511,6 +511,9 @@ impl Insc {
             Insc::EqRef(src1, src2, dst) => format!("%{} = eq ref %{}, %{}", dst, src1, src2),
             Insc::EqAny(src1, src2, dst) => format!("%{} = eq ? %{}, %{}", dst, src1, src2),
             Insc::MakeIntConst(int_const, dst) => format!("%{} = int ${}", dst, int_const),
+            Insc::MakeBoolConst(bool_const, dst) => format!("%{} = bool ${}", dst, bool_const),
+            Insc::MakeFloatConst(float_const, dst) => format!("%{} = float ${}", dst, float_const),
+            Insc::MakeNull(dst) => format!("%{} = null", dst),
             Insc::LoadConst(const_id, dst) => format!("%{} = load {}", dst, const_id),
             Insc::SaveConst(src, const_id) => format!("store {}, %{}", const_id, src),
             Insc::Call(func_id, args, rets) => {
