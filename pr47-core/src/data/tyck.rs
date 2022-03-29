@@ -31,6 +31,14 @@ pub enum TyckInfo {
 }
 
 impl TyckInfo {
+    pub fn is_any(&self) -> bool {
+        if let TyckInfo::AnyType = self {
+            true
+        } else {
+            false
+        }
+    }
+
     pub unsafe fn get_container_tyck_info_unchecked(&self) -> NonNull<ContainerTyckInfo> {
         if let TyckInfo::Container(container_tyck_info) = self {
             NonNull::new_unchecked(container_tyck_info as *const _ as *mut _)
