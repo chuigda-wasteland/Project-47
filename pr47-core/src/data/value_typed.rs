@@ -77,7 +77,7 @@ impl From<char> for ValueTypedData {
         Self {
             tag: ValueTypeTag::Char as usize | VALUE_TYPE_MASK as usize,
             inner: ValueTypedDataInner {
-                char_value
+                repr: char_value as _
             }
         }
     }
@@ -88,7 +88,7 @@ impl From<bool> for ValueTypedData {
         Self {
             tag: ValueTypeTag::Bool as usize | VALUE_TYPE_MASK as usize,
             inner: ValueTypedDataInner {
-                bool_value
+                repr: bool_value as _
             }
         }
     }
