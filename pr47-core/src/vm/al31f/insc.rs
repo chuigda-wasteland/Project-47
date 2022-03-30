@@ -600,6 +600,8 @@ impl Insc {
                 result
             },
             Insc::Raise(exception_loc) => format!("raise %{}", exception_loc),
+            Insc::CreateContainer(container_ctor, _, dst) =>
+                format!("%{} = create-container %{:x}", dst, container_ctor as *const _ as usize),
             Insc::CreateObject(dest) => format!("%{} = new object", dest),
             Insc::JumpIfTrue(condition, dest) => format!("if %{} goto L.{}", condition, dest),
             Insc::JumpIfFalse(condition, dest) => format!("if not %{} goto L.{}", condition, dest),
@@ -621,6 +623,15 @@ impl Insc {
                 result
             },
             Insc::TypeCheck(value_loc, _) => format!("type-check %{}", value_loc),
+            Insc::VecIndex(vec_loc, idx, dest) =>
+                format!("%{} = vec-index %{}, %{}", dest, vec_loc, idx),
+            Insc::VecIndexPut(vec_loc, idx, value_loc) =>
+                format!("vec-index-put %{}, %{}, %{}", vec_loc, idx, value_loc),
+            Insc::VecPush(vec_loc, value_loc) => format!("vec-push %{} %{}", vec_loc, value_loc),
+            Insc::ObjectGetDyn(obj_loc, field_name, dest) =>
+                format!("%{} = object-get %{}, %{}", dest, obj_loc, field_name),
+            Insc::ObjectPutDyn(obj_loc, field_name, value_loc) =>
+                format!("object-put %{}, %{}, %{}", obj_loc, field_name, value_loc),
             _ => "unimplemented insc".to_string()
         }
     }
