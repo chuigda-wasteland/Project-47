@@ -78,30 +78,6 @@ macro_rules! impl_rel_op {
     }
 }
 
-macro_rules! impl_checked_op2 {
-    (
-        $slice:ident,
-        $src1:ident,
-        $src2:ident,
-        $dst:ident,
-        $checked_op:expr,
-        $thread:expr,
-        $insc_ptr:expr
-    ) => {
-        {
-            let src1: Value = $slice.get_value(*$src1);
-            let src2: Value = $slice.get_value(*$src2);
-            let dst: &mut Value = &mut *$slice.get_value_mut_ref(*$dst);
-            if let Err(e /*: UncheckedException*/) = $checked_op($thread, src1, src2, dst) {
-                return Poll::Ready(Err(
-                    unchecked_exception_unwind_stack(e, &mut $thread.stack, $insc_ptr)
-                ));
-            }
-        }
-    }
-}
-
-
 macro_rules! impl_checked_bin_op {
     (
         $slice:ident,

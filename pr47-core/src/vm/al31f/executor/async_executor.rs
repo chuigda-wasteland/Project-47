@@ -193,7 +193,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             Insc::AddFloat(src1, src2, dst) =>
                 impl_float_binop![slice, src1, src2, dst, +],
             Insc::AddAny(src1, src2, dst) =>
-                impl_checked_op2![slice, src1, src2, dst, checked_add, thread, insc_ptr],
+                impl_checked_bin_op![slice, src1, src2, dst, checked_add, thread, insc_ptr],
             Insc::IncrInt(pos) => {
                 let v: Value = Value::new_int(slice.get_value(*pos).vt_data.inner.int_value + 1);
                 slice.set_value(*pos, v);
