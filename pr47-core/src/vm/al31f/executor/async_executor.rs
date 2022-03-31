@@ -408,7 +408,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             Insc::OwnershipInfoCheck(src, mask) => {
                 let src: Value = slice.get_value(*src);
-                if src.is_value() || (src.ownership_info() as u8) & mask == 0 {
+                if src.is_value() || ((src.ownership_info() as u8) & mask) != *mask {
                     return Poll::Ready(Err(unchecked_exception_unwind_stack(
                         UncheckedException::OwnershipCheckFailure {
                             object: src,

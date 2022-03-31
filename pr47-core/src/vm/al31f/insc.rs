@@ -4,6 +4,7 @@ use std::ptr::NonNull;
 
 use crate::data::generic::{GenericTypeCtor, GenericTypeVT};
 use crate::data::tyck::TyckInfo;
+use crate::data::wrapper::{OWN_INFO_COLLECT_MASK, OWN_INFO_GLOBAL_MASK, OWN_INFO_MOVE_MASK, OWN_INFO_OWNED_MASK, OWN_INFO_READ_MASK, OWN_INFO_WRITE_MASK};
 
 /// An VM instruction
 ///
@@ -601,7 +602,7 @@ impl Insc {
             },
             Insc::Raise(exception_loc) => format!("raise %{}", exception_loc),
             Insc::CreateContainer(container_ctor, _, dst) =>
-                format!("%{} = create-container %{:x}", dst, container_ctor as *const _ as usize),
+                format!("%{} = create-container <{:X}>", dst, container_ctor as *const _ as usize),
             Insc::CreateObject(dest) => format!("%{} = new object", dest),
             Insc::JumpIfTrue(condition, dest) => format!("if %{} goto L.{}", condition, dest),
             Insc::JumpIfFalse(condition, dest) => format!("if not %{} goto L.{}", condition, dest),
@@ -622,7 +623,21 @@ impl Insc {
                 }
                 result
             },
-            Insc::TypeCheck(value_loc, _) => format!("type-check %{}", value_loc),
+            Insc::TypeCheck(value_loc, tyck_info) =>
+                format!("type-check %{}, <{:X}>", value_loc, tyck_info.as_ptr() as usize),
+            Insc::OwnershipInfoCheck(value_loc, ownership_info) => {
+                let ownership_info = *ownership_info;
+                format!(
+                    "ownership-info-check %{}, <{}{}{}{}{}{}>",
+                    value_loc,
+                    if ownership_info & OWN_INFO_GLOBAL_MASK != 0 { "G" } else { "-" },
+                    if ownership_info & OWN_INFO_READ_MASK != 0 { "R" } else { "-" },
+                    if ownership_info & OWN_INFO_WRITE_MASK != 0 { "W" } else { "-" },
+                    if ownership_info & OWN_INFO_MOVE_MASK != 0 { "M" } else { "-" },
+                    if ownership_info & OWN_INFO_COLLECT_MASK != 0 { "C" } else { "-" },
+                    if ownership_info & OWN_INFO_OWNED_MASK != 0 { "O" } else { "-" },
+                )
+            }
             Insc::VecIndex(vec_loc, idx, dest) =>
                 format!("%{} = vec-index %{}, %{}", dest, vec_loc, idx),
             Insc::VecIndexPut(vec_loc, idx, value_loc) =>
@@ -632,6 +647,34 @@ impl Insc {
                 format!("%{} = object-get %{}, %{}", dest, obj_loc, field_name),
             Insc::ObjectPutDyn(obj_loc, field_name, value_loc) =>
                 format!("object-put %{}, %{}, %{}", obj_loc, field_name, value_loc),
+            Insc::Spawn(func_id, args) => {
+                let mut result: String = String::from("spawn F.");
+                result.push_str(&func_id.to_string());
+                result.push(' ');
+                for (i, arg) /*: (usize, &usize)*/ in args.iter().enumerate() {
+                    result.push('%');
+                    result.push_str(&arg.to_string());
+                    if i != args.len() - 1 {
+                        result.push(',');
+                        result.push(' ');
+                    }
+                }
+                result
+            },
+            Insc::Await(task_loc, dests) => {
+                let mut result = String::from("[");
+                for (i, dest) /*: (usize, &usize)*/ in dests.iter().enumerate() {
+                    result.push('%');
+                    result.push_str(&dest.to_string());
+                    if i != dests.len() - 1 {
+                        result.push(',');
+                        result.push(' ');
+                    }
+                }
+                result.push_str("] = await %");
+                result.push_str(&task_loc.to_string());
+                result
+            }
             _ => "unimplemented insc".to_string()
         }
     }

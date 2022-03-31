@@ -3,13 +3,14 @@ use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
-use tokio::task::JoinError;
 use xjbutil::void::Void;
 
 use crate::data::Value;
 use crate::data::generic::GenericTypeVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool, ContainerTyckInfo};
+
+#[cfg(feature = "async")] use tokio::task::JoinError;
 
 pub enum UncheckedException {
     AlreadyAwaited { promise: Value },
