@@ -1,6 +1,6 @@
 [package]
 name = "pr47"
-version = "0.1.3"
+version = "0.1.4-ALFA"
 authors = ["ICEY <icey@icey.tech>"]
 edition = "2018"
 description = "A semi-experimental programming language. Still working in progress."
@@ -13,7 +13,7 @@ pollster = "0.2"
 pr47-codegen = "0.0.2"
 smallvec = "1"
 unchecked_unwrap = "3"
-xjbutil = { version = "0.7.0-GOLF", git = "https://github.com/Pr47/xjbutil", default-features = false, features = [
+xjbutil = { version = "0.7.0", default-features = false, features = [
     "async",
     "defer",
     "display2",
