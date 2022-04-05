@@ -59,6 +59,7 @@ mod ops {
     use std::ptr::NonNull;
     use unchecked_unwrap::UncheckedUnwrap;
     use xjbutil::boxed_slice;
+    use xjbutil::unchecked::UncheckedCellOps;
 
     use crate::builtins::object::{Object, ObjectRef};
     use crate::data::tyck::{TyckInfo, TyckInfoPool};
@@ -97,7 +98,7 @@ mod ops {
             rets: &[*mut Value]
         ) -> Result<(), FFIException> {
             let object: Value = Value::new_owned(Object::new());
-            context.add_heap_managed(object.ptr_repr);
+            context.add_heap_managed(object);
             **rets.get_unchecked(0) = object;
             Ok(())
         }
@@ -128,6 +129,7 @@ mod ops {
             let field: &String = value_into_ref_noalias(*args.get_unchecked(1))?;
             let value = object_ref.ptr.as_ref()
                 .fields
+                .get_ref_unchecked()
                 .get(field)
                 .map(|x| *x)
                 .or(Some(Value::new_null()))
@@ -175,12 +177,11 @@ mod ops {
             let field: &String = value_into_ref_noalias(*args.get_unchecked(1))?;
             let value: Value = *args.get_unchecked(2);
 
-            if value.is_ref() {
-                context.mark(value.ptr_repr);
-            }
+            if value.is_ref() { context.mark(value); }
 
             object_ref.ptr.as_mut()
                 .fields
+                .get_mut_ref_unchecked()
                 .insert(field.clone(), value);
             Ok(())
         }

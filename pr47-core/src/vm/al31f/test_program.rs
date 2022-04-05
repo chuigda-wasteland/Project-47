@@ -469,6 +469,10 @@ pub fn bench_ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
 
 #[cfg(feature = "async")]
 #[inline(never)] async fn async_ffi_function() -> Result<String, std::io::Error> {
+    #[cfg(feature = "async-astd")]
+    return async_std::fs::read_to_string("./Cargo.toml").await;
+
+    #[cfg(feature = "async-tokio")]
     tokio::fs::read_to_string("./Cargo.toml").await
 }
 

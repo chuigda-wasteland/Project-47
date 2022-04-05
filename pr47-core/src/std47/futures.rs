@@ -181,6 +181,9 @@ impl AsyncFunctionBase for SleepMillisBind {
 
         let int_value: i64 = args.get_unchecked(0).vt_data.inner.int_value;
         let fut = async move {
+            #[cfg(feature = "async-astd")]
+            async_std::task::sleep(Duration::from_millis(int_value as u64)).await;
+            #[cfg(feature = "async-tokio")]
             tokio::time::sleep(Duration::from_millis(int_value as u64)).await;
             Box::new(AsyncRet()) as Box<dyn AsyncReturnType<A>>
         };

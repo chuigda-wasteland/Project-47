@@ -1,8 +1,6 @@
 use std::mem::transmute;
 use std::ptr::NonNull;
 
-use futures::TryFutureExt;
-use tokio::task::{JoinError, JoinHandle};
 use xjbutil::unchecked::{UncheckedSendFut, UncheckedSendSync};
 
 use crate::data::exception::{Exception, ExceptionInner, UncheckedException};
@@ -13,6 +11,11 @@ use crate::vm::al31f::compiled::CompiledProgram;
 use crate::vm::al31f::executor::{VMThread};
 use crate::vm::al31f::executor::{create_vm_child_thread, vm_thread_run_function};
 use crate::vm::al31f::stack::StackSlice;
+
+#[cfg(feature = "async-astd")] use std::convert::Infallible as JoinError;
+#[cfg(feature = "async-astd")] use async_std::task::JoinHandle;
+#[cfg(feature = "async-tokio")] use futures::TryFutureExt;
+#[cfg(feature = "async-tokio")] use tokio::task::{JoinError, JoinHandle};
 
 #[inline(never)]
 pub unsafe fn coroutine_spawn<A: Alloc>(
@@ -148,11 +151,13 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
             (func_id, arg_pack)
         ).await;
 
+        #[cfg(feature = "async-tokio")]
         let join_handle = join_handle.map_ok_or_else(
             |e| Box::new(AsyncRet::new_unchecked_exc(Exception::unchecked_exc(
                 UncheckedException::JoinError { inner: e }
             ))) as _,
-            |data| data);
+            |data| data
+        );
 
         let join_handle_promise: Promise<A> = Promise(Box::pin(join_handle));
         Box::new(AsyncRet2::new(join_handle_promise)) as Box<dyn AsyncReturnType<A>>

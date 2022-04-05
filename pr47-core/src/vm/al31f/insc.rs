@@ -457,7 +457,7 @@ pub enum Insc {
     /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned
     /// promise to `RET`. **No type checking**. Please note that when feature `optimized-rtlc`
     /// is enabled, all async FFI calls have RTLC.
-    #[cfg(all(feature = "async", feature = "optimized-rtlc"))]
+    #[cfg(feature = "async")]
     FFICallAsync(usize, &'static [usize], usize),
 
     /// `AWAIT [FUT] [RETS..]`

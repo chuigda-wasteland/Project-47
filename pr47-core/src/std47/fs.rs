@@ -1,7 +1,6 @@
 use std::any::TypeId;
 use std::ptr::NonNull;
 
-use tokio::fs::read_to_string;
 use xjbutil::boxed_slice;
 
 use crate::data::Value;
@@ -18,6 +17,9 @@ use crate::ffi::async_fn::{
 use crate::ffi::{DataOption, FFIException, Signature};
 use crate::ffi::async_fn::value_into_ref;
 use crate::vm::al31f::alloc::Alloc;
+
+#[cfg(feature = "async-astd")] use async_std::fs::read_to_string;
+#[cfg(feature = "async-tokio")] use tokio::fs::read_to_string;
 
 pub struct AsyncReadToStringBind();
 
@@ -42,6 +44,10 @@ impl AsyncFunctionBase for AsyncReadToStringBind {
         struct AsyncRet {
             #[allow(dead_code)]
             g: AsyncShareGuard,
+
+            #[cfg(feature = "async-astd")]
+            result: async_std::io::Result<String>,
+            #[cfg(feature = "async-tokio")]
             result: tokio::io::Result<String>
         }
 

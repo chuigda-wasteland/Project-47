@@ -12,7 +12,17 @@ use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
 use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
 use crate::vm::al31f::compiled::CompiledProgram;
 use crate::vm::al31f::executor::{VMThread, create_vm_main_thread, vm_thread_run_function};
-use crate::vm::al31f::test_program::{async_ffi_call_program, async_spawn_program, basic_fn_call_program, basic_program, exception_no_eh_program, exception_program, fibonacci_program, ffi_call_program, ffi_call_program2};
+use crate::vm::al31f::test_program::{
+    async_ffi_call_program,
+    async_spawn_program,
+    basic_fn_call_program,
+    basic_program,
+    exception_no_eh_program,
+    exception_program,
+    fibonacci_program,
+    ffi_call_program,
+    ffi_call_program2
+};
 
 async fn basic_program_eval() {
     let program: CompiledProgram<DefaultAlloc> = basic_program::<>();

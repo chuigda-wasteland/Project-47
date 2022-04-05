@@ -7,7 +7,15 @@ use crate::awa;
 use crate::diag::diag_data;
 use crate::diag::location::{SourceLoc, SourceRange};
 use crate::syntax::attr::Attribute;
-use crate::syntax::decl::{ConcreteExportDecl, ConcreteFuncDecl, ConcreteImportDecl, ConcreteObjectDecl, ConcreteOpenImportDecl, FunctionParam, OpenImportUsingItem};
+use crate::syntax::decl::{
+    ConcreteExportDecl,
+    ConcreteFuncDecl,
+    ConcreteImportDecl,
+    ConcreteObjectDecl,
+    ConcreteOpenImportDecl,
+    FunctionParam,
+    OpenImportUsingItem
+};
 use crate::syntax::expr::ConcreteExpr;
 use crate::syntax::id::Identifier;
 use crate::syntax::stmt::ConcreteCompoundStmt;

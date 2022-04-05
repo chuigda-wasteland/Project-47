@@ -10,7 +10,9 @@ use crate::data::generic::GenericTypeVT;
 use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool, ContainerTyckInfo};
 
-#[cfg(feature = "async")] use tokio::task::JoinError;
+#[cfg(feature = "async-astd")] use std::convert::Infallible as JoinError;
+#[cfg(feature = "async-tokio")] use tokio::task::JoinError;
+
 
 pub enum UncheckedException {
     AlreadyAwaited { promise: Value },

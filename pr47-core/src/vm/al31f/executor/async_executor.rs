@@ -619,7 +619,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     }
                 }
             },
-            #[cfg(all(feature = "optimized-rtlc", feature = "async"))]
+            #[cfg(feature = "async")]
             Insc::FFICallAsync(async_ffi_func_id, args, ret) => {
                 #[cfg(not(debug_assertions))]
                 let async_ffi_function: &'static dyn FFIAsyncFunction<A, _, _>
