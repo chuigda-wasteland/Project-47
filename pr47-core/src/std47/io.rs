@@ -63,18 +63,16 @@ impl FunctionBase for PrintBind {
                     ValueTypeTag::Char => print!("{}", arg.vt_data.inner.char_value),
                     ValueTypeTag::Bool => print!("{}", arg.vt_data.inner.bool_value)
                 }
+            } else if !arg.is_container() &&
+                arg.get_as_dyn_base().as_ref().unchecked_unwrap().dyn_type_id()
+                    == TypeId::of::<String>() {
+                print!("{}", &*(arg.get_as_mut_ptr_norm::<String>() as *const _));
             } else {
-                if !arg.is_container() &&
-                    arg.get_as_dyn_base().as_ref().unchecked_unwrap().dyn_type_id()
-                        == TypeId::of::<String>() {
-                    print!("{}", &*(arg.get_as_mut_ptr_norm::<String>() as *const _));
-                } else {
-                    print!("[object Object]");
-                }
+                print!("[object Object]");
             }
         }
         Ok(())
     }
 }
 
-pub const PRINT_BIND: &'static PrintBind = &PrintBind();
+pub const PRINT_BIND: &PrintBind = &PrintBind();

@@ -27,10 +27,8 @@ impl<'s, 'd> Parser<'s, 'd> {
                         Either::Right(global_attr) => program.global_attrs.push(global_attr)
                     }
                 }
-            } else {
-                if let Some(top_level_decl) = self.parse_top_level_decl() {
-                    program.decls.push(top_level_decl);
-                }
+            } else if let Some(top_level_decl) = self.parse_top_level_decl() {
+                program.decls.push(top_level_decl);
             }
         }
 
@@ -44,12 +42,10 @@ impl<'s, 'd> Parser<'s, 'd> {
 
         match self.current_token().token_inner {
             TokenInner::SymLBracket => {
-                self.parse_attributed_top_level_decl(hash_token)
-                    .map(|attributed_decl| Either::Left(attributed_decl))
+                self.parse_attributed_top_level_decl(hash_token).map(Either::Left)
             },
             TokenInner::SymExclaim => {
-                self.parse_attribute(hash_token, true, TOP_LEVEL_FIRST)
-                    .map(|global_attr| Either::Right(global_attr))
+                self.parse_attribute(hash_token, true, TOP_LEVEL_FIRST).map(Either::Right)
             },
             _ => {
                 self.diag.borrow_mut()
@@ -113,7 +109,7 @@ impl<'s, 'd> Parser<'s, 'd> {
             TokenInner::KwdConst => {
                 let const_token: Token<'s> = self.consume_token();
                 self.parse_object_decl(const_token, TOP_LEVEL_DECL_FAILSAFE)
-                    .map(|const_decl: ConcreteObjectDecl| ConcreteDecl::ConstDecl(const_decl))
+                    .map(ConcreteDecl::ConstDecl)
             },
             TokenInner::KwdVar => {
                 self.diag.borrow_mut()
@@ -126,24 +122,22 @@ impl<'s, 'd> Parser<'s, 'd> {
             TokenInner::KwdFunc => {
                 let func_token: Token<'s> = self.consume_token();
                 self.parse_func_decl(func_token, TOP_LEVEL_DECL_FAILSAFE)
-                    .map(|func_decl: ConcreteFuncDecl| ConcreteDecl::FuncDecl(func_decl))
+                    .map(ConcreteDecl::FuncDecl)
             },
             TokenInner::KwdExport => {
                 let export_token: Token<'s> = self.consume_token();
                 self.parse_export_decl(export_token, TOP_LEVEL_DECL_FAILSAFE)
-                    .map(|export_decl: ConcreteExportDecl| ConcreteDecl::ExportDecl(export_decl))
+                    .map(ConcreteDecl::ExportDecl)
             },
             TokenInner::KwdImport => {
                 let import_token: Token<'s> = self.consume_token();
                 self.parse_import_decl(import_token, TOP_LEVEL_DECL_FAILSAFE)
-                    .map(|import_decl: ConcreteImportDecl| ConcreteDecl::ImportDecl(import_decl))
+                    .map(ConcreteDecl::ImportDecl)
             },
             TokenInner::KwdOpen => {
                 let open_token: Token<'s> = self.consume_token();
                 self.parse_open_import_decl(open_token, TOP_LEVEL_DECL_FAILSAFE)
-                    .map(|open_import_decl: ConcreteOpenImportDecl| {
-                        ConcreteDecl::OpenImportDecl(open_import_decl)
-                    })
+                    .map(ConcreteDecl::OpenImportDecl)
             },
             _ => {
                 self.diag.borrow_mut()

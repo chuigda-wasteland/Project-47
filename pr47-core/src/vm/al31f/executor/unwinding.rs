@@ -18,7 +18,7 @@ pub unsafe fn unchecked_exception_unwind_stack(
     let mut exception: Exception = Exception::unchecked_exc(unchecked_exception);
 
     let mut insc_ptr: usize = insc_ptr;
-    while stack.frames.len() != 0 {
+    while !stack.frames.is_empty() {
         let last_frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
         exception.push_stack_trace(last_frame.func_id, insc_ptr);
         insc_ptr = last_frame.ret_addr.saturating_sub(1);
@@ -41,7 +41,7 @@ pub unsafe fn checked_exception_unwind_stack<A: Alloc>(
     let mut exception: Exception = Exception::checked_exc(checked_exception);
     let mut insc_ptr: usize = insc_ptr;
 
-    while stack.frames.len() != 0 {
+    while !stack.frames.is_empty() {
         let frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
         let func_id: usize = frame.func_id;
         exception.push_stack_trace(func_id, insc_ptr);

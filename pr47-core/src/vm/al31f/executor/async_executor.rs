@@ -156,7 +156,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
     }
 
     let slice: &mut StackSlice = &mut this.slice;
-    let thread: &mut VMThread<A> = &mut this.thread;
+    let thread: &mut VMThread<A> = this.thread;
     let program: &CompiledProgram<A> = thread.program.as_ref();
     let mut ffi_args: [Value; 32] = [Value::new_null(); 32];
     let mut ffi_rets: [*mut Value; 8] = [std::ptr::null_mut(); 8];
@@ -514,7 +514,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             Insc::Return(ret_values) => {
                 if let Some((prev_stack_slice, ret_addr)) =
-                    thread.stack.done_func_call_shrink_stack(&ret_values)
+                    thread.stack.done_func_call_shrink_stack(ret_values)
                 {
                     insc_ptr = ret_addr;
                     *slice = prev_stack_slice;
@@ -547,14 +547,14 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 if let Err(e /*: FFIException*/) = ffi_function.call_rtlc(
                     &mut combustor,
                     &ffi_args[0..args_len],
-                    &mut ffi_rets[0..ret_locs_len]
+                    &ffi_rets[0..ret_locs_len]
                 ) {
                     match e {
                         FFIException::Checked(checked) => {
                             let (new_slice, insc_ptr_next): (StackSlice, usize) =
                                 checked_exception_unwind_stack(
                                     get_vm!(thread),
-                                    &program,
+                                    program,
                                     checked,
                                     &mut thread.stack,
                                     insc_ptr
@@ -596,14 +596,14 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 if let Err(e /*: FFIException*/) = ffi_function.call_unchecked(
                     &mut combustor,
                     &ffi_args[0..args_len],
-                    &mut ffi_rets[0..ret_locs_len]
+                    &ffi_rets[0..ret_locs_len]
                 ) {
                     match e {
                         FFIException::Checked(checked) => {
                             let (new_slice, insc_ptr_next): (StackSlice, usize) =
                                 checked_exception_unwind_stack(
                                     get_vm!(thread),
-                                    &program,
+                                    program,
                                     checked,
                                     &mut thread.stack,
                                     insc_ptr
@@ -634,12 +634,12 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     *ffi_args.get_unchecked_mut(i) = slice.get_value(arg_idx);
                 }
 
-                let mut combustor: AsyncCombustor<A> = AsyncCombustor::new(
+                let combustor: AsyncCombustor<A> = AsyncCombustor::new(
                     thread.vm.serializer.clone(),
                     thread.program
                 );
 
-                match async_ffi_function.call_rtlc(&mut combustor, &ffi_args[0..args_len]) {
+                match async_ffi_function.call_rtlc(&combustor, &ffi_args[0..args_len]) {
                     Ok(promise /*: Promise*/) => {
                         let promise: Value = Value::new_owned(promise);
                         thread.vm.get_shared_data_mut().alloc.add_managed(promise);
@@ -651,7 +651,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                                 let (new_slice, insc_ptr_next): (StackSlice, usize) =
                                     checked_exception_unwind_stack(
                                         get_vm!(thread),
-                                        &program,
+                                        program,
                                         checked,
                                         &mut thread.stack,
                                         insc_ptr
@@ -703,7 +703,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 let (new_slice, insc_ptr_next): (StackSlice, usize) =
                     checked_exception_unwind_stack(
                         get_vm!(thread),
-                        &program,
+                        program,
                         exception,
                         &mut thread.stack,
                         insc_ptr
@@ -825,7 +825,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::StrConcat(sources, dest) => {
                 let mut buffer: String = String::new();
-                for src in sources.into_iter() {
+                for src in sources.iter() {
                     let src: &String = &*(slice.get_value(*src).get_as_mut_ptr_norm() as *const _);
                     buffer.push_str(src);
                 }

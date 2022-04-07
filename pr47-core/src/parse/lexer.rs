@@ -147,7 +147,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
     }
 
     pub fn prev_mode(&self) -> LexerMode {
-        if self.mode.len() == 0 {
+        if self.mode.is_empty() {
             unreachable!("lexer does not have a mode")
         }
 
@@ -261,15 +261,11 @@ impl<'a, 'b> Lexer<'a, 'b> {
         let start_loc: SourceLoc = self.current_loc();
         let (_, start_idx): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
         self.next_char();
-        loop {
-            if let Some((ch, _) /*: (char, usize)*/) = self.cur_char() {
-                if !part_of_identifier(ch) {
-                    break;
-                }
-                self.next_char();
-            } else {
+        while let Some((ch, _) /*: (char, usize)*/) = self.cur_char() {
+            if !part_of_identifier(ch) {
                 break;
             }
+            self.next_char();
         }
 
         let end_loc: SourceLoc = self.current_loc();
@@ -421,17 +417,18 @@ impl<'a, 'b> Lexer<'a, 'b> {
 
         let end_loc: SourceLoc = self.current_loc();
 
-        if hex_lit.len() == 0 {
+        if hex_lit.is_empty() {
             self.diag.borrow_mut()
                 .diag(end_loc, diag_data::err_empty_literal)
                 .add_mark(end_loc.into())
                 .emit();
             return Token::new_lit_int(0, SourceRange::from_loc_pair(start_loc, end_loc));
         }
-        return Token::new_lit_int(
+
+        Token::new_lit_int(
             u64::from_str_radix(&hex_lit, radix).unwrap(),
             SourceRange::from_loc_pair(start_loc, end_loc)
-        );
+        )
     }
 
     fn lex_float_lit(&mut self, start_loc: SourceLoc, integral_part: String) -> Token<'a> {
@@ -471,7 +468,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
                 }
             }
         }
-        let exponent: u64 = if exponent == "" || exponent == "+" || exponent == "-" {
+        let exponent: u64 = if exponent.is_empty() || exponent == "+" || exponent == "-" {
             self.diag.borrow_mut()
                 .diag(self.current_loc(),
                       diag_data::err_empty_float_exponent)
@@ -531,7 +528,8 @@ impl<'a, 'b> Lexer<'a, 'b> {
             .add_mark(string_end_loc.into())
             .emit();
         let str: &'a str = unsafe { self.slice_source(start_loc.offset, string_end_loc.offset) };
-        return Token::new_lit_str(str, SourceRange::from_loc_pair(start_loc, string_end_loc));
+
+        Token::new_lit_str(str, SourceRange::from_loc_pair(start_loc, string_end_loc))
     }
 
     pub fn lex_raw_string_lit(&mut self) -> Token<'a> {

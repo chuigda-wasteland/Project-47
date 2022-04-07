@@ -79,7 +79,7 @@ pub struct Stack {
     pub frames: Vec<FrameInfo>
 }
 
-pub const EMPTY_RET_LOCS_SLICE: &'static [usize] = &[];
+pub const EMPTY_RET_LOCS_SLICE: &[usize] = &[];
 
 #[cfg(debug_assertions)]
 impl Stack {

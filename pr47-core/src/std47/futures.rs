@@ -78,7 +78,7 @@ impl AsyncFunctionBase for JoinBind {
         }
 
         let futs: SmallVec<[Pin<Box<dyn Future<Output=PromiseResult<A>> + Send>>; 4]> =
-            args.into_iter()
+            args.iter()
                 .map(|arg: &Value| value_move_out_norm_noalias::<Promise<A>>(*arg))
                 .map(|Promise(fut)| fut)
                 .collect();
@@ -92,7 +92,7 @@ impl AsyncFunctionBase for JoinBind {
     }
 }
 
-pub const JOIN_BIND: &'static JoinBind = &JoinBind();
+pub const JOIN_BIND: &JoinBind = &JoinBind();
 
 pub struct SelectBind();
 
@@ -132,7 +132,7 @@ impl AsyncFunctionBase for SelectBind {
         }
 
         let futs: SmallVec<[Pin<Box<dyn Future<Output=PromiseResult<A>> + Send>>; 4]> =
-            args.into_iter()
+            args.iter()
                 .map(|arg: &Value| value_move_out_norm_noalias::<Promise<A>>(*arg))
                 .map(|Promise(fut)| fut)
                 .collect();
@@ -146,7 +146,7 @@ impl AsyncFunctionBase for SelectBind {
     }
 }
 
-pub const SELECT_BIND: &'static SelectBind = &SelectBind();
+pub const SELECT_BIND: &SelectBind = &SelectBind();
 
 pub struct SleepMillisBind();
 
@@ -192,4 +192,4 @@ impl AsyncFunctionBase for SleepMillisBind {
     }
 }
 
-pub const SLEEP_MS_BIND: &'static SleepMillisBind = &SleepMillisBind();
+pub const SLEEP_MS_BIND: &SleepMillisBind = &SleepMillisBind();

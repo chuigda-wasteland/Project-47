@@ -5,7 +5,6 @@ pub mod source;
 #[cfg(feature = "compiler-pretty-diag")] pub mod prettier;
 
 use std::fmt::Formatter;
-use std::mem::replace;
 
 use smallvec::SmallVec;
 use xjbutil::display2;
@@ -196,7 +195,7 @@ impl DiagContext {
         self.has_diag = false;
         self.has_error = false;
 
-        return replace(&mut self.diags, vec![])
+        std::mem::take(&mut self.diags)
     }
 }
 

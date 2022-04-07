@@ -1,3 +1,5 @@
+#![allow(clippy::unusual_byte_groupings)]
+
 use xjbutil::unchecked::UnsafeFrom;
 
 pub const VALUE_TYPE_MASK: u8     = 0b00_000_001;

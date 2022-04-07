@@ -42,9 +42,7 @@ impl StaticBase<VMGenericVec> for Void {
 
     fn children(vself: *const VMGenericVec) -> ChildrenType {
         unsafe {
-            let iter = Box::new((*vself).inner.get_ref_unchecked()
-                .iter()
-                .map(|value: &Value| *value));
+            let iter = Box::new((*vself).inner.get_ref_unchecked().iter().copied());
             Some(iter)
         }
     }
@@ -84,9 +82,7 @@ impl<T> StaticBase<VMVec<T>> for Void
 
     fn children(vself: *const VMVec<T>) -> ChildrenType {
         unsafe {
-            let iter = Box::new((*vself).inner.inner.get_ref_unchecked()
-                .iter()
-                .map(|value: &Value| *value));
+            let iter = Box::new((*vself).inner.inner.get_ref_unchecked().iter().copied());
             Some(iter)
         }
     }

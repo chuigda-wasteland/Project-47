@@ -67,7 +67,7 @@ impl SourceManager {
     }
 
     fn maybe_compute_source_map(&self, file_id: usize) {
-        if let None = unsafe { self.source_maps[file_id].get_ref_unchecked() } {
+        if unsafe { self.source_maps[file_id].get_ref_unchecked() }.is_none() {
             let file_content: &str = &self.file_contents[file_id as usize];
             let mut line_offsets: SmallVec<[usize; 128]> = SmallVec::new();
             line_offsets.push(0);

@@ -50,7 +50,7 @@ impl<'s, 'd> ExprVisitor<'s> for SemaPhase2<'s, 'd> {
             content: literal_expr.content,
             ty,
             concrete: &literal_expr
-        }, &self.arena);
+        }, self.arena);
         Some(Expr::LiteralExpr(literal_expr))
     }
 

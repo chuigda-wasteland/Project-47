@@ -43,7 +43,7 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
     impl AsyncRet {
         pub fn new_in<A: Alloc>(ret: Result<Vec<Value>, Exception>, alloc: &mut A) -> Self {
             let pinned: *mut bool = match &ret {
-                Ok(values) => unsafe { alloc.pin_objects(&values) },
+                Ok(values) => unsafe { alloc.pin_objects(values) },
                 Err(e) => match e.inner {
                     ExceptionInner::Checked(e) => unsafe { alloc.pin_objects(&[e]) },
                     _ => std::ptr::null_mut()

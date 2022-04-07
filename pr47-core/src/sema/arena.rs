@@ -24,7 +24,7 @@ pub struct ArenaPtr<'s, T: 's> {
 impl<'s, T: 's> Clone for ArenaPtr<'s, T> {
     fn clone(&self) -> Self {
         ArenaPtr {
-            inner: self.inner.clone(),
+            inner: self.inner,
             _phantom: PhantomData
         }
     }

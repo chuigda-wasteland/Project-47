@@ -11,6 +11,7 @@ pub trait GenericTypeRef {
     unsafe fn create_ref(wrapper_ptr: *mut Wrapper<()>) -> Self;
 }
 
+#[allow(clippy::unusual_byte_groupings)]
 pub const GENERIC_TYPE_MASK: u8 = 0b00000_010;
 
 #[cfg(debug_assertions)]

@@ -89,7 +89,7 @@ impl<'s, 'd> Parser<'s, 'd> {
                     DiagMark::from(self.current_token().range).add_comment("unexpected token")
                 )
                 .emit();
-            if skip_on_failure.len() != 0 {
+            if !skip_on_failure.is_empty() {
                 self.skip_to_any_of(skip_on_failure);
             }
             None
@@ -104,7 +104,7 @@ impl<'s, 'd> Parser<'s, 'd> {
         token_kind: TokenInner<'_>,
         skip_on_failure: &[&[TokenInner<'_>]]
     ) -> Option<Token<'s>> {
-        if let Some(_) = self.expect_token(token_kind, skip_on_failure) {
+        if self.expect_token(token_kind, skip_on_failure).is_some() {
             Some(self.consume_token())
         } else {
             None
@@ -171,7 +171,7 @@ impl<'s, 'd> Parser<'s, 'd> {
     }
 }
 
-const TOP_LEVEL_DECL_FIRST: &'static [TokenInner<'static>] = &[
+const TOP_LEVEL_DECL_FIRST: &[TokenInner<'static>] = &[
     TokenInner::KwdConst,
     TokenInner::KwdExport,
     TokenInner::KwdFunc,
@@ -179,13 +179,13 @@ const TOP_LEVEL_DECL_FIRST: &'static [TokenInner<'static>] = &[
     TokenInner::KwdOpen,
 ];
 
-const ATTR_FIRST: &'static [TokenInner<'static>] = &[TokenInner::SymHash];
+const ATTR_FIRST: &[TokenInner<'static>] = &[TokenInner::SymHash];
 
-const TOP_LEVEL_FIRST: &'static [&'static [TokenInner<'static>]] = &[
+const TOP_LEVEL_FIRST: &[&[TokenInner<'static>]] = &[
     TOP_LEVEL_DECL_FIRST,
     ATTR_FIRST
 ];
 
-const TOP_LEVEL_DECL_FAILSAFE: &'static [&'static [TokenInner<'static>]] = &[
+const TOP_LEVEL_DECL_FAILSAFE: &[&[TokenInner<'static>]] = &[
     TOP_LEVEL_DECL_FIRST
 ];
