@@ -145,11 +145,9 @@ impl Alloc for DefaultAlloc {
 
         for stack /*: &*const Stack*/ in self.stacks.iter() {
             #[cfg(debug_assertions)]
-            for stack_value /*: &Option<Value>*/ in (**stack).values.iter() {
-                if let Some(stack_value /*: &Value*/) = stack_value {
-                    if !stack_value.is_null() && !stack_value.is_value() {
-                        to_scan.push_back(*stack_value);
-                    }
+            for stack_value /*: &Value*/ in (**stack).values.iter().flatten() {
+                if !stack_value.is_null() && !stack_value.is_value() {
+                    to_scan.push_back(*stack_value);
                 }
             }
 

@@ -92,4 +92,4 @@ impl AsyncFunctionBase for AsyncReadToStringBind {
     }
 }
 
-pub const ASYNC_READ_TO_STRING_BIND: &'static AsyncReadToStringBind = &AsyncReadToStringBind();
+pub const ASYNC_READ_TO_STRING_BIND: &AsyncReadToStringBind = &AsyncReadToStringBind();

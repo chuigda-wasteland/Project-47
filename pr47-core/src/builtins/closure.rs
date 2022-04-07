@@ -29,7 +29,7 @@ impl StaticBase<Closure> for Void {
 
     #[inline] fn children(vself: *const Closure) -> ChildrenType {
         let vself: &Closure = unsafe { &*vself };
-        Some(Box::new(vself.captures.iter().map(|v: &Value| *v)))
+        Some(Box::new(vself.captures.iter().copied()))
     }
 }
 

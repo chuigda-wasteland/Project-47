@@ -34,6 +34,7 @@ pub const fn is_error(code: u32) -> bool {
     code >= err_commence_placeholder && code < warn_commence_placeholder
 }
 
+#[allow(clippy::match_single_binding)]
 pub const fn diag_message(code: u32) -> &'static str {
     if code > warn_commence_placeholder {
         match code {

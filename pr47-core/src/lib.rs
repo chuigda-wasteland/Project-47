@@ -6,6 +6,15 @@
 //! VM runtime. So we are making as many things public as possible. This situation may change in the
 //! future so watch your back.
 
+#![allow(
+    clippy::unusual_byte_groupings,
+    clippy::type_complexity,
+    clippy::missing_safety_doc,
+    clippy::new_without_default,
+    clippy::match_like_matches_macro,
+    clippy::not_unsafe_ptr_arg_deref
+)]
+
 pub mod builtins;
 pub mod data;
 pub mod ffi;

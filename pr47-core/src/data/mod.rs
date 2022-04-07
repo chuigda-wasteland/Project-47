@@ -24,7 +24,6 @@ use std::fmt::{Debug, Formatter};
 #[cfg(any(test, feature = "bench"))]
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
 
-#[allow(clippy::unusual_byte_groupings)]
 pub const TAG_BITS_MASK: u8 = 0b00000_111;
 pub const TAG_BITS_MASK_USIZE: usize = TAG_BITS_MASK as usize;
 

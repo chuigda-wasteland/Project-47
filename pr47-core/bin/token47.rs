@@ -9,10 +9,7 @@ use pr47::parse::lexer::Lexer;
 use pr47::syntax::token::{Token, TokenInner};
 
 fn main() {
-    let args: Vec<String> = std::env::args()
-        .into_iter()
-        .map(|arg| arg.to_string())
-        .collect::<_>();
+    let args: Vec<String> = std::env::args().into_iter().collect::<_>();
     if args.len() != 2 {
         eprintln!("Program usage: token47 [filename]");
         return;

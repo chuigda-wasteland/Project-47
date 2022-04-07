@@ -121,6 +121,8 @@ impl<'s, 'd> SyntaxActionApplier<'s, 'd> {
         }
     }
 
+    // TODO remove this once this function is completed
+    #[allow(clippy::collapsible_match)]
     fn resolve_open_import(
         &mut self,
         imported_items: &mut HashMap<&'s str, (&'s str, &'s str)>,

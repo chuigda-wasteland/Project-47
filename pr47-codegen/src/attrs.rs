@@ -5,7 +5,7 @@ pub(crate) fn parse_function_bind_attrs(attr: TokenStream) -> Result<Vec<String>
     for token in attr.into_iter() {
         match token {
             TokenTree::Group(group) => {
-                return Err(format!("unexpected function binder parameter: {}", group.to_string()))
+                return Err(format!("unexpected function binder parameter: {}", group))
             }
             TokenTree::Ident(ident) => {
                 ret.push(ident.to_string())

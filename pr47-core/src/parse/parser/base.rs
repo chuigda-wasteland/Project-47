@@ -53,7 +53,7 @@ impl<'s, 'd> Parser<'s, 'd> {
         failsafe_set: &[&[TokenInner<'_>]]
     ) -> Option<Identifier<'s>> {
         let parse_result: Option<Identifier<'s>> = self.parse_unqual_ident();
-        if let None = parse_result {
+        if parse_result.is_none() {
             self.skip_to_any_of(failsafe_set);
         }
         parse_result

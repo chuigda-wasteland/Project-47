@@ -12,7 +12,7 @@
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::future::Future;
-use std::mem::{replace, transmute};
+use std::mem::transmute;
 use std::sync::Arc;
 
 use futures::future::JoinAll;
@@ -111,7 +111,7 @@ impl CoroutineSharedData {
     /// Retrieve all tasks and their "completion signal receiver", cleaning internal storage of
     /// `SharedContext`. This is used by main task to `await` for all running child tasks.
     pub fn retrieve_all_tasks(&mut self) -> HashMap<u32, Receiver<()>> {
-        replace(&mut self.running_tasks, HashMap::new())
+        std::mem::take(&mut self.running_tasks)
     }
 
     /// Allocate one task ID.
@@ -235,7 +235,7 @@ impl<SD: 'static + Send> CoroutineContext<SD> {
             unsafe {
                 let running_tasks: HashMap<u32, Receiver<()>> =
                     self.permit.get_mut_ref_unchecked().get_mut().0.retrieve_all_tasks();
-                if running_tasks.len() == 0 {
+                if running_tasks.is_empty() {
                     break;
                 }
                 let fut: JoinAll<_ /*: impl Future<Output=()>*/> = join_all(

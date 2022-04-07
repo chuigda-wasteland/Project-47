@@ -1,5 +1,3 @@
-#![allow(clippy::unusual_byte_groupings)]
-
 use std::any::TypeId;
 use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::addr_of;
