@@ -10,7 +10,7 @@ use crate::parse::lexer::LexerMode;
 use crate::parse::parser::TOP_LEVEL_FIRST;
 use crate::syntax::ConcreteProgram;
 use crate::syntax::attr::Attribute;
-use crate::syntax::decl::{ConcreteDecl, ConcreteExportDecl, ConcreteFuncDecl, ConcreteImportDecl, ConcreteObjectDecl, ConcreteOpenImportDecl};
+use crate::syntax::decl::ConcreteDecl;
 use crate::syntax::token::{Token, TokenInner};
 
 impl<'s, 'd> Parser<'s, 'd> {

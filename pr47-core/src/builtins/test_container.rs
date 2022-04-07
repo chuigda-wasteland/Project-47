@@ -62,7 +62,7 @@ impl<T: 'static> TestContainer<T>
     pub fn new() -> Self {
         Self {
             inner: GenericTestContainer::new(),
-            _phantom: PhantomData::default()
+            _phantom: PhantomData
         }
     }
 }

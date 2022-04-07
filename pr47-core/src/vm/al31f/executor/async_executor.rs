@@ -6,7 +6,7 @@ use std::task::{Context, Poll};
 
 use smallvec::{SmallVec, smallvec};
 use xjbutil::mem::move_to_heap;
-use xjbutil::unchecked::{UncheckedCellOps, UncheckedSendSync};
+use xjbutil::unchecked::UncheckedSendSync;
 use xjbutil::wide_ptr::WidePointer;
 
 use crate::builtins::closure::Closure;
@@ -757,8 +757,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::CreateObject(dest) => {
-                let object: Object = Object::new();
-                let object: Value = Value::new_owned(object);
+                let object: Value = Value::new_unpin(Object::new);
                 get_vm!(thread).alloc.add_managed(object);
                 slice.set_value(*dest, object);
             },
@@ -767,7 +766,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 let vec_value: Value = slice.get_value(*src);
                 let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr() as *const _);
                 let index: i64 = slice.get_value(*index).vt_data.inner.int_value;
-                if let Some(data) = vec.inner.get_ref_unchecked().get(index as usize) {
+                if let Some(data) = vec.inner.get(index as usize) {
                     slice.set_value(*dst, *data);
                 } else {
                     return Poll::Ready(Err(
@@ -782,9 +781,9 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecIndexPut(src, index, value) => {
                 let vec_value: Value = slice.get_value(*src);
-                let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr() as *const _);
+                let vec: &mut VMGenericVec = &mut *(vec_value.get_as_mut_ptr());
                 let index: i64 = slice.get_value(*index).vt_data.inner.int_value;
-                if let Some(data) = vec.inner.get_mut_ref_unchecked().get_mut(index as usize) {
+                if let Some(data) = vec.inner.get_mut(index as usize) {
                     let value: Value = slice.get_value(*value);
                     get_vm!(thread).alloc.mark_object(value);
                     *data = value;
@@ -801,16 +800,16 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecPush(src, data) => {
                 let vec_value: Value = slice.get_value(*src);
-                let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr() as *const _);
+                let vec: &mut VMGenericVec = &mut *(vec_value.get_as_mut_ptr());
                 let data: Value = slice.get_value(*data);
                 get_vm!(thread).alloc.mark_object(data);
-                vec.inner.get_mut_ref_unchecked().push(data);
+                vec.inner.push(data);
             },
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::VecLen(src, dst) => {
                 let vec_value: Value = slice.get_value(*src);
                 let vec: &VMGenericVec = &*(vec_value.get_as_mut_ptr() as *const _);
-                slice.set_value(*dst, Value::new_int(vec.inner.get_ref_unchecked().len() as i64));
+                slice.set_value(*dst, Value::new_int(vec.inner.len() as i64));
             },
 
             #[cfg(feature = "al31f-builtin-ops")]
@@ -850,7 +849,6 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             Insc::ObjectGet(src, field, dest) => {
                 let object: &Object = &*(slice.get_value(*src).get_as_mut_ptr_norm() as *const _);
                 let value: Value = *object.fields
-                    .get_ref_unchecked()
                     .get(field.as_ref())
                     .unwrap_or(&Value::new_null());
                 slice.set_value(*dest, value);
@@ -860,7 +858,6 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 let object: &Object = &*(slice.get_value(*src).get_as_mut_ptr_norm() as *const _);
                 let field: &String = &*(slice.get_value(*field).get_as_mut_ptr_norm() as *const _);
                 let value: Value = *object.fields
-                    .get_ref_unchecked()
                     .get(field)
                     .unwrap_or(&Value::new_null());
                 slice.set_value(*dest, value);
@@ -870,7 +867,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 let object: &mut Object = &mut *(slice.get_value(*src).get_as_mut_ptr_norm());
                 let data: Value = slice.get_value(*data);
                 get_vm!(thread).alloc.mark_object(data);
-                object.fields.get_mut_ref_unchecked().insert(field.as_ref().to_string(), data);
+                object.fields.insert(field.as_ref().to_string(), data);
             },
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::ObjectPutDyn(src, field, data) => {
@@ -878,7 +875,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 let field: &String = &*(slice.get_value(*field).get_as_mut_ptr_norm() as *const _);
                 let data: Value = slice.get_value(*data);
                 get_vm!(thread).alloc.mark_object(data);
-                object.fields.get_mut_ref_unchecked().insert(field.to_string(), data);
+                object.fields.insert(field.to_string(), data);
             }
         }
     }

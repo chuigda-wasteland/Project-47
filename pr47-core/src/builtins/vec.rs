@@ -1,10 +1,8 @@
 use std::any::TypeId;
-use std::cell::UnsafeCell;
-use std::marker::PhantomData;
+use std::marker::{PhantomData, PhantomPinned};
 use std::ptr::NonNull;
 
-use xjbutil::mem::move_to_heap;
-use xjbutil::unchecked::UncheckedCellOps;
+use xjbutil::std_ext::BoxedExt;
 use xjbutil::void::Void;
 
 use crate::data::generic::GenericTypeVT;
@@ -15,7 +13,17 @@ use crate::data::wrapper::Wrapper;
 
 #[repr(transparent)]
 pub struct VMGenericVec {
-    pub inner: UnsafeCell<Vec<Value>>
+    pub(crate) inner: Vec<Value>,
+    _pinned: PhantomPinned
+}
+
+impl VMGenericVec {
+    fn new() -> Self {
+        Self {
+            inner: Vec::new(),
+            _pinned: PhantomPinned
+        }
+    }
 }
 
 impl StaticBase<VMGenericVec> for Void {
@@ -42,7 +50,7 @@ impl StaticBase<VMGenericVec> for Void {
 
     fn children(vself: *const VMGenericVec) -> ChildrenType {
         unsafe {
-            let iter = Box::new((*vself).inner.get_ref_unchecked().iter().copied());
+            let iter = Box::new((*vself).inner.iter().copied());
             Some(iter)
         }
     }
@@ -50,7 +58,7 @@ impl StaticBase<VMGenericVec> for Void {
 
 #[repr(transparent)]
 pub struct VMVec<T: 'static> {
-    pub inner: VMGenericVec,
+    pub(crate) repr: VMGenericVec,
     _phantom: PhantomData<T>
 }
 
@@ -82,15 +90,10 @@ impl<T> StaticBase<VMVec<T>> for Void
 
     fn children(vself: *const VMVec<T>) -> ChildrenType {
         unsafe {
-            let iter = Box::new((*vself).inner.inner.get_ref_unchecked().iter().copied());
+            let iter = Box::new((*vself).repr.inner.iter().copied());
             Some(iter)
         }
     }
-}
-
-pub struct VMVecRef<T: 'static> {
-    pub ptr: *mut Wrapper<()>,
-    _phantom: PhantomData<T>
 }
 
 pub fn create_vm_vec_vt(
@@ -114,7 +117,5 @@ pub fn create_vm_vec_vt(
 }
 
 pub fn vec_ctor() -> *mut Wrapper<()> {
-    move_to_heap(Wrapper::new_owned(VMGenericVec {
-        inner: UnsafeCell::new(Vec::new())
-    })).as_ptr() as *mut _
+    Wrapper::new_unpin(VMGenericVec::new).leak_as_nonnull().as_ptr() as *mut _
 }

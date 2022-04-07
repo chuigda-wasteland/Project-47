@@ -1,24 +1,22 @@
-use std::cell::UnsafeCell;
 use std::collections::HashMap;
-use std::ptr::NonNull;
-use xjbutil::unchecked::UncheckedCellOps;
+use std::marker::PhantomPinned;
 
 use xjbutil::void::Void;
-use crate::data::generic::GenericTypeRef;
 
 use crate::data::Value;
 use crate::data::traits::{ChildrenType, StaticBase};
-use crate::data::wrapper::{OWN_INFO_OWNED_MASK, Wrapper};
 
 #[repr(transparent)]
 pub struct Object {
-    pub(crate) fields: UnsafeCell<HashMap<String, Value>>
+    pub(crate) fields: HashMap<String, Value>,
+    _pin: PhantomPinned
 }
 
 impl Object {
     pub fn new() -> Self {
         Self {
-            fields: UnsafeCell::new(HashMap::new())
+            fields: HashMap::new(),
+            _pin: PhantomPinned
         }
     }
 }
@@ -28,28 +26,8 @@ impl StaticBase<Object> for Void {
 
     #[inline] fn children(vself: *const Object) -> ChildrenType {
         unsafe {
-            let iter = Box::new((*vself).fields.get_ref_unchecked()
-                .iter()
-                .map(|(_, value): (_, &Value)| *value));
+            let iter = Box::new((*vself).fields.iter().map(|(_, value): (_, &Value)| *value));
             Some(iter)
-        }
-    }
-}
-
-pub struct ObjectRef {
-    pub ptr: NonNull<Object>
-}
-
-impl GenericTypeRef for ObjectRef {
-    unsafe fn create_ref(wrapper_ptr: *mut Wrapper<()>) -> Self {
-        if (*wrapper_ptr).ownership_info & OWN_INFO_OWNED_MASK != 0 {
-            Self {
-                ptr: NonNull::new_unchecked(&mut (*wrapper_ptr).data.owned as *mut _ as _)
-            }
-        } else {
-            Self {
-                ptr: NonNull::new_unchecked((*wrapper_ptr).data.ptr as _)
-            }
         }
     }
 }
