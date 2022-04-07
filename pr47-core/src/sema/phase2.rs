@@ -49,7 +49,7 @@ impl<'s, 'd> ExprVisitor<'s> for SemaPhase2<'s, 'd> {
         let literal_expr: ArenaPtr<'s, LiteralExpr<'s>> = ArenaPtr::new_in(LiteralExpr {
             content: literal_expr.content,
             ty,
-            concrete: &literal_expr
+            concrete: literal_expr
         }, self.arena);
         Some(Expr::LiteralExpr(literal_expr))
     }
