@@ -111,21 +111,6 @@ impl<T: 'static> Wrapper<T> {
         ret
     }
 
-    pub fn new_unpin(ctor: fn() -> T) -> Box<Self> {
-        let mut ret: Box<Wrapper<T>> = Box::new(Self {
-            refcount: 0,
-            ownership_info: OwnershipInfo::VMOwned as u8,
-            gc_info: 0,
-            data_offset: 0,
-            ownership_info2: 0,
-            data: WrapperData {
-                owned: ManuallyDrop::new(MaybeUninit::new(ctor()))
-            }
-        });
-        ret.data_offset = (addr_of!(ret.data) as usize - addr_of!(ret) as usize) as u8;
-        ret
-    }
-
     pub fn new_ref(ptr: *const T) -> Self {
         let mut ret: Wrapper<T> = Self {
             refcount: 1,

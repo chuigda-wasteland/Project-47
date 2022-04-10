@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::marker::{PhantomData, PhantomPinned};
 use std::ptr::NonNull;
 
-use xjbutil::std_ext::BoxedExt;
+use xjbutil::mem::move_to_heap;
 use xjbutil::void::Void;
 
 use crate::data::generic::GenericTypeVT;
@@ -117,5 +117,5 @@ pub fn create_vm_vec_vt(
 }
 
 pub fn vec_ctor() -> *mut Wrapper<()> {
-    Wrapper::new_unpin(VMGenericVec::new).leak_as_nonnull().as_ptr() as *mut _
+    move_to_heap(Wrapper::new_owned(VMGenericVec::new())).as_ptr() as *mut _
 }

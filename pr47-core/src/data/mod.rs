@@ -21,7 +21,6 @@ use crate::data::wrapper::{DynBase, OwnershipInfo, Wrapper};
 
 #[cfg(any(test, feature = "bench"))]
 use std::fmt::{Debug, Formatter};
-use xjbutil::std_ext::BoxedExt;
 #[cfg(any(test, feature = "bench"))]
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
 
@@ -79,15 +78,6 @@ impl Value {
     {
         Self {
             ptr: move_to_heap(Wrapper::new_owned(data)).as_ptr()
-        }
-    }
-
-    pub fn new_unpin<T>(ctor: fn() -> T) -> Self
-        where T: 'static,
-              Void: StaticBase<T>
-    {
-        Self {
-            ptr: Wrapper::new_unpin(ctor).leak_as_nonnull().as_ptr()
         }
     }
 

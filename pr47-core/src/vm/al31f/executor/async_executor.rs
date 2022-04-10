@@ -757,7 +757,8 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             },
             #[cfg(feature = "al31f-builtin-ops")]
             Insc::CreateObject(dest) => {
-                let object: Value = Value::new_unpin(Object::new);
+                let object: Object = Object::new();
+                let object: Value = Value::new_owned(object);
                 get_vm!(thread).alloc.add_managed(object);
                 slice.set_value(*dest, object);
             },
