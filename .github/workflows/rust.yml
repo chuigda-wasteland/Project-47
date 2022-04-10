@@ -16,8 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
+    - name: Install rust nightly with miri
+      run: rustup toolchain install nightly --component miri
     - name: Run tests for sync mode
       run: make test_sync
     - name: Run tests for async mode
