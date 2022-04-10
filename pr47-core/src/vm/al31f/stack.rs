@@ -32,16 +32,16 @@ pub struct StackSlice(*mut Value);
 #[cfg(not(debug_assertions))]
 impl StackSlice {
     #[inline(always)] pub unsafe fn set_value(&mut self, idx: usize, value: Value) {
-        let dest: &mut Value = &mut *self.0.offset(idx as isize);
+        let dest: &mut Value = &mut *self.0.add(idx);
         *dest = value;
     }
 
     #[inline(always)] pub unsafe fn get_value(&mut self, idx: usize) -> Value {
-        *self.0.offset(idx as isize)
+        *self.0.add(idx)
     }
 
     #[inline(always)] pub unsafe fn get_value_mut_ref(&self, idx: usize) -> *mut Value {
-        self.0.offset(idx as isize)
+        self.0.add(idx)
     }
 }
 
@@ -301,12 +301,12 @@ impl Stack {
         self.frames.push(
             FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr, func_id)
         );
-        let old_slice_ptr: *mut Value = self.values.as_mut_ptr().offset(this_frame_start as isize);
-        let new_slice_ptr: *mut Value = self.values.as_mut_ptr().offset(this_frame_end as isize);
+        let old_slice_ptr: *mut Value = self.values.as_mut_ptr().add(this_frame_start);
+        let new_slice_ptr: *mut Value = self.values.as_mut_ptr().add(this_frame_end);
 
         for i /*: usize*/ in 0..arg_locs.len() {
             let arg_loc: usize = *arg_locs.get_unchecked(i);
-            *new_slice_ptr.offset(i as isize) = *old_slice_ptr.offset(arg_loc as isize);
+            *new_slice_ptr.add(i) = *old_slice_ptr.add(arg_loc);
         }
         StackSlice(new_slice_ptr)
     }
@@ -328,17 +328,16 @@ impl Stack {
         self.frames.push(
             FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr, func_id)
         );
-        let old_slice_ptr: *mut Value = self.values.as_mut_ptr().offset(this_frame_start as isize);
-        let new_slice_ptr: *mut Value = self.values.as_mut_ptr().offset(this_frame_end as isize);
+        let old_slice_ptr: *mut Value = self.values.as_mut_ptr().add(this_frame_start);
+        let new_slice_ptr: *mut Value = self.values.as_mut_ptr().add(this_frame_end);
 
         let captures_len: usize = captures.len();
         for i in 0..captures_len {
-            *new_slice_ptr.offset(i as isize) = *captures.get_unchecked(i);
+            *new_slice_ptr.add(i) = *captures.get_unchecked(i);
         }
         for i /*: usize*/ in 0..arg_locs.len() {
             let arg_loc: usize = *arg_locs.get_unchecked(i);
-            *new_slice_ptr.offset((i + captures_len) as isize)
-                = *old_slice_ptr.offset(arg_loc as isize);
+            *new_slice_ptr.add(i + captures_len) = *old_slice_ptr.add(arg_loc);
         }
         StackSlice(new_slice_ptr)
     }
@@ -351,8 +350,7 @@ impl Stack {
 
         let this_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 1);
         let prev_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 2);
-        let prev_slice_ptr: *mut Value =
-            self.values.as_mut_ptr().offset(prev_frame.frame_start as isize);
+        let prev_slice_ptr: *mut Value = self.values.as_mut_ptr().add(prev_frame.frame_start);
 
         let ret_addr: usize = this_frame.ret_addr;
         self.values.truncate(prev_frame.frame_end);
@@ -372,12 +370,11 @@ impl Stack {
         let this_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 1);
         let prev_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 2);
 
-        let this_slice_ptr = self.values.as_ptr().offset(this_frame.frame_start as isize);
-        let prev_slice_ptr = self.values.as_mut_ptr().offset(prev_frame.frame_start as isize);
+        let this_slice_ptr = self.values.as_ptr().add(this_frame.frame_start);
+        let prev_slice_ptr = self.values.as_mut_ptr().add(prev_frame.frame_start);
 
         let ret_value_loc: usize = *this_frame.ret_value_locs.as_ref().get_unchecked(0);
-        *prev_slice_ptr.offset(ret_value_loc as isize)
-            = *this_slice_ptr.offset(ret_value_src as isize);
+        *prev_slice_ptr.add(ret_value_loc) = *this_slice_ptr.add(ret_value_src);
 
         let ret_addr: usize = this_frame.ret_addr;
         self.values.truncate(prev_frame.frame_end);
@@ -396,17 +393,14 @@ impl Stack {
 
         let this_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 1);
         let prev_frame: &FrameInfo = self.frames.get_unchecked(frame_count - 2);
-        let this_slice_ptr: *mut Value =
-            self.values.as_mut_ptr().offset(this_frame.frame_start as isize);
-        let prev_slice_ptr: *mut Value =
-            self.values.as_mut_ptr().offset(prev_frame.frame_start as isize);
+        let this_slice_ptr: *mut Value = self.values.as_mut_ptr().add(this_frame.frame_start);
+        let prev_slice_ptr: *mut Value = self.values.as_mut_ptr().add(prev_frame.frame_start);
 
         let len: usize = ret_values.len();
         for i /*: usize*/ in 0..len {
             let ret_value_loc: usize = *this_frame.ret_value_locs.as_ref().get_unchecked(i);
             let ret_value_src: usize = *ret_values.get_unchecked(i);
-            *prev_slice_ptr.offset(ret_value_loc as isize) =
-                *this_slice_ptr.offset(ret_value_src as isize);
+            *prev_slice_ptr.add(ret_value_loc) = *this_slice_ptr.add(ret_value_src);
         }
 
         let ret_addr: usize = this_frame.ret_addr;
@@ -417,7 +411,7 @@ impl Stack {
 
     #[inline] pub unsafe fn last_frame_slice(&mut self) -> StackSlice {
         let frame: &FrameInfo = self.frames.last().unchecked_unwrap();
-        StackSlice(self.values.as_mut_ptr().offset(frame.frame_start as isize))
+        StackSlice(self.values.as_mut_ptr().add(frame.frame_start))
     }
 
     #[inline] pub unsafe fn unwind_shrink_slice(&mut self) {
