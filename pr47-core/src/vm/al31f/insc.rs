@@ -647,6 +647,7 @@ impl Insc {
                 format!("%{} = object-get %{}, %{}", dest, obj_loc, field_name),
             Insc::ObjectPutDyn(obj_loc, field_name, value_loc) =>
                 format!("object-put %{}, %{}, %{}", obj_loc, field_name, value_loc),
+            #[cfg(feature = "async")]
             Insc::Spawn(func_id, args) => {
                 let mut result: String = String::from("spawn F.");
                 result.push_str(&func_id.to_string());
@@ -661,6 +662,7 @@ impl Insc {
                 }
                 result
             },
+            #[cfg(feature = "async")]
             Insc::Await(task_loc, dests) => {
                 let mut result = String::from("[");
                 for (i, dest) /*: (usize, &usize)*/ in dests.iter().enumerate() {

@@ -4,17 +4,15 @@ use xjbutil::void::Void;
 
 use crate::builtins::object::Object;
 use crate::data::Value;
-use crate::data::exception::ExceptionInner;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfoPool;
 use crate::ffi::{FFIException, Signature};
 use crate::ffi::sync_fn::{FunctionBase, OwnershipGuard, VMContext, value_into_ref};
-use crate::std47::futures::SLEEP_MS_BIND;
-use crate::std47::io::PRINT_BIND;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
 use crate::vm::al31f::insc::Insc;
 
+#[cfg(feature = "async")] use crate::data::exception::ExceptionInner;
 #[cfg(feature = "async")] use crate::ffi::async_fn::{
     AsyncFunctionBase,
     AsyncReturnType,
@@ -22,6 +20,8 @@ use crate::vm::al31f::insc::Insc;
     Promise
 };
 #[cfg(feature = "async")] use crate::ffi::async_fn::VMDataTrait;
+#[cfg(feature = "async")] use crate::std47::futures::SLEEP_MS_BIND;
+#[cfg(feature = "async")] use crate::std47::io::PRINT_BIND;
 
 pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
     let (slice_arena, code) = unsafe {
@@ -527,6 +527,7 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
     }
 }
 
+#[cfg(feature = "async")]
 const PR47BINDER_ASYNC_FFI_FUNCTION: &'static Pr47Binder_async_ffi_function
     = &Pr47Binder_async_ffi_function();
 

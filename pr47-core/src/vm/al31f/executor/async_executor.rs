@@ -4,7 +4,7 @@ use std::ptr::NonNull;
 use std::marker::PhantomPinned;
 use std::task::{Context, Poll};
 
-use smallvec::{SmallVec, smallvec};
+use smallvec::SmallVec;
 use xjbutil::mem::move_to_heap;
 use xjbutil::unchecked::UncheckedSendSync;
 use xjbutil::wide_ptr::WidePointer;
@@ -13,7 +13,8 @@ use crate::builtins::closure::Closure;
 use crate::builtins::object::Object;
 use crate::builtins::vec::VMGenericVec;
 use crate::data::Value;
-use crate::data::exception::{Exception, ExceptionInner, UncheckedException};
+use crate::data::exception::{Exception, UncheckedException};
+use crate::data::wrapper::Wrapper;
 use crate::data::value_typed::INT_TYPE_TAG;
 use crate::ffi::FFIException;
 use crate::ffi::sync_fn::Function as FFIFunction;
@@ -32,7 +33,9 @@ use crate::vm::al31f::stack::{Stack, StackSlice};
 #[cfg(feature = "async")] use std::hint::unreachable_unchecked;
 #[cfg(feature = "async")] use std::mem::transmute;
 #[cfg(feature = "async")] use futures::FutureExt;
-#[cfg(feature = "async")] use crate::data::wrapper::{Wrapper, OwnershipInfo};
+#[cfg(feature = "async")] use smallvec::smallvec;
+#[cfg(feature = "async")] use crate::data::exception::ExceptionInner;
+#[cfg(feature = "async")] use crate::data::wrapper::OwnershipInfo;
 #[cfg(feature = "async")] use crate::ffi::async_fn::{Promise, PromiseResult};
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
 #[cfg(feature = "async")] use crate::util::serializer::CoroutineContext;
@@ -60,7 +63,7 @@ pub struct VMThread<A: Alloc> {
 impl<A: Alloc> Drop for VMThread<A> {
     fn drop(&mut self) {
         unsafe {
-            self.vm.get_shared_data_mut().alloc.remove_stack(&self.stack);
+            get_vm!(self).alloc.remove_stack(&self.stack);
         }
     }
 }
@@ -77,7 +80,7 @@ pub async fn create_vm_main_thread<A: Alloc>(
         vm: CoroutineContext::main_context(AL31F::new(alloc)).await,
         program: NonNull::from(program),
         stack: Stack::new(),
-        _phantom: PhantomPinned::default()
+        _phantom: PhantomPinned
     });
     unsafe { ret.vm.get_shared_data_mut().alloc.add_stack(&ret.stack) };
     ret
@@ -93,7 +96,7 @@ pub fn create_vm_child_thread<A: Alloc>(
         vm: child_context,
         program,
         stack: Stack::new(),
-        _phantom: PhantomPinned::default()
+        _phantom: PhantomPinned
     });
     unsafe { ret.vm.get_shared_data_mut().alloc.add_stack(&ret.stack) };
     ret

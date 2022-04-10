@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 use std::any::TypeId;
 use std::ptr::NonNull;
 
@@ -6,23 +8,26 @@ use xjbutil::boxed_slice;
 use crate::data::Value;
 use crate::data::exception::ExceptionInner;
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
+use crate::ffi::{DataOption, FFIException, Signature};
+use crate::vm::al31f::alloc::Alloc;
+
+#[cfg(feature = "async")]
 use crate::ffi::async_fn::{
     AsyncFunctionBase,
     AsyncReturnType,
     AsyncShareGuard,
     AsyncVMContext,
     Promise,
-    VMDataTrait
+    VMDataTrait,
+    value_into_ref
 };
-use crate::ffi::{DataOption, FFIException, Signature};
-use crate::ffi::async_fn::value_into_ref;
-use crate::vm::al31f::alloc::Alloc;
-
 #[cfg(feature = "async-astd")] use async_std::fs::read_to_string;
 #[cfg(feature = "async-tokio")] use tokio::fs::read_to_string;
 
+#[cfg(feature = "async")]
 pub struct AsyncReadToStringBind();
 
+#[cfg(feature = "async")]
 impl AsyncFunctionBase for AsyncReadToStringBind {
     fn signature(tyck_info_pool: &mut TyckInfoPool) -> Signature {
         let string_type: NonNull<TyckInfo> = tyck_info_pool.get_string_type();
@@ -92,4 +97,5 @@ impl AsyncFunctionBase for AsyncReadToStringBind {
     }
 }
 
+#[cfg(feature = "async")]
 pub const ASYNC_READ_TO_STRING_BIND: &AsyncReadToStringBind = &AsyncReadToStringBind();

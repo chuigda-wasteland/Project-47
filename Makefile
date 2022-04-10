@@ -94,6 +94,10 @@ flamegraph_bench_al31fm2_sync_new1m:
 miri_test_all:
 	@MIRIFLAGS="-Zmiri-disable-isolation -Zmiri-ignore-leaks" cargo +nightly miri test
 
+.PHONY: miri_test_all_sync
+miri_test_all_sync:
+	@MIRIFLAGS="-Zmiri-disable-isolation -Zmiri-ignore-leaks" cargo +nightly miri test ${SYNC_BENCH_FEATURES}
+
 .PHONY: miri_test_pr47_core_data
 miri_test_pr47_core_data:
 	@echo testing pr47::core::data

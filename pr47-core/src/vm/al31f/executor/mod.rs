@@ -15,6 +15,8 @@ pub mod sync_executor;
 pub use sync_executor::*;
 
 pub mod async_executor;
-pub mod coroutine_spawn;
 
 pub use async_executor::*;
+
+#[cfg(feature = "async")]
+pub mod coroutine_spawn;
