@@ -20,10 +20,9 @@ use crate::ffi::async_fn::{
     AsyncVMContext,
     Promise,
     PromiseResult,
-    VMDataTrait
+    LockedCtx
 };
 use crate::ffi::async_fn::{value_move_out_check_norm_noalias, value_move_out_norm_noalias};
-use crate::vm::al31f::alloc::Alloc;
 
 pub struct JoinBind();
 
@@ -34,22 +33,22 @@ impl AsyncFunctionBase for JoinBind {
         unimplemented!("join operation does not have standard signature")
     }
 
-    unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Alloc=A>, ACTX: AsyncVMContext<VMData=VD>> (
+    unsafe fn call_rtlc<LC: LockedCtx, ACTX: AsyncVMContext<Locked=LC>> (
         _context: &ACTX,
         args: &[Value]
-    ) -> Result<Promise<A>, FFIException> {
-        struct AsyncRet<A: Alloc> {
-            results: Vec<PromiseResult<A>>
+    ) -> Result<Promise<LC>, FFIException> {
+        struct AsyncRet<LC: LockedCtx> {
+            results: Vec<PromiseResult<LC>>
         }
 
-        impl<A: Alloc> AsyncReturnType<A> for AsyncRet<A> {
+        impl<LC: LockedCtx> AsyncReturnType<LC> for AsyncRet<LC> {
             fn is_err(&self) -> bool {
                 self.results.iter().any(|x| x.is_err())
             }
 
             fn resolve(
                 self: Box<Self>,
-                alloc: &mut A,
+                locked_ctx: &mut LC,
                 dests: &[*mut Value]
             ) -> Result<usize, ExceptionInner> {
                 let len: usize = self.results.len();
@@ -58,7 +57,7 @@ impl AsyncFunctionBase for JoinBind {
                     unsafe {
                         if (*self.results.get_unchecked(i)).is_err() {
                             return std::ptr::read(self.results.get_unchecked(i))
-                                .resolve(alloc, &[]);
+                                .resolve(locked_ctx, &[]);
                         }
                     }
                 }
@@ -66,7 +65,7 @@ impl AsyncFunctionBase for JoinBind {
                 let mut resolved_size: usize = 0;
                 for result in self.results {
                     resolved_size += unsafe {
-                        result.resolve(alloc, &dests[resolved_size..]).unchecked_unwrap()
+                        result.resolve(locked_ctx, &dests[resolved_size..]).unchecked_unwrap()
                     }
                 }
                 Ok(resolved_size)
@@ -77,15 +76,15 @@ impl AsyncFunctionBase for JoinBind {
             value_move_out_check_norm_noalias(*arg)?;
         }
 
-        let futs: SmallVec<[Pin<Box<dyn Future<Output=PromiseResult<A>> + Send>>; 4]> =
+        let futs: SmallVec<[Pin<Box<dyn Future<Output=PromiseResult<LC>> + Send>>; 4]> =
             args.iter()
-                .map(|arg: &Value| value_move_out_norm_noalias::<Promise<A>>(*arg))
+                .map(|arg: &Value| value_move_out_norm_noalias::<Promise<LC>>(*arg))
                 .map(|Promise(fut)| fut)
                 .collect();
 
         let fut = async move {
-            let results: Vec<PromiseResult<A>> = join_all(futs).await;
-            Box::new(AsyncRet { results }) as Box<dyn AsyncReturnType<A>>
+            let results: Vec<PromiseResult<LC>> = join_all(futs).await;
+            Box::new(AsyncRet { results }) as Box<dyn AsyncReturnType<LC>>
         };
 
         Ok(Promise(Box::pin(fut)))
@@ -101,29 +100,29 @@ impl AsyncFunctionBase for SelectBind {
         unimplemented!("select operation does not have standard signature")
     }
 
-    unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Alloc=A>, ACTX: AsyncVMContext<VMData=VD>>(
+    unsafe fn call_rtlc<LC: LockedCtx, ACTX: AsyncVMContext<Locked=LC>>(
         _context: &ACTX,
         args: &[Value]
-    ) -> Result<Promise<A>, FFIException> {
-        struct AsyncRet<A: Alloc> {
-            result: Box<dyn AsyncReturnType<A>>,
+    ) -> Result<Promise<LC>, FFIException> {
+        struct AsyncRet<LC: LockedCtx> {
+            result: Box<dyn AsyncReturnType<LC>>,
             idx: usize
         }
 
-        impl<A: Alloc> AsyncReturnType<A> for AsyncRet<A> {
+        impl<LC: LockedCtx> AsyncReturnType<LC> for AsyncRet<LC> {
             fn is_err(&self) -> bool {
                 self.result.is_err()
             }
 
             fn resolve(
                 self: Box<Self>,
-                alloc: &mut A,
+                locked_ctx: &mut LC,
                 dests: &[*mut Value]
             ) -> Result<usize, ExceptionInner> {
                 unsafe {
                     **dests.get_unchecked(0) = Value::new_int(self.idx as i64);
                 }
-                self.result.resolve(alloc, &dests[1..])
+                self.result.resolve(locked_ctx, &dests[1..])
             }
         }
 
@@ -131,15 +130,15 @@ impl AsyncFunctionBase for SelectBind {
             value_move_out_check_norm_noalias(*arg)?;
         }
 
-        let futs: SmallVec<[Pin<Box<dyn Future<Output=PromiseResult<A>> + Send>>; 4]> =
+        let futs: SmallVec<[Pin<Box<dyn Future<Output=PromiseResult<LC>> + Send>>; 4]> =
             args.iter()
-                .map(|arg: &Value| value_move_out_norm_noalias::<Promise<A>>(*arg))
+                .map(|arg: &Value| value_move_out_norm_noalias::<Promise<LC>>(*arg))
                 .map(|Promise(fut)| fut)
                 .collect();
 
         let fut = async move {
             let (result, idx, _rest) = select_all(futs).await;
-            Box::new(AsyncRet { result, idx }) as Box<dyn AsyncReturnType<A>>
+            Box::new(AsyncRet { result, idx }) as Box<dyn AsyncReturnType<LC>>
         };
 
         Ok(Promise(Box::pin(fut)))
@@ -161,18 +160,18 @@ impl AsyncFunctionBase for SleepMillisBind {
         }
     }
 
-    unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Alloc=A>, ACTX: AsyncVMContext<VMData=VD>>(
+    unsafe fn call_rtlc<LC: LockedCtx, ACTX: AsyncVMContext<Locked=LC>>(
         _context: &ACTX,
         args: &[Value]
-    ) -> Result<Promise<A>, FFIException> {
+    ) -> Result<Promise<LC>, FFIException> {
         struct AsyncRet();
 
-        impl<A: Alloc> AsyncReturnType<A> for AsyncRet {
+        impl<LC: LockedCtx> AsyncReturnType<LC> for AsyncRet {
             fn is_err(&self) -> bool {
                 false
             }
 
-            fn resolve(self: Box<Self>, _alloc: &mut A, _dests: &[*mut Value])
+            fn resolve(self: Box<Self>, _locked_ctx: &mut LC, _dests: &[*mut Value])
                 -> Result<usize, ExceptionInner>
             {
                 Ok(0)
@@ -185,7 +184,7 @@ impl AsyncFunctionBase for SleepMillisBind {
             async_std::task::sleep(Duration::from_millis(int_value as u64)).await;
             #[cfg(feature = "async-tokio")]
             tokio::time::sleep(Duration::from_millis(int_value as u64)).await;
-            Box::new(AsyncRet()) as Box<dyn AsyncReturnType<A>>
+            Box::new(AsyncRet()) as Box<dyn AsyncReturnType<LC>>
         };
 
         Ok(Promise(Box::pin(fut)))

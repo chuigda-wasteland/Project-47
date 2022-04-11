@@ -109,7 +109,7 @@ pub struct VMThreadRunFunctionFut<'a, A: Alloc, const S: bool> {
     insc_ptr: usize,
 
     #[cfg(feature = "async")]
-    awaiting_promise: Option<Pin<Box<dyn Future<Output=PromiseResult<A>>>>>,
+    awaiting_promise: Option<Pin<Box<dyn Future<Output=PromiseResult<AL31F<A>>>>>>,
 }
 
 unsafe impl<'a, A: Alloc, const S: bool> Send for VMThreadRunFunctionFut<'a, A, S> {}
@@ -133,7 +133,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 unreachable_unchecked()
             };
 
-            if let Err(e) = promise_result.resolve(&mut get_vm!(this.thread).alloc, &value_dests) {
+            if let Err(e) = promise_result.resolve(get_vm!(this.thread), &value_dests) {
                 match e {
                     ExceptionInner::Checked(checked) => {
                         let (new_slice, insc_ptr_next): (StackSlice, usize) =
@@ -626,10 +626,10 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
             #[cfg(feature = "async")]
             Insc::FFICallAsync(async_ffi_func_id, args, ret) => {
                 #[cfg(not(debug_assertions))]
-                let async_ffi_function: &'static dyn FFIAsyncFunction<A, _, _>
+                let async_ffi_function: &'static dyn FFIAsyncFunction<_, _>
                     = *program.async_ffi_funcs.get_unchecked(*async_ffi_func_id);
                 #[cfg(debug_assertions)]
-                let async_ffi_function: &'static dyn FFIAsyncFunction<A, _, _>
+                let async_ffi_function: &'static dyn FFIAsyncFunction<_, _>
                     = program.async_ffi_funcs[*async_ffi_func_id];
 
                 let args_len: usize = args.len();
@@ -684,7 +684,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                     )));
                 }
 
-                let Promise(fut) = promise.move_out::<Promise<A>>();
+                let Promise(fut) = promise.move_out::<Promise<AL31F<A>>>();
                 (*wrapper).ownership_info = OwnershipInfo::MovedToRust as u8;
 
                 this.insc_ptr = insc_ptr;
