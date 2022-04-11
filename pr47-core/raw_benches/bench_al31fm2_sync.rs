@@ -1,9 +1,9 @@
 use std::env;
 
 use pr47::data::Value;
-use pr47::data::exception::Exception;
 use pr47::vm::al31f::alloc::default_alloc::DefaultAlloc;
 use pr47::vm::al31f::compiled::CompiledProgram;
+use pr47::vm::al31f::exception::Exception;
 use pr47::vm::al31f::executor::vm_run_function_sync;
 use pr47::vm::al31f::test_program::{
     alloc_1m_program,

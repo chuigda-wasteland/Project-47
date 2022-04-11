@@ -1,5 +1,6 @@
 pub mod alloc;
 pub mod compiled;
+pub mod exception;
 pub mod executor;
 pub mod insc;
 pub mod stack;

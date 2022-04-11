@@ -1,8 +1,8 @@
-use crate::data::exception::Exception;
 use crate::data::Value;
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
 use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
 use crate::vm::al31f::compiled::CompiledProgram;
+use crate::vm::al31f::exception::Exception;
 use crate::vm::al31f::executor::vm_run_function_sync;
 use crate::vm::al31f::test_program::basic_program;
 

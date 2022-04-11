@@ -6,11 +6,11 @@ use xjbutil::unchecked::UncheckedSendSync;
 
 use crate::builtins::object::Object;
 use crate::data::Value;
-use crate::data::exception::Exception;
 use crate::data::wrapper::DynBase;
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
 use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
 use crate::vm::al31f::compiled::CompiledProgram;
+use crate::vm::al31f::exception::Exception;
 use crate::vm::al31f::executor::{VMThread, create_vm_main_thread, vm_thread_run_function};
 use crate::vm::al31f::test_program::{
     async_ffi_call_program,

@@ -2,11 +2,12 @@ use std::any::TypeId;
 
 use unchecked_unwrap::UncheckedUnwrap;
 
-use crate::data::exception::{CheckedException, Exception, UncheckedException};
+use crate::data::exception::{CheckedException, UncheckedException};
 use crate::data::Value;
 use crate::vm::al31f::AL31F;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
+use crate::vm::al31f::exception::Exception;
 use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
 
 #[inline(never)]

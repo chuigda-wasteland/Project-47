@@ -1,5 +1,6 @@
-use crate::data::exception::{Exception, UncheckedException};
+use crate::data::exception::UncheckedException;
 use crate::vm::al31f::alloc::Alloc;
+use crate::vm::al31f::exception::Exception;
 use crate::vm::al31f::executor::unwinding::unchecked_exception_unwind_stack;
 use crate::vm::al31f::executor::VMThread;
 use crate::vm::al31f::stack::StackSlice;

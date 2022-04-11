@@ -5,9 +5,9 @@ use xjbutil::std_ext::ExpectSilentExt;
 use xjbutil::unchecked::UncheckedSendSync;
 
 use pr47::data::Value;
-use pr47::data::exception::Exception;
 use pr47::vm::al31f::alloc::default_alloc::DefaultAlloc;
 use pr47::vm::al31f::compiled::CompiledProgram;
+use pr47::vm::al31f::exception::Exception;
 use pr47::vm::al31f::executor::{VMThread, create_vm_main_thread, vm_thread_run_function};
 use pr47::vm::al31f::test_program::{
     alloc_1m_program,

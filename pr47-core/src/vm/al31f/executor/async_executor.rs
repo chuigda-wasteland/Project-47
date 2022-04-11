@@ -13,7 +13,7 @@ use crate::builtins::closure::Closure;
 use crate::builtins::object::Object;
 use crate::builtins::vec::VMGenericVec;
 use crate::data::Value;
-use crate::data::exception::{Exception, UncheckedException};
+use crate::data::exception::UncheckedException;
 use crate::data::wrapper::Wrapper;
 use crate::data::value_typed::INT_TYPE_TAG;
 use crate::ffi::FFIException;
@@ -21,9 +21,11 @@ use crate::ffi::sync_fn::Function as FFIFunction;
 use crate::vm::al31f::{AL31F, Combustor};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
+use crate::vm::al31f::exception::Exception;
 use crate::vm::al31f::executor::checked_bin_ops::*;
 use crate::vm::al31f::executor::checked_cast_ops::*;
 use crate::vm::al31f::executor::checked_unary_ops::*;
+use crate::vm::al31f::executor::coroutine_spawn::coroutine_spawn;
 use crate::vm::al31f::executor::overload::call_overload;
 use crate::vm::al31f::executor::rtti::check_type;
 use crate::vm::al31f::executor::unwinding::*;
@@ -42,7 +44,6 @@ use crate::vm::al31f::stack::{Stack, StackSlice};
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
 #[cfg(all(feature = "async", feature = "al31f-builtin-ops"))]
-use crate::vm::al31f::executor::coroutine_spawn::coroutine_spawn;
 
 include!("get_vm_makro.rs");
 include!("impl_makro.rs");
