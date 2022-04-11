@@ -4,11 +4,11 @@ use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::data::exception::{CheckedException, UncheckedException};
 use crate::data::Value;
-use crate::vm::al31f::AL31F;
-use crate::vm::al31f::alloc::Alloc;
-use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram};
-use crate::vm::al31f::exception::Exception;
-use crate::vm::al31f::stack::{FrameInfo, Stack, StackSlice};
+use crate::vm::al31fm2::AL31F;
+use crate::vm::al31fm2::alloc::Alloc;
+use crate::vm::al31fm2::compiled::{CompiledFunction, CompiledProgram};
+use crate::vm::al31fm2::exception::Exception;
+use crate::vm::al31fm2::stack::{FrameInfo, Stack, StackSlice};
 
 #[inline(never)]
 pub unsafe fn unchecked_exception_unwind_stack(

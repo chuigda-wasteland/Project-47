@@ -13,12 +13,12 @@ use std::ptr::NonNull;
 
 use crate::data::Value;
 use crate::ffi::sync_fn::VMContext;
-use crate::vm::al31f::alloc::Alloc;
+use crate::vm::al31fm2::alloc::Alloc;
 
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncVMContext;
 #[cfg(feature = "async")] use crate::ffi::async_fn::LockedCtx;
 #[cfg(feature = "async")] use crate::util::serializer::{CoroutineSharedData, Serializer};
-#[cfg(feature = "async")] use crate::vm::al31f::compiled::CompiledProgram;
+#[cfg(feature = "async")] use crate::vm::al31fm2::compiled::CompiledProgram;
 
 pub struct AL31F<A: Alloc> {
     pub alloc: A

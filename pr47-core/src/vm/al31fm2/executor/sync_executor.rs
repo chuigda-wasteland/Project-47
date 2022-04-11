@@ -4,12 +4,12 @@ use std::ptr::NonNull;
 use xjbutil::unchecked::UncheckedSendSync;
 
 use crate::data::Value;
-use crate::vm::al31f::AL31F;
-use crate::vm::al31f::alloc::Alloc;
-use crate::vm::al31f::compiled::CompiledProgram;
-use crate::vm::al31f::exception::Exception;
-use crate::vm::al31f::executor::{VMThread, vm_thread_run_function};
-use crate::vm::al31f::stack::Stack;
+use crate::vm::al31fm2::AL31F;
+use crate::vm::al31fm2::alloc::Alloc;
+use crate::vm::al31fm2::compiled::CompiledProgram;
+use crate::vm::al31fm2::exception::Exception;
+use crate::vm::al31fm2::executor::{VMThread, vm_thread_run_function};
+use crate::vm::al31fm2::stack::Stack;
 
 #[cfg(feature = "async")]
 use crate::util::serializer::CoroutineContext;

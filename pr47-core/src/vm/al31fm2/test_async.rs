@@ -8,11 +8,11 @@ use crate::builtins::object::Object;
 use crate::data::Value;
 use crate::data::wrapper::DynBase;
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
-use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
-use crate::vm::al31f::compiled::CompiledProgram;
-use crate::vm::al31f::exception::Exception;
-use crate::vm::al31f::executor::{VMThread, create_vm_main_thread, vm_thread_run_function};
-use crate::vm::al31f::test_program::{
+use crate::vm::al31fm2::alloc::default_alloc::DefaultAlloc;
+use crate::vm::al31fm2::compiled::CompiledProgram;
+use crate::vm::al31fm2::exception::Exception;
+use crate::vm::al31fm2::executor::{VMThread, create_vm_main_thread, vm_thread_run_function};
+use crate::vm::al31fm2::test_program::{
     async_ffi_call_program,
     async_spawn_program,
     basic_fn_call_program,

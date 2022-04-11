@@ -45,8 +45,8 @@ variant_count = "1"
 
 [features]
 default = [
-    "al31f",
-    "al31f-builtin-ops",
+    "al31fu",
+    "async",
     "async-avoid-block",
     "async-tokio",
     "compiler",
@@ -55,8 +55,9 @@ default = [
     "std47"
 ]
 
-al31f = []
-al31f-builtin-ops = []
+al31fm2 = []
+al31fm2-builtin-ops = []
+al31fu = []
 async = ["futures"]
 async-astd = ["async", "async-std", "xjbutil/async-astd"]
 async-avoid-block = []

@@ -5,8 +5,8 @@ use unchecked_unwrap::UncheckedUnwrap;
 use crate::data::Value;
 use crate::data::generic::GenericTypeVT;
 use crate::data::wrapper::{DynBase, OWN_INFO_COLLECT_MASK, OWN_INFO_GLOBAL_MASK};
-use crate::vm::al31f::alloc::{Alloc, AllocPin};
-use crate::vm::al31f::stack::Stack;
+use crate::vm::al31fm2::alloc::{Alloc, AllocPin};
+use crate::vm::al31fm2::stack::Stack;
 
 /// Default allocator for `AL31F`, with STW GC.
 pub struct DefaultAlloc {
@@ -239,9 +239,9 @@ mod test {
     use crate::data::generic::GenericTypeVT;
     use crate::data::tyck::TyckInfoPool;
     use crate::data::wrapper::Wrapper;
-    use crate::vm::al31f::alloc::Alloc;
-    use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
-    use crate::vm::al31f::stack::{Stack, StackSlice};
+    use crate::vm::al31fm2::alloc::Alloc;
+    use crate::vm::al31fm2::alloc::default_alloc::DefaultAlloc;
+    use crate::vm::al31fm2::stack::{Stack, StackSlice};
 
     #[test] fn test_default_collector_simple() {
         let mut alloc: DefaultAlloc = DefaultAlloc::new();

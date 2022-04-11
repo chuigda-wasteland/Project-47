@@ -5,11 +5,11 @@ use xjbutil::std_ext::ExpectSilentExt;
 use xjbutil::unchecked::UncheckedSendSync;
 
 use pr47::data::Value;
-use pr47::vm::al31f::alloc::default_alloc::DefaultAlloc;
-use pr47::vm::al31f::compiled::CompiledProgram;
-use pr47::vm::al31f::exception::Exception;
-use pr47::vm::al31f::executor::{VMThread, create_vm_main_thread, vm_thread_run_function};
-use pr47::vm::al31f::test_program::{
+use pr47::vm::al31fm2::alloc::default_alloc::DefaultAlloc;
+use pr47::vm::al31fm2::compiled::CompiledProgram;
+use pr47::vm::al31fm2::exception::Exception;
+use pr47::vm::al31fm2::executor::{VMThread, create_vm_main_thread, vm_thread_run_function};
+use pr47::vm::al31fm2::test_program::{
     alloc_1m_program,
     bench_ffi_call_program,
     bench_ffi_call_program2,

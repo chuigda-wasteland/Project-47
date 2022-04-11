@@ -5,12 +5,12 @@ use xjbutil::slice_arena::SliceArena;
 use crate::data::Value;
 use crate::data::tyck::TyckInfo;
 use crate::ffi::sync_fn::Function as FFIFunction;
-use crate::vm::al31f::Combustor;
-use crate::vm::al31f::alloc::Alloc;
-use crate::vm::al31f::insc::Insc;
+use crate::vm::al31fm2::Combustor;
+use crate::vm::al31fm2::alloc::Alloc;
+use crate::vm::al31fm2::insc::Insc;
 
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncFunction as FFIAsyncFunction;
-#[cfg(feature = "async")] use crate::vm::al31f::{AL31F, AsyncCombustor};
+#[cfg(feature = "async")] use crate::vm::al31fm2::{AL31F, AsyncCombustor};
 
 pub struct ExceptionHandlingBlock {
     pub insc_ptr_range: (usize, usize),

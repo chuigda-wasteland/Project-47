@@ -4,7 +4,7 @@ pub mod no_gc_alloc;
 use xjbutil::flex::FlexArray;
 
 use crate::data::Value;
-use crate::vm::al31f::stack::Stack;
+use crate::vm::al31fm2::stack::Stack;
 
 pub type AllocPin = FlexArray<bool, Value>;
 

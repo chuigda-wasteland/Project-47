@@ -8,9 +8,9 @@ use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfoPool;
 use crate::ffi::{FFIException, Signature};
 use crate::ffi::sync_fn::{FunctionBase, OwnershipGuard, VMContext, value_into_ref};
-use crate::vm::al31f::alloc::Alloc;
-use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
-use crate::vm::al31f::insc::Insc;
+use crate::vm::al31fm2::alloc::Alloc;
+use crate::vm::al31fm2::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
+use crate::vm::al31fm2::insc::Insc;
 
 #[cfg(feature = "async")] use crate::data::exception::ExceptionInner;
 #[cfg(feature = "async")] use crate::ffi::async_fn::{
@@ -560,7 +560,7 @@ pub fn async_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
     }
 }
 
-#[cfg(all(feature = "async", feature = "al31f-builtin-ops"))]
+#[cfg(all(feature = "async", feature = "al31fm2-builtin-ops"))]
 pub fn async_spawn_program<A: Alloc>() -> CompiledProgram<A> {
     let string1: String = "string1\n".into();
     let string1: Value = Value::new_owned(string1);

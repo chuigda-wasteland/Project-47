@@ -466,7 +466,7 @@ pub enum Insc {
     #[cfg(feature = "async")]
     Await(usize, &'static [usize]),
 
-    #[cfg(all(feature = "async", feature = "al31f-builtin-ops"))]
+    #[cfg(all(feature = "async", feature = "al31fm2-builtin-ops"))]
     Spawn(usize, &'static [usize]),
 
     /// `RAISE [EXCEPTION]`
@@ -480,24 +480,24 @@ pub enum Insc {
 
     CreateClosure(usize, &'static [usize], NonNull<GenericTypeVT>, usize),
 
-    #[cfg(feature = "al31f-builtin-ops")] CreateString(usize),
-    #[cfg(feature = "al31f-builtin-ops")] CreateObject(usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] CreateString(usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] CreateObject(usize),
 
-    #[cfg(feature = "al31f-builtin-ops")] VecIndex(usize, usize, usize),
-    #[cfg(feature = "al31f-builtin-ops")] VecIndexPut(usize, usize, usize),
-    #[cfg(feature = "al31f-builtin-ops")] VecPush(usize, usize),
-    #[cfg(feature = "al31f-builtin-ops")] VecLen(usize, usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] VecIndex(usize, usize, usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] VecIndexPut(usize, usize, usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] VecPush(usize, usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] VecLen(usize, usize),
 
-    #[cfg(feature = "al31f-builtin-ops")] StrClone(usize, usize),
-    #[cfg(feature = "al31f-builtin-ops")] StrConcat(&'static [usize], usize),
-    #[cfg(feature = "al31f-builtin-ops")] StrLen(usize, usize),
-    #[cfg(feature = "al31f-builtin-ops")] StrEquals(usize, usize, usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] StrClone(usize, usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] StrConcat(&'static [usize], usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] StrLen(usize, usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] StrEquals(usize, usize, usize),
 
-    #[cfg(feature = "al31f-builtin-ops")] ObjectGet(usize, NonNull<str>, usize),
-    #[cfg(feature = "al31f-builtin-ops")] ObjectGetDyn(usize, usize, usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] ObjectGet(usize, NonNull<str>, usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] ObjectGetDyn(usize, usize, usize),
 
-    #[cfg(feature = "al31f-builtin-ops")] ObjectPut(usize, NonNull<str>, usize),
-    #[cfg(feature = "al31f-builtin-ops")] ObjectPutDyn(usize, usize, usize)
+    #[cfg(feature = "al31fm2-builtin-ops")] ObjectPut(usize, NonNull<str>, usize),
+    #[cfg(feature = "al31fm2-builtin-ops")] ObjectPutDyn(usize, usize, usize)
 }
 
 impl Insc {
@@ -685,5 +685,5 @@ impl Insc {
 #[cfg(test)]
 #[cfg_attr(miri, ignore)]
 #[test] fn count_instructions() {
-    eprintln!(" [pr47::vm::al31f::insc] Insc::VARIANT_COUNT = {}", Insc::VARIANT_COUNT);
+    eprintln!(" [pr47::vm::al31fm2::insc] Insc::VARIANT_COUNT = {}", Insc::VARIANT_COUNT);
 }

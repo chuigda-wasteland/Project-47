@@ -1,10 +1,10 @@
 use crate::data::Value;
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
-use crate::vm::al31f::alloc::default_alloc::DefaultAlloc;
-use crate::vm::al31f::compiled::CompiledProgram;
-use crate::vm::al31f::exception::Exception;
-use crate::vm::al31f::executor::vm_run_function_sync;
-use crate::vm::al31f::test_program::basic_program;
+use crate::vm::al31fm2::alloc::default_alloc::DefaultAlloc;
+use crate::vm::al31fm2::compiled::CompiledProgram;
+use crate::vm::al31fm2::exception::Exception;
+use crate::vm::al31fm2::executor::vm_run_function_sync;
+use crate::vm::al31fm2::test_program::basic_program;
 
 #[test]
 fn test_basic_program_eval() {

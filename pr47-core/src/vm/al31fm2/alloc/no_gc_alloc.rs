@@ -1,6 +1,6 @@
 use crate::data::Value;
-use crate::vm::al31f::alloc::Alloc;
-use crate::vm::al31f::stack::Stack;
+use crate::vm::al31fm2::alloc::Alloc;
+use crate::vm::al31fm2::stack::Stack;
 
 pub struct NoGCAlloc {
     managed: Vec<Value>
