@@ -20,3 +20,5 @@ Cargo.lock
 brute_force_proof
 brute_force_proof.exe
 brute_force_proof.pdb
+
+pr47-core/src/vm/al31fu/cxx/cmake-build-*
