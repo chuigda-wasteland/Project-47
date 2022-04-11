@@ -6,6 +6,7 @@ use xjbutil::unchecked::{UncheckedSendFut, UncheckedSendSync};
 use crate::data::exception::{ExceptionInner, UncheckedException};
 use crate::data::Value;
 use crate::ffi::async_fn::{AsyncReturnType, Promise};
+use crate::vm::al31f::AL31F;
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::CompiledProgram;
 use crate::vm::al31f::exception::Exception;
@@ -17,6 +18,7 @@ use crate::vm::al31f::stack::StackSlice;
 #[cfg(feature = "async-astd")] use async_std::task::JoinHandle;
 #[cfg(feature = "async-tokio")] use futures::TryFutureExt;
 #[cfg(feature = "async-tokio")] use tokio::task::{JoinError, JoinHandle};
+use crate::ffi::sync_fn::VMContext;
 
 #[inline(never)]
 pub unsafe fn coroutine_spawn<A: Alloc>(
@@ -24,7 +26,7 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
     slice: &mut StackSlice,
     func_id: usize,
     args: &[usize]
-) -> Promise<A> {
+) -> Promise<AL31F<A>> {
     pub struct ResetPtr(*mut bool);
 
     impl Drop for ResetPtr {
@@ -62,14 +64,14 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
         }
     }
 
-    impl<A: Alloc> AsyncReturnType<A> for AsyncRet {
+    impl<A: Alloc> AsyncReturnType<AL31F<A>> for AsyncRet {
         fn is_err(&self) -> bool {
             self.ret.is_err()
         }
 
         fn resolve(
             self: Box<Self>,
-            _alloc: &mut A,
+            _locked_ctx: &mut AL31F<A>,
             dests: &[*mut Value]
         ) -> Result<usize, ExceptionInner> {
             match self.ret {
@@ -89,30 +91,30 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
     unsafe impl Sync for AsyncRet {}
 
     pub struct AsyncRet2<A: Alloc> {
-        result: Result<Promise<A>, JoinError>
+        result: Result<Promise<AL31F<A>>, JoinError>
     }
 
     impl<A: Alloc> AsyncRet2<A> {
-        pub fn new(join_handle: Promise<A>) -> Self {
+        pub fn new(join_handle: Promise<AL31F<A>>) -> Self {
             Self { result: Ok(join_handle) }
         }
     }
 
-    impl<A: Alloc> AsyncReturnType<A> for AsyncRet2<A> {
+    impl<A: Alloc> AsyncReturnType<AL31F<A>> for AsyncRet2<A> {
         fn is_err(&self) -> bool {
             self.result.is_err()
         }
 
         fn resolve(
             self: Box<Self>,
-            alloc: &mut A,
+            locked_ctx: &mut AL31F<A>,
             dests: &[*mut Value]
         ) -> Result<usize, ExceptionInner> {
             match self.result {
                 Ok(join_handle) => {
                     let join_handle_value: Value = Value::new_owned(join_handle);
                     unsafe {
-                        alloc.add_managed(join_handle_value);
+                        locked_ctx.add_heap_managed(join_handle_value);
                         **dests.get_unchecked(0) = join_handle_value;
                     }
                     Ok(1)
@@ -131,7 +133,7 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
     let arg_pack: UncheckedSendSync<_> = UncheckedSendSync::new((args, program));
 
     let get_join_handle = async move {
-        let join_handle: JoinHandle<Box<dyn AsyncReturnType<A>>> = thread.vm.co_spawn_task(
+        let join_handle: JoinHandle<Box<dyn AsyncReturnType<AL31F<A>>>> = thread.vm.co_spawn_task(
             |child_context, (func_id, arg_pack)| UncheckedSendFut::new(async move {
                 let (args, program): (Box<[Value]>, NonNull<CompiledProgram<A>>) =
                     arg_pack.into_inner();
@@ -160,8 +162,8 @@ pub unsafe fn coroutine_spawn<A: Alloc>(
             |data| data
         );
 
-        let join_handle_promise: Promise<A> = Promise(Box::pin(join_handle));
-        Box::new(AsyncRet2::new(join_handle_promise)) as Box<dyn AsyncReturnType<A>>
+        let join_handle_promise: Promise<AL31F<A>> = Promise(Box::pin(join_handle));
+        Box::new(AsyncRet2::new(join_handle_promise)) as Box<dyn AsyncReturnType<AL31F<A>>>
     };
 
     Promise(Box::pin(get_join_handle))

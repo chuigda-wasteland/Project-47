@@ -19,7 +19,7 @@ use crate::vm::al31f::insc::Insc;
     AsyncVMContext,
     Promise
 };
-#[cfg(feature = "async")] use crate::ffi::async_fn::VMDataTrait;
+#[cfg(feature = "async")] use crate::ffi::async_fn::LockedCtx;
 #[cfg(feature = "async")] use crate::std47::futures::SLEEP_MS_BIND;
 #[cfg(feature = "async")] use crate::std47::io::PRINT_BIND;
 
@@ -486,32 +486,34 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
         unimplemented!()
     }
 
-    unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Alloc= A>, ACTX: AsyncVMContext<VMData = VD>> (
+    unsafe fn call_rtlc<LC: LockedCtx, ACTX: AsyncVMContext<Locked=LC>> (
         _context: &ACTX,
         _args: &[Value]
-    ) -> Result<Promise<A>, FFIException> {
+    ) -> Result<Promise<LC>, FFIException> {
         struct AsyncRet {
             r: Result<String, std::io::Error>
         }
 
-        impl<A: Alloc> AsyncReturnType<A> for AsyncRet {
+        impl<LC: LockedCtx> AsyncReturnType<LC> for AsyncRet {
             fn is_err(&self) -> bool {
                 self.r.is_err()
             }
 
-            fn resolve(self: Box<Self>, alloc: &mut A, dests: &[*mut Value]) -> Result<usize, ExceptionInner> {
+            fn resolve(self: Box<Self>, locked_ctx: &mut LC, dests: &[*mut Value])
+                -> Result<usize, ExceptionInner>
+            {
                 match self.r {
                     Ok(data) => {
                         let value: Value = Value::new_owned(data);
                         unsafe {
-                            alloc.add_managed(value);
+                            locked_ctx.add_heap_managed(value);
                             **dests.get_unchecked(0) = value;
                         }
                         Ok(1)
                     },
                     Err(e) => {
                         let err_value: Value = Value::new_owned(e);
-                        unsafe { alloc.add_managed(err_value); }
+                        locked_ctx.add_heap_managed(err_value);
                         Err(ExceptionInner::Checked(err_value))
                     }
                 }
@@ -520,7 +522,7 @@ impl AsyncFunctionBase for Pr47Binder_async_ffi_function {
 
         let fut = async move {
             let r: Result<String, std::io::Error> = async_ffi_function().await;
-            Box::new(AsyncRet { r }) as Box<dyn AsyncReturnType<A>>
+            Box::new(AsyncRet { r }) as Box<dyn AsyncReturnType<LC>>
         };
 
         Ok(Promise(Box::pin(fut)))

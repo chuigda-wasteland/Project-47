@@ -16,7 +16,7 @@ use crate::ffi::sync_fn::VMContext;
 use crate::vm::al31f::alloc::Alloc;
 
 #[cfg(feature = "async")] use crate::ffi::async_fn::AsyncVMContext;
-#[cfg(feature = "async")] use crate::ffi::async_fn::VMDataTrait;
+#[cfg(feature = "async")] use crate::ffi::async_fn::LockedCtx;
 #[cfg(feature = "async")] use crate::util::serializer::{CoroutineSharedData, Serializer};
 #[cfg(feature = "async")] use crate::vm::al31f::compiled::CompiledProgram;
 
@@ -31,13 +31,24 @@ impl<A: Alloc> AL31F<A> {
 }
 
 #[cfg(feature = "async")]
-impl<A: Alloc> VMDataTrait for AL31F<A> {
-    type Alloc = A;
+impl<A: Alloc> VMContext for AL31F<A> {
+    #[inline(always)]
+    fn add_heap_managed(&mut self, value: Value) {
+        unsafe {
+            self.alloc.add_managed(value);
+        }
+    }
 
-    fn get_alloc(&mut self) -> &mut Self::Alloc {
-        &mut self.alloc
+    #[inline(always)]
+    fn mark(&mut self, value: Value) {
+        unsafe {
+            self.alloc.mark_object(value);
+        }
     }
 }
+
+#[cfg(feature = "async")]
+impl<A: Alloc> LockedCtx for AL31F<A> {}
 
 pub struct Combustor<A: Alloc> {
     vm: NonNull<AL31F<A>>
@@ -83,9 +94,9 @@ unsafe impl<A: Alloc> Sync for AsyncCombustor<A> {}
 
 #[cfg(feature = "async")]
 impl<A: Alloc> AsyncVMContext for AsyncCombustor<A> {
-    type VMData = AL31F<A>;
+    type Locked = AL31F<A>;
 
-    fn serializer(&self) -> &Serializer<(CoroutineSharedData, Self::VMData)> {
+    fn serializer(&self) -> &Serializer<(CoroutineSharedData, Self::Locked)> {
         &self.vm
     }
 }

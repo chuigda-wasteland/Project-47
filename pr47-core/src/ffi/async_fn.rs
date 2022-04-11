@@ -17,45 +17,40 @@ use crate::data::wrapper::{
 use crate::ffi::{FFIException, Signature};
 use crate::util::serializer::{CoroutineSharedData, Serializer};
 
-pub trait VMDataTrait : 'static + Sized + Send {
-    type Alloc;
-
-    fn get_alloc(&mut self) -> &mut Self::Alloc;
-}
+pub trait LockedCtx: VMContext + Send {}
 
 pub trait AsyncVMContext: 'static + Sized + Send + Sync {
-    type VMData: VMDataTrait;
+    type Locked: LockedCtx;
 
-    fn serializer(&self) -> &Serializer<(CoroutineSharedData, Self::VMData)>;
+    fn serializer(&self) -> &Serializer<(CoroutineSharedData, Self::Locked)>;
 }
 
 pub trait AsyncFunctionBase: 'static {
     fn signature(tyck_info_pool: &mut TyckInfoPool) -> Signature;
 
-    unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Alloc= A>, ACTX: AsyncVMContext<VMData = VD>> (
+    unsafe fn call_rtlc<LC: LockedCtx, ACTX: AsyncVMContext<Locked=LC>> (
         context: &ACTX,
         args: &[Value]
-    ) -> Result<Promise<A>, FFIException>;
+    ) -> Result<Promise<LC>, FFIException>;
 }
 
-pub trait AsyncFunction<A: Alloc, VD: VMDataTrait, ACTX: AsyncVMContext>: 'static {
+pub trait AsyncFunction<LC: LockedCtx, ACTX: AsyncVMContext>: 'static {
     fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature;
 
-    unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Result<Promise<A>, FFIException>;
+    unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Result<Promise<LC>, FFIException>;
 }
 
-impl<AFBase, A, VD, ACTX> AsyncFunction<A, VD, ACTX> for AFBase where
+impl<AFBase, LC, ACTX> AsyncFunction<LC, ACTX> for AFBase where
     AFBase: AsyncFunctionBase,
-    A: Alloc,
-    VD: VMDataTrait<Alloc= A>,
-    ACTX: AsyncVMContext<VMData = VD>
+    LC: LockedCtx,
+    ACTX: AsyncVMContext<Locked=LC>
 {
     fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature {
         <AFBase as AsyncFunctionBase>::signature(tyck_info_pool)
     }
 
-    unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Result<Promise<A>, FFIException> {
-        <AFBase as AsyncFunctionBase>::call_rtlc::<A, VD, ACTX>(context, args)
+    unsafe fn call_rtlc(&self, context: &ACTX, args: &[Value]) -> Result<Promise<LC>, FFIException> {
+        <AFBase as AsyncFunctionBase>::call_rtlc::<LC, ACTX>(context, args)
     }
 }
 
@@ -93,21 +88,21 @@ impl Drop for AsyncShareGuard {
 unsafe impl Send for AsyncShareGuard {}
 unsafe impl Sync for AsyncShareGuard {}
 
-pub trait AsyncReturnType<A: Alloc> : Send + Sync {
+pub trait AsyncReturnType<LC: LockedCtx> : Send + Sync {
     fn is_err(&self) -> bool;
 
     fn resolve(
         self: Box<Self>,
-        alloc: &mut A,
+        locked_ctx: &mut LC,
         dests: &[*mut Value]
     ) -> Result<usize, ExceptionInner>;
 }
 
-pub type PromiseResult<A> = Box<dyn AsyncReturnType<A>>;
+pub type PromiseResult<LC> = Box<dyn AsyncReturnType<LC>>;
 
-pub struct Promise<A: Alloc>(pub Pin<Box<dyn Future<Output=PromiseResult<A>> + Send>>);
+pub struct Promise<LC: LockedCtx>(pub Pin<Box<dyn Future<Output=PromiseResult<LC>> + Send>>);
 
-impl<A: Alloc> StaticBase<Promise<A>> for Void {
+impl<LC: LockedCtx> StaticBase<Promise<LC>> for Void {
     fn type_name() -> String {
         "promise".to_string()
     }
@@ -124,7 +119,7 @@ pub use crate::ffi::sync_fn::{
     value_move_out_norm_noalias
 };
 use crate::data::tyck::TyckInfoPool;
-use crate::vm::al31f::alloc::Alloc;
+use crate::ffi::sync_fn::VMContext;
 
 #[inline] pub unsafe fn value_into_ref<'a, T>(
     value: Value

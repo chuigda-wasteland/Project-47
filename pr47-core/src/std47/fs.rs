@@ -18,7 +18,7 @@ use crate::ffi::async_fn::{
     AsyncShareGuard,
     AsyncVMContext,
     Promise,
-    VMDataTrait,
+    LockedCtx,
     value_into_ref
 };
 #[cfg(feature = "async-astd")] use async_std::fs::read_to_string;
@@ -42,10 +42,10 @@ impl AsyncFunctionBase for AsyncReadToStringBind {
         }
     }
 
-    unsafe fn call_rtlc<A: Alloc, VD: VMDataTrait<Alloc=A>, ACTX: AsyncVMContext<VMData=VD>>(
+    unsafe fn call_rtlc<LC: LockedCtx, ACTX: AsyncVMContext<Locked=LC>>(
         _context: &ACTX,
         args: &[Value]
-    ) -> Result<Promise<A>, FFIException> {
+    ) -> Result<Promise<LC>, FFIException> {
         struct AsyncRet {
             #[allow(dead_code)]
             g: AsyncShareGuard,
@@ -56,30 +56,28 @@ impl AsyncFunctionBase for AsyncReadToStringBind {
             result: tokio::io::Result<String>
         }
 
-        impl<A: Alloc> AsyncReturnType<A> for AsyncRet {
+        impl<LC: LockedCtx> AsyncReturnType<LC> for AsyncRet {
             fn is_err(&self) -> bool {
                 self.result.is_err()
             }
 
             fn resolve(
                 self: Box<Self>,
-                alloc: &mut A,
+                locked_ctx: &mut LC,
                 dests: &[*mut Value]
             ) -> Result<usize, ExceptionInner> {
                 match self.result {
                     Ok(data) => {
                         let value: Value = Value::new_owned(data);
+                        locked_ctx.add_heap_managed(value);
                         unsafe {
-                            alloc.add_managed(value);
                             **dests.get_unchecked(0) = value;
                         }
                         Ok(1)
                     }
                     Err(e) => {
                         let err_value: Value = Value::new_owned(e);
-                        unsafe {
-                            alloc.add_managed(err_value);
-                        }
+                        locked_ctx.add_heap_managed(err_value);
                         Err(ExceptionInner::Checked(err_value))
                     }
                 }
@@ -90,7 +88,7 @@ impl AsyncFunctionBase for AsyncReadToStringBind {
 
         let fut = async move {
             let result = read_to_string(r).await;
-            Box::new(AsyncRet { g, result }) as Box<dyn AsyncReturnType<A>>
+            Box::new(AsyncRet { g, result }) as Box<dyn AsyncReturnType<LC>>
         };
 
         Ok(Promise(Box::pin(fut)))
