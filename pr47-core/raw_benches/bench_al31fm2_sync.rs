@@ -16,9 +16,13 @@ use pr47::vm::al31f::test_program::{
 fn run_program(mut program: CompiledProgram<DefaultAlloc>, args: Vec<Value>) {
     for _ in 0..10 {
         let alloc: DefaultAlloc = DefaultAlloc::new();
+        let start_time = std::time::Instant::now();
         let result: Result<Vec<Value>, Exception> = unsafe {
             vm_run_function_sync(alloc, &mut program, 0, &args)
         };
+        let end_time = std::time::Instant::now();
+        eprintln!("elapsed time = {}", (end_time - start_time).as_millis());
+
         if let Err(_) = result {
             panic!("");
         }

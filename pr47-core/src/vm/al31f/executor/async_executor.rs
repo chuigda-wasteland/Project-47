@@ -25,7 +25,6 @@ use crate::vm::al31f::exception::Exception;
 use crate::vm::al31f::executor::checked_bin_ops::*;
 use crate::vm::al31f::executor::checked_cast_ops::*;
 use crate::vm::al31f::executor::checked_unary_ops::*;
-use crate::vm::al31f::executor::coroutine_spawn::coroutine_spawn;
 use crate::vm::al31f::executor::overload::call_overload;
 use crate::vm::al31f::executor::rtti::check_type;
 use crate::vm::al31f::executor::unwinding::*;
@@ -44,6 +43,7 @@ use crate::vm::al31f::stack::{Stack, StackSlice};
 #[cfg(feature = "async")] use crate::vm::al31f::AsyncCombustor;
 
 #[cfg(all(feature = "async", feature = "al31f-builtin-ops"))]
+use crate::vm::al31f::executor::coroutine_spawn::coroutine_spawn;
 
 include!("get_vm_makro.rs");
 include!("impl_makro.rs");
