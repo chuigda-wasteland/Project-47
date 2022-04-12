@@ -43,6 +43,9 @@ unicode-width = { optional = true, version = "0.1" }
 tokio = { version = "1", features = ["rt-multi-thread", "fs"] }
 variant_count = "1"
 
+[build-dependencies]
+cc = { optional = true, version = "1" }
+
 [features]
 default = [
     "al31fu",
@@ -57,7 +60,7 @@ default = [
 
 al31fm2 = []
 al31fm2-builtin-ops = []
-al31fu = []
+al31fu = ["cc"]
 async = ["futures"]
 async-astd = ["async", "async-std", "xjbutil/async-astd"]
 async-avoid-block = []
