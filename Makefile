@@ -3,9 +3,9 @@ all:
 	@echo "Please, run something else"
 
 ASYNC_BENCH_FEATURES = \
-	--no-default-features --features="al31f al31fm2-builtin-ops async async-tokio bench optimized-rtlc std47"
+	--no-default-features --features="al31fm2 al31fm2-builtin-ops async async-tokio bench optimized-rtlc std47"
 SYNC_BENCH_FEATURES = \
-	--no-default-features --features="al31f al31fm2-builtin-ops bench optimized-rtlc std47"
+	--no-default-features --features="al31fm2 al31fm2-builtin-ops bench optimized-rtlc std47"
 
 .PHONY:
 clean:
