@@ -3,6 +3,10 @@ use std::convert::Infallible;
 use xjbutil::wide_ptr::WidePointer;
 
 use crate::data::Value;
+use crate::util::serializer::{CoroutineSharedData, Serializer};
+use crate::vm::al31fu::combustor::LockedAsyncContext;
+
+pub struct AsyncCombustor(pub(crate) Serializer<(CoroutineSharedData, LockedAsyncContext)>);
 
 #[no_mangle]
 pub extern "C" fn pr47_al31fu_rs_rust_panic() -> Infallible {

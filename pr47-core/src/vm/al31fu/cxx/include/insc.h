@@ -6,6 +6,7 @@
 namespace pr47 {
 namespace al31fu {
 
+// @todo generate this with some table generation tool
 enum InscOpCode : std::uint32_t {
     Move = 0,
 

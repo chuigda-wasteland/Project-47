@@ -75,19 +75,45 @@ struct ValueTypedData {
     assert(GetTag() == ValueTypeTag::Int);
     return inner.intValue;
   }
+
+  constexpr inline double GetAsFloat() const {
+    assert(GetTag() == ValueTypeTag::Float);
+    return inner.floatValue;
+  }
+
+  constexpr inline char32_t GetAsChar() const {
+    assert(GetTag() == ValueTypeTag::Char);
+    return inner.charValue;
+  }
+
+  constexpr inline bool GetAsBool() const {
+    assert(GetTag() == ValueTypeTag::Bool);
+    return inner.boolValue;
+  }
+
+  constexpr inline uint64_t GetRepr() const {
+    return inner.repr;
+  }
 };
 
 union Value {
   WidePointer widePointer;
   ValueTypedData valueTypedData;
+
+  constexpr inline explicit Value(WidePointer wide_pointer)
+    : widePointer(wide_pointer) {}
+
+  constexpr inline explicit Value(ValueTypedData value_typed_data)
+    : valueTypedData(value_typed_data) {}
 };
 
 extern "C" {
 
 [[noreturn]] void pr47_al31fu_rs_rust_panic();
 
-bool pr47_al31fu_rs_poll_fut(WidePointer wide_ptr,
-                             std::array<Value*, 8> *ret_values);
+bool
+pr47_al31fu_rs_poll_fut(WidePointer wide_ptr,
+                        std::array<Value*, 8> *ret_values);
 
 } // extern "C"
 
