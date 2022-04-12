@@ -5,3 +5,5 @@ project(pseudo_project)
 set(CMAKE_CXX_STANDARD 14)
 
 include_directories(./include)
+
+add_library(pr47_al31fu_pseudo src/insc.cc src/pseudo.cc)
