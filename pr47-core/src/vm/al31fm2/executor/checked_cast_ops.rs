@@ -48,7 +48,7 @@ use crate::data::value_typed::{
     match src.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize) {
         CHAR_TYPE_TAG => *dest = src,
         // should we even implement this?
-        // INT_TYPE_TAG => *dest = Value::new_char(src.vt_data.inner.int_value as u32 as char),
+        // INT_TYPE_TAG => *dest = Value::new_char(src.vt_data.inner.intValue as u32 as char),
         _ => return Err(UncheckedException::InvalidCastOp { dest_type: "char", src })
     }
 
