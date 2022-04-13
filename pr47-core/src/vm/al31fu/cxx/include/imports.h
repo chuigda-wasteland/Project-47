@@ -5,17 +5,16 @@
 #include <cassert>
 #include <cstdint>
 
-namespace pr47 {
-namespace al31fu {
+namespace pr47::al31fu {
 
 struct WidePointer {
   size_t ptr;
   size_t trivia;
 
-  constexpr inline WidePointer(uintptr_t ptr, uintptr_t trivia)
+  constexpr inline WidePointer(uintptr_t ptr, uintptr_t trivia) noexcept
     : ptr(ptr), trivia(trivia) {}
 
-  constexpr inline bool operator==(const WidePointer& other) const {
+  constexpr inline bool operator==(const WidePointer& other) const noexcept {
     return ptr == other.ptr && trivia == other.trivia;
   }
 };
@@ -30,7 +29,7 @@ enum class ValueTypeTag : uint8_t {
   Bool = 0b00'100'000,
 };
 
-constexpr inline size_t MakeValueTypedDataTag(ValueTypeTag tag) {
+constexpr inline size_t MakeValueTypedDataTag(ValueTypeTag tag) noexcept {
   return static_cast<size_t>(tag) | VALUE_TYPE_TAG_MASK;
 }
 
@@ -44,66 +43,86 @@ struct ValueTypedData {
     bool boolValue;
     uint64_t repr;
 
-    constexpr inline explicit Inner(int64_t value) : intValue(value) {}
-    constexpr inline explicit Inner(double value) : floatValue(value) {}
-    constexpr inline explicit Inner(char32_t value) : charValue(value) {}
-    constexpr inline explicit Inner(bool value) : boolValue(value) {}
-    constexpr inline explicit Inner(uint64_t value) : repr(value) {}
+    constexpr inline explicit Inner(int64_t value) noexcept
+      : intValue(value) {}
+    constexpr inline explicit Inner(double value) noexcept
+      : floatValue(value) {}
+    constexpr inline explicit Inner(char32_t value) noexcept
+      : charValue(value) {}
+    constexpr inline explicit Inner(bool value) noexcept
+      : boolValue(value) {}
+    constexpr inline explicit Inner(uint64_t value) noexcept
+      : repr(value) {}
   } inner;
 
-  constexpr inline explicit ValueTypedData(int64_t int_value)
+  constexpr inline explicit ValueTypedData(int64_t intValue) noexcept
     : tag(MakeValueTypedDataTag(ValueTypeTag::Int)),
-      inner(int_value) {}
+      inner(intValue) {}
 
-  constexpr inline explicit ValueTypedData(double float_value)
+  constexpr inline explicit ValueTypedData(double floatValue) noexcept
     : tag(MakeValueTypedDataTag(ValueTypeTag::Float)),
-      inner(float_value) {}
+      inner(floatValue) {}
 
-  constexpr inline explicit ValueTypedData(char32_t char_value)
+  constexpr inline explicit ValueTypedData(char32_t charValue) noexcept
     : tag(MakeValueTypedDataTag(ValueTypeTag::Char)),
-      inner(char_value) {}
+      inner(charValue) {}
 
-  constexpr inline explicit ValueTypedData(bool bool_value)
+  constexpr inline explicit ValueTypedData(bool boolValue) noexcept
     : tag(MakeValueTypedDataTag(ValueTypeTag::Bool)),
-      inner(bool_value) {}
+      inner(boolValue) {}
 
-  constexpr inline ValueTypeTag GetTag() const {
+  [[nodiscard]] constexpr inline ValueTypeTag GetTag() const noexcept {
     return static_cast<ValueTypeTag>(tag & VALUE_TYPE_TAG_MASK);
   }
 
-  constexpr inline int64_t GetAsInt() const {
+  [[nodiscard]] constexpr inline int64_t GetAsInt() const noexcept {
     assert(GetTag() == ValueTypeTag::Int);
     return inner.intValue;
   }
 
-  constexpr inline double GetAsFloat() const {
+  [[nodiscard]] constexpr inline double GetAsFloat() const noexcept {
     assert(GetTag() == ValueTypeTag::Float);
     return inner.floatValue;
   }
 
-  constexpr inline char32_t GetAsChar() const {
+  [[nodiscard]] constexpr inline char32_t GetAsChar() const noexcept {
     assert(GetTag() == ValueTypeTag::Char);
     return inner.charValue;
   }
 
-  constexpr inline bool GetAsBool() const {
+  [[nodiscard]] constexpr inline bool GetAsBool() const noexcept {
     assert(GetTag() == ValueTypeTag::Bool);
     return inner.boolValue;
   }
 
-  constexpr inline uint64_t GetRepr() const {
+  [[nodiscard]] constexpr inline uint64_t GetRepr() const noexcept {
     return inner.repr;
   }
+};
+
+struct alignas(8) WrapperHeader {
+  uint32_t refCount;
+  uint8_t ownershipInfo;
+  uint8_t gcInfo;
+  uint8_t dataOffset;
+  uint8_t ownershipInfo2;
+
+  WrapperHeader() = delete;
+  WrapperHeader(const WrapperHeader&) = delete;
+  WrapperHeader(WrapperHeader&&) = delete;
+
+  WrapperHeader& operator=(const WrapperHeader&) = delete;
+  WrapperHeader& operator=(WrapperHeader&&) = delete;
 };
 
 union Value {
   WidePointer widePointer;
   ValueTypedData valueTypedData;
 
-  constexpr inline explicit Value(WidePointer wide_pointer)
+  constexpr inline explicit Value(WidePointer wide_pointer) noexcept
     : widePointer(wide_pointer) {}
 
-  constexpr inline explicit Value(ValueTypedData value_typed_data)
+  constexpr inline explicit Value(ValueTypedData value_typed_data) noexcept
     : valueTypedData(value_typed_data) {}
 };
 
@@ -113,11 +132,10 @@ extern "C" {
 
 bool
 pr47_al31fu_rs_poll_fut(WidePointer wide_ptr,
-                        std::array<Value*, 8> *ret_values);
+                        std::array<Value* __restrict, 8> *ret_values);
 
 } // extern "C"
 
-} // namespace al31fu
 } // namespace pr47
 
 #endif // PR47_AL31FU_IMPORTS_H
