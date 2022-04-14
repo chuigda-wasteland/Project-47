@@ -22,3 +22,7 @@ brute_force_proof.exe
 brute_force_proof.pdb
 
 pr47-core/src/vm/al31fu/cxx/cmake-build-*
+pr47-core/src/vm/al31fu/build*
+
+CMakeLists.txt.user
+CMakeLists.txt.user.*

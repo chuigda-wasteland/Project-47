@@ -2,14 +2,15 @@
 #define PR47_AL31FU_IMPORTS_H
 
 #include <array>
+#include <bit>
 #include <cassert>
 #include <cstdint>
 
 namespace pr47::al31fu {
 
 struct WidePointer {
-  size_t ptr;
-  size_t trivia;
+  std::size_t ptr;
+  std::size_t trivia;
 
   constexpr inline WidePointer(uintptr_t ptr, uintptr_t trivia) noexcept
     : ptr(ptr), trivia(trivia) {}
@@ -19,7 +20,12 @@ struct WidePointer {
   }
 };
 
+constexpr uint8_t TAG_BITS_MASK = 0b00'000'111;
+constexpr std::size_t TAG_BITS_MASK_USIZE =
+    static_cast<std::size_t>(TAG_BITS_MASK);
+constexpr std::size_t PTR_BITS_MASK_USIZE = ~TAG_BITS_MASK_USIZE;
 constexpr uint8_t VALUE_TYPE_MASK = 0b00'000'001;
+constexpr uint8_t GENERIC_TYPE_MASK = 0b00'000'010;
 constexpr uint8_t VALUE_TYPE_TAG_MASK = 0b00'111'000;
 
 enum class ValueTypeTag : uint8_t {
@@ -100,12 +106,20 @@ struct ValueTypedData {
   }
 };
 
+//                                                  G R W M C O
+constexpr std::uint8_t OWN_INFO_GLOBASL_MASK = 0b00'1'0'0'0'0'0;
+constexpr std::uint8_t OWN_INFO_READ_MASK    = 0b00'0'1'0'0'0'0;
+constexpr std::uint8_t OWN_INFO_WRITE_MASK   = 0b00'0'0'1'0'0'0;
+constexpr std::uint8_t OWN_INFO_MOVE_MASK    = 0b00'0'0'0'1'0'0;
+constexpr std::uint8_t OWN_INFO_COLLECT_MASK = 0b00'0'0'0'0'1'0;
+constexpr std::uint8_t OWN_INFO_OWN_MASK     = 0b00'0'0'0'0'0'1;
+
 struct alignas(8) WrapperHeader {
-  uint32_t refCount;
-  uint8_t ownershipInfo;
-  uint8_t gcInfo;
-  uint8_t dataOffset;
-  uint8_t ownershipInfo2;
+  std::uint32_t refCount;
+  std::uint8_t ownershipInfo;
+  std::uint8_t gcInfo;
+  std::uint8_t dataOffset;
+  std::uint8_t ownershipInfo2;
 
   WrapperHeader() = delete;
   WrapperHeader(const WrapperHeader&) = delete;
@@ -118,12 +132,127 @@ struct alignas(8) WrapperHeader {
 union Value {
   WidePointer widePointer;
   ValueTypedData valueTypedData;
+  WrapperHeader *wrapperHeader;
 
-  constexpr inline explicit Value(WidePointer wide_pointer) noexcept
-    : widePointer(wide_pointer) {}
+  constexpr inline explicit Value(WidePointer widePointer) noexcept
+    : widePointer(widePointer) {}
 
-  constexpr inline explicit Value(ValueTypedData value_typed_data) noexcept
-    : valueTypedData(value_typed_data) {}
+  constexpr inline explicit Value(ValueTypedData valueTypedData) noexcept
+    : valueTypedData(valueTypedData) {}
+
+  constexpr inline explicit Value(int64_t value) noexcept
+    : valueTypedData(value) {}
+
+  constexpr inline explicit Value(double value) noexcept
+    : valueTypedData(value) {}
+
+  constexpr inline explicit Value(char32_t value) noexcept
+    : valueTypedData(value) {}
+
+  constexpr inline explicit Value(bool value) noexcept
+    : valueTypedData(value) {}
+
+  constexpr inline static Value CreateNull() noexcept {
+    return Value(WidePointer(0, 0));
+  }
+
+  constexpr inline bool IsNull() const noexcept {
+    return !this->widePointer.ptr;
+  }
+
+  constexpr inline bool IsValue() const noexcept {
+    return (this->widePointer.ptr & VALUE_TYPE_MASK) != 0;
+  }
+
+  constexpr inline bool IsReference() const noexcept {
+    return (this->widePointer.ptr & VALUE_TYPE_MASK) == 0;
+  }
+
+  constexpr inline bool IsContainer() const noexcept {
+    return (this->widePointer.ptr & GENERIC_TYPE_MASK) != 0;
+  }
+
+  constexpr inline std::size_t GetUntaggedPtr() const noexcept {
+    return (this->widePointer.ptr & PTR_BITS_MASK_USIZE);
+  }
+
+  constexpr inline std::uint32_t GetRefCount() const noexcept {
+    return std::bit_cast<WrapperHeader const*>(this->GetUntaggedPtr())
+        ->refCount;
+  }
+
+  constexpr inline std::uint32_t GetRefCountNorm() const noexcept {
+    return this->wrapperHeader->refCount;
+  }
+
+  constexpr inline void IncrRefCount() noexcept {
+    std::bit_cast<WrapperHeader*>(this->GetUntaggedPtr())->refCount += 1;
+  }
+
+  constexpr inline void IncrRefCountNorm() noexcept {
+    this->wrapperHeader->refCount += 1;
+  }
+
+  constexpr inline void DecrRefCount() noexcept {
+    std::bit_cast<WrapperHeader*>(this->GetUntaggedPtr())->refCount -= 1;
+  }
+
+  constexpr inline void DecrRefCountNorm() noexcept {
+    this->wrapperHeader->refCount -= 1;
+  }
+
+  constexpr inline std::uint8_t GetOwnershipInfo() const noexcept {
+    return std::bit_cast<WrapperHeader const*>(this->GetUntaggedPtr())
+        ->ownershipInfo;
+  }
+
+  constexpr inline std::uint8_t GetOwnershipInfoNorm() const noexcept {
+    return this->wrapperHeader->ownershipInfo;
+  }
+
+  constexpr inline void SetOwnershipInfo(std::uint8_t info) noexcept {
+    std::bit_cast<WrapperHeader*>(this->GetUntaggedPtr())->ownershipInfo = info;
+  }
+
+  constexpr inline void SetOwnershipInfoNorm(std::uint8_t info) noexcept {
+    this->wrapperHeader->ownershipInfo = info;
+  }
+
+  constexpr inline void BackupOwnershipInfo() noexcept {
+    WrapperHeader* header =
+        std::bit_cast<WrapperHeader*>(this->GetUntaggedPtr());
+    header->ownershipInfo2 = header->ownershipInfo;
+  }
+
+  constexpr inline void BackupOwnershipInfoNorm() noexcept {
+    this->wrapperHeader->ownershipInfo2 = this->wrapperHeader->ownershipInfo;
+  }
+
+  constexpr inline void ResetOwnershipInfo() noexcept {
+    WrapperHeader* header =
+        std::bit_cast<WrapperHeader*>(this->GetUntaggedPtr());
+    header->ownershipInfo = header->ownershipInfo2;
+  }
+
+  constexpr inline void ResetOwnershipInfoNorm() noexcept {
+    this->wrapperHeader->ownershipInfo = this->wrapperHeader->ownershipInfo2;
+  }
+
+  constexpr inline WidePointer GetAsDynBase() const noexcept {
+    return WidePointer(this->GetUntaggedPtr(), this->widePointer.trivia);
+  }
+
+  constexpr void* GetAsMutPtr() const noexcept {
+    std::size_t untaggedPtr = this->GetUntaggedPtr();
+    WrapperHeader* header = std::bit_cast<WrapperHeader*>(untaggedPtr);
+    std::size_t dataOffset = static_cast<std::size_t>(header->dataOffset);
+    if (header->ownershipInfo & OWN_INFO_OWN_MASK) {
+      return static_cast<void*>(header + dataOffset);
+    } else {
+      void **pPtr = std::bit_cast<void**>(header + dataOffset);
+      return *pPtr;
+    }
+  }
 };
 
 extern "C" {
@@ -136,6 +265,6 @@ pr47_al31fu_rs_poll_fut(WidePointer wide_ptr,
 
 } // extern "C"
 
-} // namespace pr47
+} // namespace pr47::al31fu
 
 #endif // PR47_AL31FU_IMPORTS_H

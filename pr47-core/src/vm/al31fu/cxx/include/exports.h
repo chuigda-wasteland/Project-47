@@ -1,4 +1,4 @@
-#ifndef pr47_al31fu_rsS_H
-#define pr47_al31fu_rsS_H
+#ifndef PR47_AL31FU_EXPORTS_H
+#define PR47_AL31FU_EXPORTS_H
 
-#endif // pr47_al31fu_rsS_H
+#endif // PR47_AL31FU_EXPORTS_H
