@@ -47,8 +47,10 @@ use crate::data::value_typed::{
 ) -> Result<(), UncheckedException> {
     match src.vt_data.tag & (VALUE_TYPE_TAG_MASK as usize) {
         CHAR_TYPE_TAG => *dest = src,
-        // should we even implement this?
-        // INT_TYPE_TAG => *dest = Value::new_char(src.vt_data.inner.int_value as u32 as char),
+        INT_TYPE_TAG => match char::try_from(src.vt_data.inner.repr as u32) {
+            Ok(c) => *dest = Value::new_char(c),
+            Err(_) => return Err(UncheckedException::InvalidCastOp { dest_type: "char", src })
+        },
         _ => return Err(UncheckedException::InvalidCastOp { dest_type: "char", src })
     }
 
