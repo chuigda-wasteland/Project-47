@@ -9,7 +9,6 @@ use crate::data::Value;
 use crate::data::exception::ExceptionInner;
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::ffi::{DataOption, FFIException, Signature};
-use crate::vm::al31f::alloc::Alloc;
 
 #[cfg(feature = "async")]
 use crate::ffi::async_fn::{

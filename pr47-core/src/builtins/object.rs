@@ -32,7 +32,7 @@ impl StaticBase<Object> for Void {
     }
 }
 
-#[cfg(not(feature = "al31f-builtin-ops"))]
+#[cfg(all(feature = "al31fm2", not(feature = "al31fm2-builtin-ops")))]
 mod ops {
     use std::ptr::NonNull;
     use unchecked_unwrap::UncheckedUnwrap;
