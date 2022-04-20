@@ -3,8 +3,8 @@ use std::ptr::NonNull;
 
 use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::unchecked::UnsafeFrom;
-use crate::data::generic::GenericTypeVT;
 
+use crate::data::generic::GenericTypeVT;
 use crate::data::tyck::TyckInfo;
 use crate::data::Value;
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
