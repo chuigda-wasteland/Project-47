@@ -531,8 +531,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 }
             },
             Insc::FFICallRtlc(ffi_func_id, args, ret_value_locs) => {
-                let ffi_function: &'static dyn FFIFunction<Combustor<A>>
-                    = program.ffi_funcs[*ffi_func_id];
+                let ffi_function: &FFIFunction<Combustor<A>> = &program.ffi_funcs[*ffi_func_id];
 
                 let args_len: usize = args.len();
                 for i /*: usize*/ in 0..args_len {
@@ -548,7 +547,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
 
                 let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
-                if let Err(e /*: FFIException*/) = ffi_function.call_rtlc(
+                if let Err(e /*: FFIException*/) = (ffi_function.call_rtlc)(
                     &mut combustor,
                     &ffi_args[0..args_len],
                     &ffi_rets[0..ret_locs_len]
@@ -580,8 +579,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 let ffi_function: &'static dyn FFIFunction<Combustor<A>>
                     = *program.ffi_funcs.get_unchecked(*ffi_func_id);
                 #[cfg(debug_assertions)]
-                let ffi_function: &'static dyn FFIFunction<Combustor<A>>
-                    = program.ffi_funcs[*ffi_func_id];
+                let ffi_function: &FFIFunction<Combustor<A>> = &program.ffi_funcs[*ffi_func_id];
 
                 let args_len: usize = args.len();
                 for i /*: usize*/ in 0..args_len {
@@ -597,7 +595,7 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
 
                 let mut combustor: Combustor<A> = Combustor::new(NonNull::from(get_vm!(thread)));
 
-                if let Err(e /*: FFIException*/) = ffi_function.call_unchecked(
+                if let Err(e /*: FFIException*/) = (ffi_function.call_unchecked)(
                     &mut combustor,
                     &ffi_args[0..args_len],
                     &ffi_rets[0..ret_locs_len]

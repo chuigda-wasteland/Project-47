@@ -30,7 +30,7 @@ impl FunctionBase for DurationForMillisBind {
         }
     }
 
-    unsafe fn call_rtlc<CTX: VMContext>(
+    unsafe extern "C" fn call_rtlc<CTX: VMContext>(
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
@@ -38,7 +38,7 @@ impl FunctionBase for DurationForMillisBind {
         Self::call_unchecked(context, args, rets)
     }
 
-    unsafe fn call_unchecked<CTX: VMContext>(
+    unsafe extern "C" fn call_unchecked<CTX: VMContext>(
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]

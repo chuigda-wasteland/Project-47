@@ -7,6 +7,7 @@ use crate::data::Value;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfoPool;
 use crate::ffi::{FFIException, Signature};
+use crate::ffi::sync_fn::Function as FFIFunction;
 use crate::ffi::sync_fn::{FunctionBase, OwnershipGuard, VMContext, value_into_ref};
 use crate::vm::al31f::alloc::Alloc;
 use crate::vm::al31f::compiled::{CompiledFunction, CompiledProgram, ExceptionHandlingBlock};
@@ -21,7 +22,7 @@ use crate::vm::al31f::insc::Insc;
 };
 #[cfg(feature = "async")] use crate::ffi::async_fn::LockedCtx;
 #[cfg(feature = "async")] use crate::std47::futures::SLEEP_MS_BIND;
-#[cfg(feature = "async")] use crate::std47::io::PRINT_BIND;
+#[cfg(feature = "async")] use crate::std47::io::PrintBind;
 
 pub fn basic_program<A: Alloc>() -> CompiledProgram<A> {
     let (slice_arena, code) = unsafe {
@@ -239,7 +240,7 @@ impl FunctionBase for Pr47Binder_ffi_function {
         todo!()
     }
 
-    unsafe fn call_rtlc<CTX: VMContext>(
+    unsafe extern "C" fn call_rtlc<CTX: VMContext>(
         _context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
@@ -260,7 +261,7 @@ impl FunctionBase for Pr47Binder_ffi_function {
         Ok(())
     }
 
-    unsafe fn call_unchecked<CTX: VMContext>(
+    unsafe extern "C" fn call_unchecked<CTX: VMContext>(
         _context: &mut CTX,
         _args: &[Value],
         _rets: &[*mut Value]
@@ -268,8 +269,6 @@ impl FunctionBase for Pr47Binder_ffi_function {
         todo!()
     }
 }
-
-const PR47BINDER_FFI_FUNCTION: &'static Pr47Binder_ffi_function = &Pr47Binder_ffi_function();
 
 pub fn ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
     let (slice_arena, code) = unsafe {
@@ -293,7 +292,7 @@ pub fn ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
         functions: boxed_slice![
             CompiledFunction::new(0, 0, 0, 1, boxed_slice![])
         ],
-        ffi_funcs: boxed_slice![PR47BINDER_FFI_FUNCTION as _],
+        ffi_funcs: boxed_slice![FFIFunction::transmute_from::<Pr47Binder_ffi_function>()],
         #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
@@ -356,7 +355,7 @@ pub fn bench_ffi_call_program<A: Alloc>() -> CompiledProgram<A> {
         functions: boxed_slice![
             CompiledFunction::new(0, 0, 0, 5, boxed_slice![])
         ],
-        ffi_funcs: boxed_slice![PR47BINDER_FFI_FUNCTION as _],
+        ffi_funcs: boxed_slice![FFIFunction::transmute_from::<Pr47Binder_ffi_function>()],
         #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
@@ -373,7 +372,7 @@ impl FunctionBase for Pr47Binder_ffi_function2 {
         unimplemented!()
     }
 
-    unsafe fn call_rtlc<CTX: VMContext>(
+    unsafe extern "C" fn call_rtlc<CTX: VMContext>(
         _context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
@@ -390,7 +389,7 @@ impl FunctionBase for Pr47Binder_ffi_function2 {
         Ok(())
     }
 
-    unsafe fn call_unchecked<CTX: VMContext>(
+    unsafe extern "C" fn call_unchecked<CTX: VMContext>(
         _context: &mut CTX,
         _args: &[Value],
         _rets: &[*mut Value]
@@ -422,7 +421,7 @@ pub fn ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
         functions: boxed_slice![
             CompiledFunction::new(0, 2, 1, 2, boxed_slice![])
         ],
-        ffi_funcs: boxed_slice![PR47_BINDER_FFI_FUNCTION2 as _],
+        ffi_funcs: boxed_slice![FFIFunction::transmute_from::<Pr47Binder_ffi_function2>()],
         #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
@@ -462,7 +461,7 @@ pub fn bench_ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
         functions: boxed_slice![
             CompiledFunction::new(0, 0, 0, 6, boxed_slice![])
         ],
-        ffi_funcs: boxed_slice![PR47_BINDER_FFI_FUNCTION2 as _],
+        ffi_funcs: boxed_slice![FFIFunction::transmute_from::<Pr47Binder_ffi_function2>()],
         #[cfg(feature="async")] async_ffi_funcs: boxed_slice![]
     }
 }
@@ -625,7 +624,7 @@ pub fn async_spawn_program<A: Alloc>() -> CompiledProgram<A> {
             CompiledFunction::new(0, 0, 0, 2, boxed_slice![]),
             CompiledFunction::new(12, 0, 0, 1, boxed_slice![])
         ],
-        ffi_funcs: boxed_slice![PRINT_BIND as _],
+        ffi_funcs: boxed_slice![FFIFunction::transmute_from::<PrintBind>() as _],
         async_ffi_funcs: boxed_slice![SLEEP_MS_BIND as _]
     }
 }

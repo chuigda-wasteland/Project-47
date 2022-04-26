@@ -21,61 +21,36 @@ pub trait VMContext: 'static + Sized {
 pub trait FunctionBase: 'static {
     fn signature(tyck_info_pool: &mut TyckInfoPool) -> Signature;
 
-    unsafe fn call_rtlc<CTX: VMContext>(
+    unsafe extern "C" fn call_rtlc<CTX: VMContext>(
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
     ) -> Result<(), FFIException>;
 
-    unsafe fn call_unchecked<CTX: VMContext>(
-        context: &mut CTX,
-        args: &[Value],
-        rets: &[*mut Value]
-    ) -> Result<(), FFIException>;
-}
-
-pub trait Function<CTX: VMContext>: 'static {
-    fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature;
-
-    unsafe fn call_rtlc(
-        &self,
-        context: &mut CTX,
-        args: &[Value],
-        rets: &[*mut Value]
-    ) -> Result<(), FFIException>;
-
-    unsafe fn call_unchecked(
-        &self,
+    unsafe extern "C" fn call_unchecked<CTX: VMContext>(
         context: &mut CTX,
         args: &[Value],
         rets: &[*mut Value]
     ) -> Result<(), FFIException>;
 }
 
-impl<FBase, CTX> Function<CTX> for FBase where
-    FBase: FunctionBase,
-    CTX: VMContext
-{
-    #[inline] fn signature(&self, tyck_info_pool: &mut TyckInfoPool) -> Signature {
-        <FBase as FunctionBase>::signature(tyck_info_pool)
-    }
+type CallFn<CTX> = unsafe extern "C" fn(
+    context: &mut CTX,
+    args: &[Value],
+    rets: &[*mut Value]
+) -> Result<(), FFIException>;
 
-    #[inline] unsafe fn call_rtlc(
-        &self,
-        context: &mut CTX,
-        args: &[Value],
-        rets: &[*mut Value]
-    ) -> Result<(), FFIException> {
-        <FBase as FunctionBase>::call_rtlc(context, args, rets)
-    }
+pub struct Function<CTX: VMContext> {
+    pub call_rtlc: CallFn<CTX>,
+    pub call_unchecked: CallFn<CTX>
+}
 
-    #[inline] unsafe fn call_unchecked(
-        &self,
-        context: &mut CTX,
-        args: &[Value],
-        rets: &[*mut Value]
-    ) -> Result<(), FFIException> {
-        <FBase as FunctionBase>::call_unchecked(context, args, rets)
+impl<CTX: VMContext> Function<CTX> {
+    pub fn transmute_from<F: FunctionBase>() -> Self {
+        Self {
+            call_rtlc: F::call_rtlc,
+            call_unchecked: F::call_unchecked
+        }
     }
 }
 

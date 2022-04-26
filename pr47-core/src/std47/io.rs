@@ -18,7 +18,7 @@ impl FunctionBase for PrintBind {
         unimplemented!("print does not have a standard signature")
     }
 
-    unsafe fn call_rtlc<CTX: VMContext>(
+    unsafe extern "C" fn call_rtlc<CTX: VMContext>(
         _context: &mut CTX,
         args: &[Value],
         _rets: &[*mut Value]
@@ -50,7 +50,7 @@ impl FunctionBase for PrintBind {
         Ok(())
     }
 
-    unsafe fn call_unchecked<CTX: VMContext>(
+    unsafe extern "C" fn call_unchecked<CTX: VMContext>(
         _context: &mut CTX,
         args: &[Value],
         _rets: &[*mut Value]
@@ -74,5 +74,3 @@ impl FunctionBase for PrintBind {
         Ok(())
     }
 }
-
-pub const PRINT_BIND: &PrintBind = &PrintBind();
