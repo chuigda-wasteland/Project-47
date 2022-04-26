@@ -2,7 +2,7 @@ use xjbutil::void::Void;
 
 use crate::data::Value;
 use crate::data::generic::GenericTypeRef;
-use crate::data::exception::{UncheckedException};
+use crate::data::exception::RawException;
 use crate::data::traits::StaticBase;
 use crate::data::tyck::TyckInfoPool;
 use crate::data::wrapper::{OwnershipInfo, Wrapper};

@@ -398,8 +398,6 @@ impl FunctionBase for Pr47Binder_ffi_function2 {
     }
 }
 
-const PR47_BINDER_FFI_FUNCTION2: &'static Pr47Binder_ffi_function2 = &Pr47Binder_ffi_function2();
-
 pub fn ffi_call_program2<A: Alloc>() -> CompiledProgram<A> {
     let (slice_arena, code) = unsafe {
         let arena: SliceArena<8192, 8> = SliceArena::new();
