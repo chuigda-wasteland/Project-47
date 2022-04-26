@@ -1,7 +1,7 @@
 use std::ptr::NonNull;
 
 use crate::data::tyck::TyckInfo;
-use crate::data::exception::ExceptionInner;
+use crate::data::exception::RawException;
 
 pub mod sync_fn;
 
@@ -26,4 +26,4 @@ pub struct Signature {
     pub ret_option: Box<[DataOption]>
 }
 
-pub type FFIException = ExceptionInner;
+pub type FFIException = RawException;
