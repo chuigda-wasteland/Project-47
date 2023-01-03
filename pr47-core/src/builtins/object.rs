@@ -35,7 +35,7 @@ impl StaticBase<Object> for Void {
 #[cfg(all(feature = "al31fm2", not(feature = "al31fm2-builtin-ops")))]
 mod ops {
     use std::ptr::NonNull;
-    use unchecked_unwrap::UncheckedUnwrap;
+    use unwrap_unchecked::UncheckedUnwrap;
     use xjbutil::boxed_slice;
     use xjbutil::unchecked::UncheckedCellOps;
 
@@ -111,7 +111,7 @@ mod ops {
                 .get(field)
                 .map(|x| *x)
                 .or(Some(Value::new_null()))
-                .unchecked_unwrap();
+                .unwrap_unchecked();
             **rets.get_unchecked(0) = value;
             Ok(())
         }

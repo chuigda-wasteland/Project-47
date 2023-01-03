@@ -1,7 +1,5 @@
 use std::collections::VecDeque;
 
-use unchecked_unwrap::UncheckedUnwrap;
-
 use crate::data::Value;
 use crate::data::generic::GenericTypeVT;
 use crate::data::wrapper::{DynBase, OWN_INFO_COLLECT_MASK, OWN_INFO_GLOBAL_MASK};
@@ -106,7 +104,7 @@ impl Alloc for DefaultAlloc {
     }
 
     unsafe fn remove_stack(&mut self, stack: *const Stack) {
-        let _removed = self.stacks.remove(self.stacks.binary_search(&stack).unchecked_unwrap());
+        let _removed = self.stacks.remove(self.stacks.binary_search(&stack).unwrap_unchecked());
     }
 
     unsafe fn add_managed(&mut self, data: Value) {

@@ -1,5 +1,4 @@
 use std::any::TypeId;
-use unchecked_unwrap::UncheckedUnwrap;
 
 use xjbutil::unchecked::UnsafeFrom;
 
@@ -39,7 +38,7 @@ impl FunctionBase for PrintBind {
                     }));
                 }
                 if !arg.is_container() &&
-                    arg.get_as_dyn_base().as_ref().unchecked_unwrap().dyn_type_id()
+                    arg.get_as_dyn_base().as_ref().unwrap_unchecked().dyn_type_id()
                         == TypeId::of::<String>() {
                     print!("{}", &*(arg.get_as_mut_ptr_norm::<String>() as *const _));
                 } else {
@@ -64,7 +63,7 @@ impl FunctionBase for PrintBind {
                     ValueTypeTag::Bool => print!("{}", arg.vt_data.inner.bool_value)
                 }
             } else if !arg.is_container() &&
-                arg.get_as_dyn_base().as_ref().unchecked_unwrap().dyn_type_id()
+                arg.get_as_dyn_base().as_ref().unwrap_unchecked().dyn_type_id()
                     == TypeId::of::<String>() {
                 print!("{}", &*(arg.get_as_mut_ptr_norm::<String>() as *const _));
             } else {

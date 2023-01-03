@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use crate::data::Value;
 use crate::data::exception::UncheckedException;
 use crate::data::value_typed::{

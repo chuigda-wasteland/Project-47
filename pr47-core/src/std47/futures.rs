@@ -6,7 +6,6 @@ use std::time::Duration;
 
 use futures::future::select_all;
 use smallvec::SmallVec;
-use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::boxed_slice;
 use xjbutil::async_utils::join_all;
 
@@ -65,7 +64,7 @@ impl AsyncFunctionBase for JoinBind {
                 let mut resolved_size: usize = 0;
                 for result in self.results {
                     resolved_size += unsafe {
-                        result.resolve(locked_ctx, &dests[resolved_size..]).unchecked_unwrap()
+                        result.resolve(locked_ctx, &dests[resolved_size..]).unwrap_unchecked()
                     }
                 }
                 Ok(resolved_size)

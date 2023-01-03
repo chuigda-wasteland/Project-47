@@ -9,7 +9,6 @@ pub mod ty;
 use std::cell::RefCell;
 use std::mem::swap;
 
-use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::defer;
 
 use crate::diag::{DiagContext, DiagMark};
@@ -71,7 +70,7 @@ impl<'s, 'd> Parser<'s, 'd> {
         if self.m_peek_token.is_none() {
             self.m_peek_token = Some(self.lexer.next_token())
         }
-        unsafe { self.m_peek_token.as_ref().unchecked_unwrap() }
+        unsafe { self.m_peek_token.as_ref().unwrap_unchecked() }
     }
 
     #[must_use = "not using the return value is likely to be a mistake"]

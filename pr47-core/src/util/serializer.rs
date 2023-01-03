@@ -16,7 +16,6 @@ use std::mem::transmute;
 use std::sync::Arc;
 
 use futures::future::JoinAll;
-use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::async_utils::{Mutex, MutexGuard, join_all, oneshot, task, yield_now};
 use xjbutil::async_utils::oneshot::{Receiver, Sender};
 use xjbutil::unchecked::{UncheckedCellOps, UncheckedOption};
@@ -240,7 +239,7 @@ impl<SD: 'static + Send> CoroutineContext<SD> {
                 }
                 let fut: JoinAll<_ /*: impl Future<Output=()>*/> = join_all(
                     running_tasks.into_iter().map(|(_tid, rx): (u32, Receiver<()>)| async move {
-                        rx.await.unchecked_unwrap()
+                        rx.await.unwrap_unchecked()
                     })
                 );
                 self.co_await(fut).await;

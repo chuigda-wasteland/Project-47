@@ -2,7 +2,6 @@ use std::any::TypeId;
 use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::addr_of;
 
-use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::unchecked::UnsafeFrom;
 use xjbutil::void::Void;
 
@@ -175,7 +174,7 @@ impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
     unsafe fn move_out_ck(&mut self, out: *mut (), type_id: TypeId) {
         debug_assert_eq!(self.dyn_type_id(), type_id);
         debug_assert!(OwnershipInfo::unsafe_from(self.ownership_info).is_movable());
-        let dest: &mut MaybeUninit<T> = (out as *mut MaybeUninit<T>).as_mut().unchecked_unwrap();
+        let dest: &mut MaybeUninit<T> = (out as *mut MaybeUninit<T>).as_mut().unwrap_unchecked();
         std::ptr::write(dest.as_mut_ptr(), ManuallyDrop::take(&mut self.data.owned).assume_init());
         self.ownership_info = OwnershipInfo::MovedToRust as u8;
     }
@@ -183,7 +182,7 @@ impl<T: 'static> DynBase for Wrapper<T> where Void: StaticBase<T> {
     #[cfg(not(debug_assertions))]
     unsafe fn move_out(&mut self, out: *mut ()) {
         let dest: &mut MaybeUninit<T>
-            = (out as *mut MaybeUninit<T>).as_mut().unchecked_unwrap();
+            = (out as *mut MaybeUninit<T>).as_mut().unwrap_unchecked();
         std::ptr::write(dest.as_mut_ptr(), ManuallyDrop::take(&mut self.data.owned).assume_init());
         self.ownership_info = OwnershipInfo::MovedToRust as u8;
     }

@@ -1,7 +1,6 @@
 use std::cell::UnsafeCell;
 
 use smallvec::SmallVec;
-use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::unchecked::UncheckedCellOps;
 
 use crate::diag::location::SourceCoord;
@@ -46,7 +45,7 @@ impl SourceManager {
             self.source_maps[file_id as usize]
                 .get_ref_unchecked()
                 .as_ref()
-                .unchecked_unwrap()
+                .unwrap_unchecked()
         };
 
         let line: usize = source_map.line_offsets

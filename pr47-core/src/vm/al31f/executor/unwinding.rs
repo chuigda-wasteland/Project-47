@@ -1,7 +1,5 @@
 use std::any::TypeId;
 
-use unchecked_unwrap::UncheckedUnwrap;
-
 use crate::data::exception::{CheckedException, UncheckedException};
 use crate::data::Value;
 use crate::vm::al31f::AL31F;
@@ -20,7 +18,7 @@ pub unsafe fn unchecked_exception_unwind_stack(
 
     let mut insc_ptr: usize = insc_ptr;
     while !stack.frames.is_empty() {
-        let last_frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
+        let last_frame: &FrameInfo = stack.frames.last().unwrap_unchecked();
         exception.push_stack_trace(last_frame.func_id, insc_ptr);
         insc_ptr = last_frame.ret_addr.saturating_sub(1);
 
@@ -43,7 +41,7 @@ pub unsafe fn checked_exception_unwind_stack<A: Alloc>(
     let mut insc_ptr: usize = insc_ptr;
 
     while !stack.frames.is_empty() {
-        let frame: &FrameInfo = stack.frames.last().unchecked_unwrap();
+        let frame: &FrameInfo = stack.frames.last().unwrap_unchecked();
         let func_id: usize = frame.func_id;
         exception.push_stack_trace(func_id, insc_ptr);
 

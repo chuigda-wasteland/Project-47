@@ -1,6 +1,5 @@
 use super::{Parser, TOP_LEVEL_DECL_FAILSAFE};
 
-use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::either::Either;
 
 use crate::awa;
@@ -71,10 +70,10 @@ impl<'s, 'd> Parser<'s, 'd> {
 
         match &mut decl {
             ConcreteDecl::ConstDecl(const_decl) => unsafe {
-                const_decl.attr.replace(attr_list).unchecked_unwrap();
+                const_decl.attr.replace(attr_list).unwrap_unchecked();
             },
             ConcreteDecl::FuncDecl(func_decl) => unsafe {
-                func_decl.attr.replace(attr_list).unchecked_unwrap();
+                func_decl.attr.replace(attr_list).unwrap_unchecked();
             },
             ConcreteDecl::ExportDecl(export_decl) => {
                 self.diag.borrow_mut()

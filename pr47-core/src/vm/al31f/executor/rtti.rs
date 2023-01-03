@@ -1,7 +1,6 @@
 use std::any::TypeId;
 use std::ptr::NonNull;
 
-use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::unchecked::UnsafeFrom;
 
 use crate::data::generic::GenericTypeVT;
@@ -21,7 +20,7 @@ pub unsafe fn check_type(value: Value, tyck_info: NonNull<TyckInfo>) -> bool {
                 ValueTypeTag::Bool => *plain == TypeId::of::<bool>(),
             }
         } else if !value.is_container() {
-            value.get_as_dyn_base().as_ref().unchecked_unwrap().dyn_tyck(tyck_info.as_ref())
+            value.get_as_dyn_base().as_ref().unwrap_unchecked().dyn_tyck(tyck_info.as_ref())
         } else {
             false
         },
@@ -44,7 +43,7 @@ pub unsafe fn check_type(value: Value, tyck_info: NonNull<TyckInfo>) -> bool {
                 // TODO this is temporary patch for LY testing
                 vt.tyck_info.as_ref().params.as_ref().len() == inner.params.as_ref().len()
             } else if value.is_ref() {
-                value.get_as_dyn_base().as_ref().unchecked_unwrap().dyn_tyck(tyck_info.as_ref())
+                value.get_as_dyn_base().as_ref().unwrap_unchecked().dyn_tyck(tyck_info.as_ref())
             } else {
                 false
             }

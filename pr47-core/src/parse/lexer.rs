@@ -3,7 +3,6 @@ use std::iter::Peekable;
 use std::str::CharIndices;
 
 use phf::phf_map;
-use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::diag::{DiagContext, DiagMark};
 use crate::diag::diag_data;
@@ -202,7 +201,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
     }
 
     pub fn maybe_lex_comment(&mut self) -> Token<'a> {
-        let (_, offset): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
+        let (_, offset): (char, usize) = unsafe { self.cur_char().unwrap_unchecked() };
         if let Some(ch) = self.peek_char() {
             if ch == '/' {
                 self.next_char();
@@ -259,7 +258,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
 
     pub fn lex_id_or_keyword(&mut self) -> Token<'a> {
         let start_loc: SourceLoc = self.current_loc();
-        let (_, start_idx): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
+        let (_, start_idx): (char, usize) = unsafe { self.cur_char().unwrap_unchecked() };
         self.next_char();
         while let Some((ch, _) /*: (char, usize)*/) = self.cur_char() {
             if !part_of_identifier(ch) {
@@ -291,7 +290,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
 
     pub fn lex_id(&mut self) -> Token<'a> {
         let start_loc: SourceLoc = self.current_loc();
-        let (_, start_idx): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
+        let (_, start_idx): (char, usize) = unsafe { self.cur_char().unwrap_unchecked() };
         self.next_char();
 
         while let Some((ch, idx)) = self.cur_char() {
@@ -310,7 +309,7 @@ impl<'a, 'b> Lexer<'a, 'b> {
 
     pub fn lex_symbol(&mut self) -> Token<'a> {
         let location: SourceLoc = self.current_loc();
-        let (ch, _): (char, usize) = unsafe { self.cur_char().unchecked_unwrap() };
+        let (ch, _): (char, usize) = unsafe { self.cur_char().unwrap_unchecked() };
 
         use TokenInner::*;
         match ch {

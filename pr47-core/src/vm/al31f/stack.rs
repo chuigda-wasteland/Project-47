@@ -1,7 +1,5 @@
 use std::ptr::NonNull;
 
-use unchecked_unwrap::UncheckedUnwrap;
-
 use crate::data::Value;
 
 #[cfg(debug_assertions)]
@@ -211,12 +209,12 @@ impl Stack {
     }
 
     pub unsafe fn last_frame_slice(&mut self) -> StackSlice {
-        let frame: &FrameInfo = self.frames.last().unchecked_unwrap();
+        let frame: &FrameInfo = self.frames.last().unwrap_unchecked();
         StackSlice(&mut self.values[frame.frame_start..frame.frame_end] as *mut _)
     }
 
     pub unsafe fn unwind_shrink_slice(&mut self) {
-        let frame: FrameInfo = self.frames.pop().unchecked_unwrap();
+        let frame: FrameInfo = self.frames.pop().unwrap_unchecked();
         self.values.truncate(frame.frame_start);
     }
 }
@@ -293,7 +291,7 @@ impl Stack {
         ret_value_locs: NonNull<[usize]>,
         ret_addr: usize
     ) -> StackSlice {
-        let this_frame: &FrameInfo = self.frames.last().unchecked_unwrap();
+        let this_frame: &FrameInfo = self.frames.last().unwrap_unchecked();
         let (this_frame_start, this_frame_end): (usize, usize)
             = (this_frame.frame_start, this_frame.frame_end);
         let new_frame_end: usize = this_frame_end + frame_size;
@@ -320,7 +318,7 @@ impl Stack {
         ret_value_locs: NonNull<[usize]>,
         ret_addr: usize
     ) -> StackSlice {
-        let this_frame: &FrameInfo = self.frames.last().unchecked_unwrap();
+        let this_frame: &FrameInfo = self.frames.last().unwrap_unchecked();
         let (this_frame_start, this_frame_end): (usize, usize)
             = (this_frame.frame_start, this_frame.frame_end);
         let new_frame_end: usize = this_frame_end + frame_size;
@@ -354,7 +352,7 @@ impl Stack {
 
         let ret_addr: usize = this_frame.ret_addr;
         self.values.truncate(prev_frame.frame_end);
-        self.frames.pop().unchecked_unwrap();
+        self.frames.pop().unwrap_unchecked();
         Some((StackSlice(prev_slice_ptr), ret_addr))
     }
 
@@ -378,7 +376,7 @@ impl Stack {
 
         let ret_addr: usize = this_frame.ret_addr;
         self.values.truncate(prev_frame.frame_end);
-        self.frames.pop().unchecked_unwrap();
+        self.frames.pop().unwrap_unchecked();
         Some((StackSlice(prev_slice_ptr), ret_addr))
     }
 
@@ -405,17 +403,17 @@ impl Stack {
 
         let ret_addr: usize = this_frame.ret_addr;
         self.values.truncate(prev_frame.frame_end);
-        self.frames.pop().unchecked_unwrap();
+        self.frames.pop().unwrap_unchecked();
         Some((StackSlice(prev_slice_ptr), ret_addr))
     }
 
     #[inline] pub unsafe fn last_frame_slice(&mut self) -> StackSlice {
-        let frame: &FrameInfo = self.frames.last().unchecked_unwrap();
+        let frame: &FrameInfo = self.frames.last().unwrap_unchecked();
         StackSlice(self.values.as_mut_ptr().add(frame.frame_start))
     }
 
     #[inline] pub unsafe fn unwind_shrink_slice(&mut self) {
-        let frame: FrameInfo = self.frames.pop().unchecked_unwrap();
+        let frame: FrameInfo = self.frames.pop().unwrap_unchecked();
         self.values.truncate(frame.frame_start);
     }
 }

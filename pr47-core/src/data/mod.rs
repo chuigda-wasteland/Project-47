@@ -8,7 +8,6 @@ pub mod wrapper;
 use std::marker::PhantomData;
 use std::mem::{MaybeUninit, transmute};
 
-use unchecked_unwrap::UncheckedUnwrap;
 use xjbutil::mem::move_to_heap;
 use xjbutil::unchecked::UnsafeFrom;
 use xjbutil::void::Void;
@@ -341,12 +340,12 @@ impl Value {
         if !self.is_container() {
             let dyn_base: *mut dyn DynBase = self.ptr;
             #[cfg(debug_assertions)]
-            dyn_base.as_mut().unchecked_unwrap().move_out_ck(
+            dyn_base.as_mut().unwrap_unchecked().move_out_ck(
                 &mut maybe_uninit as *mut _ as *mut (),
                 <Void as StaticBase<T>>::type_id()
             );
             #[cfg(not(debug_assertions))]
-            dyn_base.as_mut().unchecked_unwrap().move_out(
+            dyn_base.as_mut().unwrap_unchecked().move_out(
                 &mut maybe_uninit as *mut _ as *mut ()
             );
         } else {
@@ -354,13 +353,13 @@ impl Value {
             let custom_vt: *const GenericTypeVT = self.ptr_repr.trivia as *const _;
 
             #[cfg(debug_assertions)]
-            (custom_vt.as_ref().unchecked_unwrap().move_out_fn) (
+            (custom_vt.as_ref().unwrap_unchecked().move_out_fn) (
                 this_ptr,
                 &mut maybe_uninit as *mut _ as *mut (),
                 <Void as StaticBase<T>>::type_id()
             );
             #[cfg(not(debug_assertions))]
-            (custom_vt.as_ref().unchecked_unwrap().move_out_fn) (
+            (custom_vt.as_ref().unwrap_unchecked().move_out_fn) (
                 this_ptr,
                 &mut maybe_uninit as *mut _ as *mut (),
             );
@@ -379,12 +378,12 @@ impl Value {
         let mut maybe_uninit: MaybeUninit<T> = MaybeUninit::uninit();
         let dyn_base: *mut dyn DynBase = self.ptr;
         #[cfg(debug_assertions)]
-        dyn_base.as_mut().unchecked_unwrap().move_out_ck(
+        dyn_base.as_mut().unwrap_unchecked().move_out_ck(
             &mut maybe_uninit as *mut _ as *mut (),
             <Void as StaticBase<T>>::type_id()
         );
         #[cfg(not(debug_assertions))]
-            dyn_base.as_mut().unchecked_unwrap().move_out(
+            dyn_base.as_mut().unwrap_unchecked().move_out(
             &mut maybe_uninit as *mut _ as *mut ()
         );
         maybe_uninit.assume_init()
