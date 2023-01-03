@@ -11,7 +11,7 @@ use crate::data::wrapper::{OWN_INFO_COLLECT_MASK, OWN_INFO_GLOBAL_MASK, OWN_INFO
 /// This is a tri-address like instruction set for register machine.
 #[cfg_attr(test, derive(Debug), derive(VariantCount))]
 pub enum Insc {
-    /// `MOV` [SRC] [DEST]
+    /// `MOV [SRC] [DEST]`
     ///
     /// Move the value in register `SRC` to `DEST`
     Move(usize, usize),
@@ -406,7 +406,7 @@ pub enum Insc {
     /// Similar to `IS-NULL`, but throws null pointer exception instead
     NullCheck(usize),
 
-    /// `IS-TYPE` [SRC] [TYCK-INFO] [DEST]
+    /// `IS-TYPE [SRC] [TYCK-INFO] [DEST]`
     ///
     /// Check if data stored in `SRC` is of `TYCK-INFO` type, and save the boolean result to `DEST`.
     IsType(usize, NonNull<TyckInfo>, usize),
@@ -455,8 +455,9 @@ pub enum Insc {
     /// `FFI-CALL-ASYNC [FUNC-ID] [ARGS..] [RET]`
     ///
     /// Call the async function denoted by `FUNC-ID` with given `ARGS`, store the returned
-    /// promise to `RET`. **No type checking**. Please note that when feature `optimized-rtlc`
-    /// is enabled, all async FFI calls have RTLC.
+    /// promise to `RET`. **No type checking**.
+    /// This instruction does not have non-rtlc version, because RTLC is **MANDATORY** for
+    /// asynchronous FFI functions.
     #[cfg(feature = "async")]
     FFICallAsync(usize, &'static [usize], usize),
 

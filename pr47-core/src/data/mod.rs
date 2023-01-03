@@ -32,8 +32,7 @@ pub const PTR_BITS_MASK_USIZE: usize = !TAG_BITS_MASK_USIZE;
 /// A generic stack value of Pr47. A stack value may be
 ///   * A *value-typed data*, see `pr47::data::value_typed::ValueTypedData`
 ///   * A *normal reference* to "heap" object, see `pr47::data::wrapper::DynBase`
-///   * A *custom pointer* to container objects created in Pr47 VM, see
-///     `pr47::data::wrapper::custom_vt::ContainerVT`
+///   * A *custom pointer* to container objects, see `pr47::data::wrapper::custom_vt::ContainerVT`
 ///
 /// A normal reference may be either *owned*, or *shared/mutably shared from Rust*. Check
 /// documentation of `pr47::data::wrapper::Wrapper` for more information. A custom pointer should

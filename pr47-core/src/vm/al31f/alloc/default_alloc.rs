@@ -107,6 +107,7 @@ impl Alloc for DefaultAlloc {
         let _removed = self.stacks.remove(self.stacks.binary_search(&stack).unwrap_unchecked());
     }
 
+    #[inline(never)]
     unsafe fn add_managed(&mut self, data: Value) {
         if self.max_debt < self.debt && self.gc_allowed {
             self.collect();
@@ -115,10 +116,12 @@ impl Alloc for DefaultAlloc {
         self.debt += 1;
     }
 
-    #[inline(always)] unsafe fn mark_object(&mut self, _data: Value) {
+    #[inline(always)]
+    unsafe fn mark_object(&mut self, _data: Value) {
         // do nothing
     }
 
+    #[inline(never)]
     unsafe fn pin_objects(&mut self, pinned: &[Value]) -> *mut bool {
         self.pin_debt += 1;
         if self.pin_debt > self.max_pin_debt {
@@ -131,6 +134,7 @@ impl Alloc for DefaultAlloc {
         ret_ptr
     }
 
+    #[inline(never)]
     unsafe fn collect(&mut self) {
         self.cleanup_pins();
         self.debt = 0;
@@ -224,6 +228,7 @@ impl Alloc for DefaultAlloc {
         });
     }
 
+    #[inline(always)]
     fn set_gc_allowed(&mut self, allowed: bool) {
         self.gc_allowed = allowed;
     }
