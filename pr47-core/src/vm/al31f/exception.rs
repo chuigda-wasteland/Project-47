@@ -1,3 +1,4 @@
+use std::marker::PhantomPinned;
 use xjbutil::void::Void;
 
 use crate::data::exception::{CheckedException, ExceptionInner, StackTrace, UncheckedException};
@@ -5,21 +6,24 @@ use crate::data::traits::{ChildrenType, StaticBase};
 
 pub struct Exception {
     pub inner: ExceptionInner,
-    pub trace: Vec<StackTrace>
+    pub trace: Vec<StackTrace>,
+    _pin: PhantomPinned
 }
 
 impl Exception {
     #[inline(never)] pub fn checked_exc(checked: CheckedException) -> Self {
         Self {
             inner: ExceptionInner::Checked(checked),
-            trace: vec![]
+            trace: vec![],
+            _pin: PhantomPinned
         }
     }
 
     #[inline(never)] pub fn unchecked_exc(unchecked: UncheckedException) -> Self {
         Self {
             inner: ExceptionInner::Unchecked(unchecked),
-            trace: vec![]
+            trace: vec![],
+            _pin: PhantomPinned
         }
     }
 
