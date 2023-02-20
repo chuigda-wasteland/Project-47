@@ -6,6 +6,8 @@
 //! VM runtime. So we are making as many things public as possible. This situation may change in the
 //! future so watch your back.
 
+#![cfg_attr(miri, feature(strict_provenance))]
+
 #![allow(
     clippy::unusual_byte_groupings,
     clippy::type_complexity,

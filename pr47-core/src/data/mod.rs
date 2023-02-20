@@ -20,6 +20,7 @@ use crate::data::wrapper::{DynBase, OwnershipInfo, Wrapper};
 
 #[cfg(any(test, feature = "bench"))]
 use std::fmt::{Debug, Formatter};
+use xjbutil::provenance_ignore;
 #[cfg(any(test, feature = "bench"))]
 use crate::data::value_typed::{VALUE_TYPE_TAG_MASK, ValueTypeTag};
 
@@ -74,14 +75,15 @@ impl Value {
         where T: 'static,
               Void: StaticBase<T>
     {
-        Self {
-            ptr: move_to_heap(Wrapper::new_owned(data)).as_ptr()
-        }
+        let ptr: *mut Wrapper<T> = move_to_heap(Wrapper::new_owned(data)).as_ptr();
+        let s = Self { ptr: provenance_ignore!(ptr) };
+        eprintln!("s.ptr_repr.trivia = {:x}", unsafe { s.ptr_repr.trivia });
+        s
     }
 
     pub fn new_container(wrapper: *mut Wrapper<()>, vt: *const GenericTypeVT) -> Self {
-        let ptr: usize = (wrapper as usize) | (GENERIC_TYPE_MASK as usize);
-        let trivia: usize = vt as _;
+        let ptr: usize = (provenance_ignore!(wrapper) as usize) | (GENERIC_TYPE_MASK as usize);
+        let trivia: usize = provenance_ignore!(vt) as _;
 
         Self { ptr_repr: WidePointer::new(ptr, trivia) }
     }
@@ -92,7 +94,9 @@ impl Value {
               Void: StaticBase<T>
     {
         Self {
-            ptr: move_to_heap(Wrapper::new_ref(data as *const T)).as_ptr()
+            ptr: move_to_heap(Wrapper::new_ref(
+                provenance_ignore!(data as *const T))
+            ).as_ptr()
         }
     }
 
@@ -102,7 +106,9 @@ impl Value {
               Void: StaticBase<T>
     {
         Self {
-            ptr: move_to_heap(Wrapper::new_mut_ref(data as *mut T)).as_ptr()
+            ptr: move_to_heap(Wrapper::new_mut_ref(
+                provenance_ignore!(data as *mut T))
+            ).as_ptr()
         }
     }
 
@@ -285,7 +291,7 @@ impl Value {
     pub unsafe fn get_as_dyn_base(&self) -> *mut dyn DynBase {
         debug_assert!(self.is_ref());
         debug_assert!(!self.is_container());
-        transmute::<WidePointer, *mut dyn DynBase>(self.ptr_repr)
+        self.ptr
     }
 
     /// Given that `self` **MUST** be a reference, assuming that `self` may be a custom pointer,
