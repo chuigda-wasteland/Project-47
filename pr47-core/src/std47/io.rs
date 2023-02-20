@@ -27,7 +27,6 @@ impl FunctionBase for PrintBind {
                 match ValueTypeTag::unsafe_from(arg.vt_data.tag as u8) {
                     ValueTypeTag::Int => print!("{}", arg.vt_data.inner.int_value),
                     ValueTypeTag::Float => print!("{}", arg.vt_data.inner.float_value),
-                    ValueTypeTag::Char => print!("{}", arg.vt_data.inner.char_value),
                     ValueTypeTag::Bool => print!("{}", arg.vt_data.inner.bool_value)
                 }
             } else {
@@ -59,7 +58,6 @@ impl FunctionBase for PrintBind {
                 match ValueTypeTag::unsafe_from(arg.vt_data.tag as u8) {
                     ValueTypeTag::Int => print!("{}", arg.vt_data.inner.int_value),
                     ValueTypeTag::Float => print!("{}", arg.vt_data.inner.float_value),
-                    ValueTypeTag::Char => print!("{}", arg.vt_data.inner.char_value),
                     ValueTypeTag::Bool => print!("{}", arg.vt_data.inner.bool_value)
                 }
             } else if !arg.is_container() &&

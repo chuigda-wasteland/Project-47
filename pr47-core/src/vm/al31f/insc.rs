@@ -4,7 +4,14 @@ use std::ptr::NonNull;
 
 use crate::data::generic::{GenericTypeCtor, GenericTypeVT};
 use crate::data::tyck::TyckInfo;
-use crate::data::wrapper::{OWN_INFO_COLLECT_MASK, OWN_INFO_GLOBAL_MASK, OWN_INFO_MOVE_MASK, OWN_INFO_OWNED_MASK, OWN_INFO_READ_MASK, OWN_INFO_WRITE_MASK};
+use crate::data::wrapper::{
+    OWN_INFO_COLLECT_MASK,
+    OWN_INFO_GLOBAL_MASK,
+    OWN_INFO_MOVE_MASK,
+    OWN_INFO_OWNED_MASK,
+    OWN_INFO_READ_MASK,
+    OWN_INFO_WRITE_MASK
+};
 
 /// An VM instruction
 ///
@@ -314,11 +321,6 @@ pub enum Insc {
     /// Put the float literal `LIT` to register `DEST`.
     MakeFloatConst(f64, usize),
 
-    /// `MAKE-CHAR-CONST [CHAR-LIT] [DEST]`
-    ///
-    /// Put the char literal `LIT` to register `DEST`.
-    MakeCharConst(char, usize),
-
     /// `MAKE-BOOL-CONST [BOOL-LIT] [DEST]`
     ///
     /// Put the boolean literal `LIT` to register `DEST`.
@@ -347,9 +349,6 @@ pub enum Insc {
     /// **No type checking.**
     CastFloatInt(usize, usize),
 
-    // TODO: Rust forbids case from `char` to `i64`. Should we use this?
-    // CastCharInt(usize, usize),
-
     /// `CAST-BOOL-INT [BOOL@SRC] [DEST]`
     ///
     /// Convert the boolean value in `SRC` to integer, put the result into register `DEST`.
@@ -361,7 +360,6 @@ pub enum Insc {
 
     CastIntFloat(usize, usize),
     CastAnyFloat(usize, usize),
-    CastAnyChar(usize, usize),
 
     CastIntBool(usize, usize),
     CastAnyBool(usize, usize),

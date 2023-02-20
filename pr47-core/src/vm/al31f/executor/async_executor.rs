@@ -334,8 +334,6 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 slice.set_value(*dst, Value::new_int(*i64_const)),
             Insc::MakeFloatConst(f64_const, dst) =>
                 slice.set_value(*dst, Value::new_float(*f64_const)),
-            Insc::MakeCharConst(char_const, dst) =>
-                slice.set_value(*dst, Value::new_char(*char_const)),
             Insc::MakeBoolConst(bool_const, dst) =>
                 slice.set_value(*dst, Value::new_bool(*bool_const)),
             Insc::MakeNull(dst) =>
@@ -358,8 +356,6 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 impl_cast_op![slice, src, dst, i64, f64, int_value, new_float],
             Insc::CastAnyFloat(src, dst) =>
                 impl_checked_cast_op![slice, src, dst, cast_any_float, thread, insc_ptr],
-            Insc::CastAnyChar(src, dst) =>
-                impl_checked_cast_op![slice, src, dst, cast_any_char, thread, insc_ptr],
             Insc::CastIntBool(src, dst) => {
                 let src: i64 = slice.get_value(*src).vt_data.inner.int_value;
                 let casted: bool = src != 0;

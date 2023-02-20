@@ -6,15 +6,13 @@ pub const VALUE_TYPE_TAG_MASK: u8 = 0b00_111_000;
 #[repr(u8)]
 #[derive(Clone, Copy)]
 pub enum ValueTypeTag {
-    Int   = 0b00_001_000,
-    Float = 0b00_010_000,
-    Char  = 0b00_011_000,
-    Bool  = 0b00_100_000
+    Int   = 0b00_000_000,
+    Float = 0b00_001_000,
+    Bool  = 0b00_010_000
 }
 
 pub const INT_TYPE_TAG: usize   = ValueTypeTag::Int as usize;
 pub const FLOAT_TYPE_TAG: usize = ValueTypeTag::Float as usize;
-pub const CHAR_TYPE_TAG: usize  = ValueTypeTag::Char as usize;
 pub const BOOL_TYPE_TAG: usize  = ValueTypeTag::Bool as usize;
 
 impl UnsafeFrom<u8> for ValueTypeTag {
@@ -28,7 +26,6 @@ impl UnsafeFrom<u8> for ValueTypeTag {
 pub union ValueTypedDataInner {
     pub int_value: i64,
     pub float_value: f64,
-    pub char_value: char,
     pub bool_value: bool,
 
     pub repr: u64
@@ -67,17 +64,6 @@ impl From<f64> for ValueTypedData {
             tag: ValueTypeTag::Float as usize | VALUE_TYPE_MASK as usize,
             inner: ValueTypedDataInner {
                 float_value
-            }
-        }
-    }
-}
-
-impl From<char> for ValueTypedData {
-    #[inline(always)] fn from(char_value: char) -> Self {
-        Self {
-            tag: ValueTypeTag::Char as usize | VALUE_TYPE_MASK as usize,
-            inner: ValueTypedDataInner {
-                repr: char_value as _
             }
         }
     }

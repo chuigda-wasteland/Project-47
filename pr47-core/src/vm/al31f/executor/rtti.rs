@@ -16,7 +16,6 @@ pub unsafe fn check_type(value: Value, tyck_info: NonNull<TyckInfo>) -> bool {
             match ValueTypeTag::unsafe_from((value.vt_data.tag as u8) & VALUE_TYPE_TAG_MASK) {
                 ValueTypeTag::Int => *plain == TypeId::of::<i64>(),
                 ValueTypeTag::Float => *plain == TypeId::of::<f64>(),
-                ValueTypeTag::Char => *plain == TypeId::of::<char>(),
                 ValueTypeTag::Bool => *plain == TypeId::of::<bool>(),
             }
         } else if !value.is_container() {

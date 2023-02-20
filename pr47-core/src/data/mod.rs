@@ -126,13 +126,6 @@ impl Value {
         }
     }
 
-    /// Create a new character `Value`
-    #[inline(always)] pub fn new_char(char_value: char) -> Self {
-        Self {
-            vt_data: ValueTypedData::from(char_value)
-        }
-    }
-
     /// Create a new boolean `Value`
     #[inline(always)] pub fn new_bool(bool_value: bool) -> Self {
         Self {
@@ -397,7 +390,6 @@ impl Debug for Value {
                 match ValueTypeTag::unsafe_from((self.vt_data.tag as u8) & VALUE_TYPE_TAG_MASK) {
                     ValueTypeTag::Int => write!(f, "IntV({})", self.vt_data.inner.int_value),
                     ValueTypeTag::Float => write!(f, "FloatV({})", self.vt_data.inner.float_value),
-                    ValueTypeTag::Char => write!(f, "CharV('{}')", self.vt_data.inner.char_value),
                     ValueTypeTag::Bool => write!(f, "BoolV({})", self.vt_data.inner.bool_value)
                 }
             }
