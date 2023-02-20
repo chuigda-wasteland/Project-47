@@ -281,24 +281,12 @@ unsafe fn poll_unsafe<'a, A: Alloc, const S: bool>(
                 impl_rel_op![slice, src1, src2, dst, <, f64, float_value],
             Insc::LtAny(src1, src2, dst) =>
                 impl_checked_bin_op![slice, src1, src2, dst, checked_lt, thread, insc_ptr],
-            Insc::GtInt(src1, src2, dst) =>
-                impl_rel_op![slice, src1, src2, dst, >, i64, int_value],
-            Insc::GtFloat(src1, src2, dst) =>
-                impl_rel_op![slice, src1, src2, dst, >, f64, float_value],
-            Insc::GtAny(src1, src2, dst) =>
-                impl_checked_bin_op![slice, src1, src2, dst, checked_gt, thread, insc_ptr],
             Insc::LeInt(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, <=, i64, int_value],
             Insc::LeFloat(src1, src2, dst) =>
                 impl_rel_op![slice, src1, src2, dst, <=, f64, float_value],
             Insc::LeAny(src1, src2, dst) =>
                 impl_checked_bin_op![slice, src1, src2, dst, checked_le, thread, insc_ptr],
-            Insc::GeInt(src1, src2, dst) =>
-                impl_rel_op![slice, src1, src2, dst, >=, i64, int_value],
-            Insc::GeFloat(src1, src2, dst) =>
-                impl_rel_op![slice, src1, src2, dst, >=, f64, float_value],
-            Insc::GeAny(src1, src2, dst) =>
-                impl_checked_bin_op![slice, src1, src2, dst, checked_ge, thread, insc_ptr],
             Insc::BAndInt(src1, src2, dst) => impl_int_binop![slice, src1, src2, dst, &],
             Insc::BAndAny(src1, src2, dst) =>
                 impl_checked_bin_op![slice, src1, src2, dst, checked_bit_and, thread, insc_ptr],

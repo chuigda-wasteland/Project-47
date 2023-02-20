@@ -160,21 +160,6 @@ pub enum Insc {
     /// appropriate less-than comparison accordingly, and put result to register `DEST`.
     LtAny(usize, usize, usize),
 
-    /// `GT-INT [INT@SRC1] [INT@SRC2] [DEST]`
-    ///
-    /// Similar to `LT-INT` but yields inverted result.
-    GtInt(usize, usize, usize),
-
-    /// `GT-FLOAT [SRC1] [SRC2] [DEST]`
-    ///
-    /// Similar to `LT-FLOAT` but yields inverted result.
-    GtFloat(usize, usize, usize),
-
-    /// `GT-ANY [SRC1] [SRC2] [DEST]`
-    ///
-    /// Similar to `LT-ANY` but yields inverted result.
-    GtAny(usize, usize, usize),
-
     /// `LE-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
     /// Check if integer in register `SRC1` is less than or equal to integer in register `SRC2`,
@@ -192,21 +177,6 @@ pub enum Insc {
     /// Load numbers in register `SRC1` and `SRC2`, **check types at run time** and perform
     /// appropriate less-than-or-equal-to comparison accordingly, and put result to register `DEST`.
     LeAny(usize, usize, usize),
-
-    /// `GE-INT [INT@SRC1] [INT@SRC2] [DEST]`
-    ///
-    /// Similar to `LE-INT` but yields inverted result.
-    GeInt(usize, usize, usize),
-
-    /// `GE-FLOAT [SRC1] [SRC2] [DEST]`
-    ///
-    /// Similar to `LE-FLOAT` but yields inverted result.
-    GeFloat(usize, usize, usize),
-
-    /// `GE-ANY [SRC1] [SRC2] [DEST]`
-    ///
-    /// Similar to `LE-ANY` but yields inverted result.
-    GeAny(usize, usize, usize),
 
     /// `BITAND-INT [INT@SRC1] [INT@SRC2] [DEST]`
     ///
