@@ -16,11 +16,10 @@ use crate::data::traits::{ChildrenType, StaticBase};
 use crate::data::tyck::{TyckInfo, TyckInfoPool};
 use crate::data::wrapper::{Wrapper, WrapperData, DynBase, OwnershipInfo};
 
-#[allow(dead_code)]
 struct TestStruct {
     field1: i32,
     field2: i64,
-    field3: std::string::String
+    field3: String
 }
 
 const TEST_STRUCT_NAME: &'static str = "pr47_core__data__test__TestStruct";
@@ -153,13 +152,15 @@ impl StaticBase<TestStruct2> for Void {
 
             drop(dyn_base);
 
-            let raw_ptr: usize = v.untagged_ptr_field();
-            let raw_ptr: *const Wrapper<TestStruct> = raw_ptr as *const _;
-            let test_struct_ref: &Wrapper<TestStruct> = raw_ptr.as_ref().unwrap();
-            // TODO
-            // assert_eq!(test_struct_ref.data.owned.field1, 114);
-            // assert_eq!(test_struct_ref.data.owned.field2, 514);
-            // assert_eq!(test_struct_ref.data.owned.field3, "1919810");
+            let raw_ptr: *const Wrapper<TestStruct> = v.ptr as *const _;
+            let test_struct_ref: &Wrapper<TestStruct> = &*raw_ptr;
+
+            {
+                let test_struct_ref = test_struct_ref.data.owned.assume_init_ref();
+                assert_eq!(test_struct_ref.field1, 114);
+                assert_eq!(test_struct_ref.field2, 514);
+                assert_eq!(test_struct_ref.field3, "1919810");
+            }
 
             drop(test_struct_ref);
 
