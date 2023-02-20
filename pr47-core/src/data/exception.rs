@@ -7,7 +7,6 @@ use crate::data::tyck::TyckInfo;
 #[cfg(feature = "async-astd")] use std::convert::Infallible as JoinError;
 #[cfg(feature = "async-tokio")] use tokio::task::JoinError;
 
-
 pub enum UncheckedException {
     AlreadyAwaited { promise: Value },
     ArgCountMismatch { func_id: usize, expected: usize, got: usize },

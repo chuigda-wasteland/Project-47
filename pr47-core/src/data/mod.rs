@@ -429,10 +429,6 @@ impl TypedValue<f64> {
     // TODO
 }
 
-impl TypedValue<char> {
-    // TODO
-}
-
 impl TypedValue<bool> {
     // TODO
 }
