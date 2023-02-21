@@ -316,8 +316,6 @@ mod test {
             &vt
         );
 
-        eprintln!("container.ptr_repr = {:?}", unsafe { container.ptr_repr });
-
         unsafe {
             alloc.add_stack(&stack);
             alloc.add_managed(str1);

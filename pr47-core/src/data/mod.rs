@@ -77,7 +77,6 @@ impl Value {
     {
         let ptr: *mut Wrapper<T> = move_to_heap(Wrapper::new_owned(data)).as_ptr();
         let s = Self { ptr: provenance_ignore!(ptr) };
-        eprintln!("s.ptr_repr.trivia = {:x}", unsafe { s.ptr_repr.trivia });
         s
     }
 

@@ -1,6 +1,6 @@
 [package]
 name = "pr47"
-version = "0.1.4-BRAVO"
+version = "0.1.4-CHARLIE"
 authors = ["ICEY <icey@icey.tech>"]
 edition = "2018"
 description = "A semi-experimental programming language. Still working in progress."
