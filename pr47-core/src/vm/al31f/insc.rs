@@ -654,5 +654,6 @@ impl Insc {
 #[cfg(test)]
 #[cfg_attr(miri, ignore)]
 #[test] fn count_instructions() {
+    eprintln!(" [pr47::vm::al31f::insc] Insc::SIZE = {}", std::mem::size_of::<Insc>());
     eprintln!(" [pr47::vm::al31f::insc] Insc::VARIANT_COUNT = {}", Insc::VARIANT_COUNT);
 }
