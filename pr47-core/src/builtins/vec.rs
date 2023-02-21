@@ -13,7 +13,7 @@ use crate::data::wrapper::Wrapper;
 
 #[repr(transparent)]
 pub struct VMGenericVec {
-    pub(crate) inner: Vec<Value>,
+    pub inner: Vec<Value>,
     _pinned: PhantomPinned
 }
 
