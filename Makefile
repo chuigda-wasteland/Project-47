@@ -94,9 +94,9 @@ flamegraph_bench_al31fm2_sync_new1m:
 miri_test_all:
 	@MIRIFLAGS="-Zmiri-disable-isolation -Zmiri-ignore-leaks -Zmiri-permissive-provenance" cargo +nightly miri test
 
-.PHONY: miri_test_all_sync
-miri_test_all_sync:
-	@MIRIFLAGS="-Zmiri-disable-isolation -Zmiri-ignore-leaks -Zmiri-permissive-provenance" cargo +nightly miri test ${SYNC_BENCH_FEATURES}
+.PHONY: miri_test_all_release
+miri_test_all_release:
+	@MIRIFLAGS="-Zmiri-disable-isolation -Zmiri-ignore-leaks -Zmiri-permissive-provenance" cargo +nightly miri test --release
 
 .PHONY: miri_test_pr47_core_data
 miri_test_pr47_core_data:

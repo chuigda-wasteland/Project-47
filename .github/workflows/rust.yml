@@ -22,7 +22,7 @@ jobs:
       run: make test_sync
     - name: Run tests for async mode
       run: make test_async
-#    - name: Run miri test for sync mode
-#      run: make miri_test_all_sync
-#    - name: Run miri test for async mode
-#      run: make miri_test_all
+    - name: Run miri test
+      run: make miri_test_all
+    - name: Run miri test for release mode
+      run: make miri_test_all_release

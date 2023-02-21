@@ -1,4 +1,4 @@
-use std::ptr::NonNull;
+use std::ptr::{addr_of_mut, NonNull, slice_from_raw_parts_mut};
 
 use crate::data::Value;
 
@@ -125,10 +125,17 @@ impl Stack {
         self.frames.push(
             FrameInfo::new(this_frame_end, new_frame_end, ret_value_locs, ret_addr, func_id)
         );
+
         let old_slice: StackSlice =
-            StackSlice(&mut self.values[this_frame_start..this_frame_end] as *mut _);
+            StackSlice(slice_from_raw_parts_mut(
+                self.values.as_mut_ptr().add(this_frame_start),
+                this_frame_end - this_frame_start
+            ));
         let mut new_slice: StackSlice =
-            StackSlice(&mut self.values[this_frame_end..new_frame_end] as *mut _);
+            StackSlice(slice_from_raw_parts_mut(
+                self.values.as_mut_ptr().add(this_frame_end),
+                frame_size
+            ));
         for (i /*: usize*/, arg_loc/*: &usize*/) in arg_locs.iter().enumerate() {
             new_slice.set_value(i, old_slice.get_value(*arg_loc));
         }
@@ -190,10 +197,14 @@ impl Stack {
         let this_frame: &FrameInfo = &self.frames[frame_count - 1];
         let prev_frame: &FrameInfo = &self.frames[frame_count - 2];
         assert_eq!(prev_frame.frame_end, this_frame.frame_start);
-        let this_slice =
-            StackSlice(&mut self.values[this_frame.frame_start..this_frame.frame_end] as *mut _);
-        let mut prev_slice =
-            StackSlice(&mut self.values[prev_frame.frame_start..prev_frame.frame_end] as *mut _);
+        let this_slice: StackSlice = StackSlice(slice_from_raw_parts_mut(
+            self.values.as_mut_ptr().add(this_frame.frame_start),
+            this_frame.frame_end - this_frame.frame_start
+        ));
+        let mut prev_slice: StackSlice = StackSlice(slice_from_raw_parts_mut(
+            self.values.as_mut_ptr().add(prev_frame.frame_start),
+            prev_frame.frame_end - prev_frame.frame_start
+        ));
 
         assert_eq!(ret_values.len(), this_frame.ret_value_locs.as_ref().len());
         for (ret_value /*: &usize*/, ret_value_loc /*: &usize*/) in
